@@ -233,6 +233,7 @@ td,th{background:var(--surface)}
   <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button data-tab="voters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.5 5.4"/></svg>Voters</button>
   <button data-action="add" class="add-tab" aria-label="Add a new voter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Add voter</button>
+  <button data-tab="asd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/><path d="M15.5 15.5l3 3M18.5 15.5l-3 3"/></svg>ASD list</button>
   <button data-tab="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>Import</button>
   <button data-tab="revisions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M4 12h7M4 17h10"/><path d="M17 10l3 3-3 3M20 13h-6"/></svg>Revisions</button>
   <button data-tab="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg>Account</button>
@@ -430,7 +431,7 @@ function live(){ return state.voters.filter(v=>!v.gone && !v.st.del); }
 function stats(){
   const L=live(), n=L.length, c=f=>L.filter(f).length;
   return { n, m:c(v=>v.gender==="M"), f:c(v=>v.gender==="F"), t:c(v=>v.gender==="T"),
-    mob:c(v=>v.st.mob==="yes"), aad:c(v=>v.st.aad==="yes"), asd:c(v=>v.st.asd), slip:c(v=>v.st.slip),
+    mob:c(v=>v.st.mob==="yes"), aad:c(v=>v.st.aad==="yes"), asd:c(v=>asdOf(v)), slip:c(v=>v.st.slip),
     forms:c(v=>v.st.form && v.st.formSt!=="Approved" && v.st.formSt!=="Rejected"),
     nophoto:c(v=>v.photo==="no"), photoKnown:c(v=>v.photo==="yes"||v.photo==="no"),
     newRev:c(v=>v.newIn && v.newIn===state.meta.rev && state.meta.rev>1), manual:c(v=>v.src==="manual") };
@@ -446,7 +447,7 @@ function vIndex(id){ return state.voters.findIndex(v=>v.id===id); }
 /* ================= render ================= */
 function render(){
   document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===tab));
-  ({home:renderHome, voters:renderVoters, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
+  ({home:renderHome, voters:renderVoters, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
 document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } tab=b.dataset.tab; render(); window.scrollTo(0,0); });
@@ -536,6 +537,131 @@ function bindSettings(){
     commit("details", -1, "Updated part details"); toast("Details saved"); render(); };
 }
 
+/* ---------- uploaded ASD list (kept separately from the roll) ---------- */
+function asdNormCat(c){ c=String(c||"").trim().toLowerCase(); if(!c) return "";
+  if(/^a$|absent|గైర్హాజరు|అబ్సెంట్/.test(c)) return "Absent";
+  if(/^s$|shift|మారిన|వలస/.test(c)) return "Shifted";
+  if(/^d$|^e$|dead|death|expired|died|మరణ|చనిపో/.test(c)) return "Dead";
+  if(/^r$|repeat|dupl|double|నకిలీ/.test(c)) return "Duplicate";
+  return c.charAt(0).toUpperCase()+c.slice(1); }
+let _asdIdx=null, _asdKey="";
+function asdIndex(){
+  const L=(state.meta.asdList&&state.meta.asdList.rows)||[];
+  const key=L.length+":"+(state.meta.asdList&&state.meta.asdList.at||0)+":"+(state.meta.asdList&&state.meta.asdList.ver||0);
+  if(_asdIdx && _asdKey===key) return _asdIdx;
+  const byE=new Map(), byS=new Map();
+  for(const r of L){ if(r.epic) byE.set(r.epic, r); else if(r.sl) byS.set(String(+r.sl), r); }
+  _asdIdx={byE,byS}; _asdKey=key; return _asdIdx;
+}
+function asdEntry(v){ const L=state.meta.asdList; if(!L||!L.rows||!L.rows.length) return null; const ix=asdIndex(); return (v.epic&&ix.byE.get(v.epic)) || (v.sl&&ix.byS.get(String(+v.sl))) || null; }
+function asdOf(v){ return v.st.asd || (asdEntry(v)? (asdEntry(v).cat||"ASD") : ""); }
+function asdMatch(r){ return state.voters.find(v=>!v.gone && ((r.epic&&v.epic===r.epic) || (!r.epic&&r.sl&&String(+v.sl)===String(+r.sl)))); }
+const ASD_FIELDS=[["sl","Serial no. in roll",["sl","s.no","sno","serial","sr","part sl","క్ర"]],["epic","EPIC",["epic","voter id","id card","card"]],["name","Name",["name","elector","పేరు"]],["relName","Relation name",["father","husband","relation","relative"]],["house","House no.",["house","door","h.no","ఇంటి"]],["age","Age",["age","వయస్సు"]],["gender","Gender",["gender","sex","లింగ"]],["cat","ASD category",["asd","category","status","type","reason","a/s/d","remark type"]],["remarks","Remarks / new address",["remark","address","shifted to","note","details"]]];
+function renderAsd(el){
+  const A=state.meta.asdList, rows=(A&&A.rows)||[];
+  if(window._asdStage){ return drawAsdStage(el); }
+  const cats={}; rows.forEach(r=>{ const c=r.cat||"Not given"; cats[c]=(cats[c]||0)+1; });
+  const q=(window._asdQ||"").toLowerCase();
+  const shown=rows.map((r,i)=>[r,i]).filter(([r])=>!q || [r.name,r.epic,r.sl,r.house,r.relName,r.remarks,r.cat].some(x=>String(x||"").toLowerCase().includes(q)));
+  el.innerHTML=`<div class="panel">
+    <h2>ASD list</h2>
+    <p class="muted small" style="margin:0">Your Absent / Shifted / Dead list, kept separately from the roll. Each entry is linked to the voter by EPIC (or serial number), so the voter shows an ASD tag during Election and SIR work.</p>
+    ${rows.length?`<div class="card panel">
+      <div class="bigline"><span class="n">${rows.length}</span><span class="muted small">in ASD list · ${shown.filter(([r])=>asdMatch(r)).length} linked to voters</span></div>
+      <div class="row">${Object.entries(cats).map(([c,n])=>`<span class="pill warn">${esc(c)} ${n}</span>`).join("")}</div>
+      <div class="muted small">From ${esc(A.source||"upload")} · ${fmtDate(A.at)}</div>
+    </div>`:`<div class="card empty"><h3>No ASD list yet</h3><p class="muted small" style="margin:0">Upload your ASD list as Excel or CSV (from Google Sheets: File → Download → Microsoft Excel).</p></div>`}
+    <div class="row">
+      <label class="btn primary" for="asdFile">⬆ Upload ASD list</label><input type="file" id="asdFile" accept=".xlsx,.xls,.csv" hidden>
+      <button class="btn" id="asdAdd">+ Add entry</button>
+      ${rows.length?`<button class="btn danger" id="asdClear">Remove list</button>`:""}
+    </div>
+    ${rows.length?`<input class="search" id="asdQ" type="search" placeholder="Search ASD list…" value="${esc(window._asdQ||"")}">
+    <div class="voters" id="asdRows">${shown.map(([r,i])=>{ const v=asdMatch(r); return `<button class="v" data-i="${i}"><span class="sl">${esc(r.sl||"—")}</span><span style="min-width:0"><div class="nm">${esc(r.name||(v&&(v.name||v.nameEn))||"(no name)")}</div><div class="meta">${r.relName?esc(r.relName)+" · ":""}H <span class="mono">${esc(r.house||(v&&v.house)||"—")}</span> · <span class="mono">${esc(r.epic||"no EPIC")}</span></div><div class="pills"><span class="pill warn">${esc(r.cat||"ASD")}</span>${v?`<span class="pill ok">In roll · Sl ${esc(v.sl)}</span>`:`<span class="pill bad">Not found in roll</span>`}${r.remarks?`<span class="pill">${esc(r.remarks)}</span>`:""}</div></span></button>`; }).join("")}</div>`:""}
+  </div>`;
+  $("#asdFile").onchange=e=>{ if(e.target.files[0]) readAsdSheet(e.target.files[0]); };
+  $("#asdAdd").onclick=()=>editAsd(-1);
+  if($("#asdClear")) $("#asdClear").onclick=()=>confirmBox(`Remove the uploaded ASD list (${rows.length} entries)? Your own ASD marks on voters stay.`, "Remove list", ()=>{ pushUndo("remove ASD list"); state.meta.asdList={rows:[],at:Date.now(),source:""}; commit("asd",-1,"Removed ASD list"); render(); }, true);
+  if($("#asdQ")) $("#asdQ").addEventListener("input", e=>{ window._asdQ=e.target.value; const pos=e.target.selectionStart; renderAsd(el); const n=$("#asdQ"); n.focus(); n.setSelectionRange(pos,pos); });
+  if($("#asdRows")) $("#asdRows").onclick=e=>{ const b=e.target.closest(".v"); if(b) editAsd(+b.dataset.i); };
+}
+function readAsdSheet(file){
+  if(typeof XLSX==="undefined"){ toast("Excel reader didn't load. Check internet and reopen."); return; }
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const wb=XLSX.read(new Uint8Array(r.result),{type:"array"});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
+    let hi=rows.findIndex(rw=>rw.filter(c=>String(c).trim()&&isNaN(c)).length>=2); if(hi<0) hi=0;
+    const head=rows[hi].map(h=>String(h).trim()), map={};
+    for(const [k,,syn] of ASD_FIELDS){ map[k]=head.findIndex((h,ix)=>!Object.values(map).includes(ix) && syn.some(s=>h.toLowerCase().includes(s))); }
+    window._asdStage={ head, body:rows.slice(hi+1).filter(r=>r.some(c=>String(c).trim())), map, source:file.name };
+    render();
+  }catch(e){ toast("Couldn't read that file"); } };
+  r.readAsArrayBuffer(file);
+}
+function drawAsdStage(el){
+  const S=window._asdStage, has=!!((state.meta.asdList&&state.meta.asdList.rows)||[]).length;
+  el.innerHTML=`<div class="panel"><h2>Match the ASD list columns</h2>
+    <p class="muted small" style="margin:0">${esc(S.source)} · ${S.body.length} rows. EPIC or serial number is needed to link each entry to a voter.</p>
+    <div class="grid2">${ASD_FIELDS.map(([k,l])=>`<label class="f">${l}<select data-k="${k}"><option value="-1">— not in file —</option>${S.head.map((h,i)=>`<option value="${i}" ${S.map[k]===i?"selected":""}>${esc(h||"Column "+(i+1))}</option>`).join("")}</select></label>`).join("")}</div>
+    <label class="f">If the file has no category column, mark every entry as<select id="asdDef"><option value="">— leave blank —</option>${ASD.filter(Boolean).map(a=>`<option>${a}</option>`).join("")}</select></label>
+    ${has?`<label class="f">Your existing ASD list<select id="asdHow"><option value="replace">Replace it with this file</option><option value="add">Add these to it</option></select></label>`:""}
+    <div class="row"><button class="btn primary" id="asdGo">Save ASD list</button><button class="btn" id="asdX">Cancel</button></div></div>`;
+  $("#asdX").onclick=()=>{ window._asdStage=null; render(); };
+  $("#asdGo").onclick=()=>{
+    el.querySelectorAll("select[data-k]").forEach(x=>S.map[x.dataset.k]=+x.value);
+    if(S.map.epic<0 && S.map.sl<0){ toast("Pick the EPIC or Serial column"); return; }
+    const g=(r,k)=> S.map[k]>=0? String(r[S.map[k]]??"").trim() : "";
+    const def=$("#asdDef").value;
+    const add=S.body.map(r=>({ sl:g(r,"sl").replace(/\D/g,""), epic:normEpic(g(r,"epic")), name:g(r,"name"), relName:g(r,"relName"), house:g(r,"house"), age:g(r,"age").replace(/\D/g,""), gender:normGender(g(r,"gender")), cat:asdNormCat(g(r,"cat"))||def, remarks:g(r,"remarks") })).filter(r=>r.epic||r.sl);
+    const how=$("#asdHow")?$("#asdHow").value:"replace";
+    pushUndo("upload ASD list");
+    const old=(how==="add"&&state.meta.asdList&&state.meta.asdList.rows)||[];
+    const seen=new Set(old.map(r=>r.epic||("S"+r.sl)));
+    const merged=old.concat(add.filter(r=>!seen.has(r.epic||("S"+r.sl))));
+    state.meta.asdList={ rows:merged, at:Date.now(), source:S.source, ver:Date.now() };
+    window._asdStage=null;
+    const linked=merged.filter(r=>asdMatch(r)).length;
+    commit("asd",-1,`Uploaded ASD list: ${add.length} entries (${linked} linked to voters)`);
+    render(); toast(`ASD list saved · ${linked} of ${merged.length} linked to voters`);
+  };
+}
+function editAsd(i){
+  const L=state.meta.asdList||(state.meta.asdList={rows:[],at:Date.now(),source:"Added by hand"});
+  const isNew=i<0, r=isNew?{sl:"",epic:"",name:"",relName:"",house:"",cat:"",remarks:""}:L.rows[i];
+  const v=isNew?null:asdMatch(r);
+  $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true" aria-label="ASD entry">
+    <div class="sheet-h"><div><div class="eyebrow">ASD list</div><h2>${isNew?"Add entry":esc(r.name||r.epic||"Entry")}</h2></div><button class="btn" id="aX" aria-label="Close">✕</button></div>
+    ${v?`<div class="note ok small">Linked to voter Sl ${esc(v.sl)} · ${esc(v.nameEn||v.name)} · H ${esc(v.house)} <button class="btn ghost" id="aOpen">Open voter</button></div>`:(isNew?"":`<div class="note bad small">No voter with this EPIC / serial in your roll.</div>`)}
+    <div class="kv">
+      <div class="k">EPIC</div><div class="val"><input id="aE" class="mono" value="${esc(r.epic)}"></div>
+      <div class="k">Serial no.</div><div class="val"><input id="aS" inputmode="numeric" value="${esc(r.sl)}"></div>
+      <div class="k">Name</div><div class="val"><input id="aN" value="${esc(r.name)}"></div>
+      <div class="k">Relation name</div><div class="val"><input id="aR" value="${esc(r.relName)}"></div>
+      <div class="k">House no.</div><div class="val"><input id="aH" value="${esc(r.house)}"></div>
+      <div class="k">Category</div><div class="val">${seg("acat",ASD.filter(Boolean).map(a=>[a,a]),r.cat)}</div>
+      <div class="k">Remarks</div><div class="val"><textarea id="aM" rows="2">${esc(r.remarks)}</textarea></div>
+    </div>
+    <div class="sheet-bar">${isNew?"":`<button class="btn danger" id="aDel">Delete</button>`}<button class="btn primary grow" id="aSave">Save</button></div>
+  </div></div>`;
+  const sh=$("#sbg");
+  sh.onclick=e=>{ if(e.target.id==="sbg"||e.target.closest("#aX")) closeSheet(); };
+  sh.querySelectorAll(".seg").forEach(sg=>sg.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; sg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
+  if($("#aOpen")) $("#aOpen").onclick=()=>openVoter(v.id);
+  if($("#aDel")) $("#aDel").onclick=()=>{ pushUndo("delete ASD entry"); L.rows.splice(i,1); L.ver=Date.now(); commit("asd",-1,"Deleted ASD entry: "+(r.name||r.epic)); closeSheet(); render(); };
+  $("#aSave").onclick=()=>{
+    const b=sh.querySelector('[data-seg="acat"] [aria-pressed="true"]');
+    const nr={ epic:normEpic($("#aE").value), sl:$("#aS").value.replace(/\D/g,""), name:$("#aN").value.trim(), relName:$("#aR").value.trim(), house:$("#aH").value.trim(), cat:b?b.dataset.v:"", remarks:$("#aM").value.trim() };
+    if(!nr.epic && !nr.sl){ toast("Enter the EPIC or serial number"); return; }
+    if(isNew){ const m=asdMatch(nr); if(m && !nr.name) nr.name=m.name; if(m && !nr.house) nr.house=m.house; }
+    pushUndo(isNew?"add ASD entry":"edit ASD entry");
+    if(isNew) L.rows.push(nr); else L.rows[i]=Object.assign({},r,nr);
+    L.ver=Date.now();
+    commit("asd",-1,(isNew?"Added ASD entry: ":"Updated ASD entry: ")+(nr.name||nr.epic||nr.sl));
+    closeSheet(); render(); toast("Saved");
+  };
+}
+
 /* ---------- voter list ---------- */
 const MODES=[["normal","Regular"],["election","Election"],["revision","SIR / Revision"]];
 const MODE_HELP={ normal:"Day-to-day: mobile and Aadhaar status, photos, corrections.", election:"Election time: voter slip distribution and the ASD list.", revision:"SIR / summary revision: ASD marking, Form 6/7/8 and new voters." };
@@ -544,8 +670,8 @@ const FILTERS = [
   ["all","All", v=>!v.gone&&!v.st.del],
   ["nomob","Mobile pending", v=>!v.gone&&!v.st.del&&v.st.mob!=="yes", ["normal","revision"]],
   ["noaad","Aadhaar pending", v=>!v.gone&&!v.st.del&&v.st.aad!=="yes", ["normal","revision"]],
-  ["asd","ASD", v=>!v.gone&&!v.st.del&&v.st.asd, ["election","revision"]],
-  ["noslip","Slip pending", v=>!v.gone&&!v.st.del&&!v.st.slip&&!v.st.asd, ["election"]],
+  ["asd","ASD", v=>!v.gone&&!v.st.del&&asdOf(v), ["election","revision"]],
+  ["noslip","Slip pending", v=>!v.gone&&!v.st.del&&!v.st.slip&&!asdOf(v), ["election"]],
   ["forms","Open forms", v=>!v.gone&&!v.st.del&&v.st.form&&v.st.formSt!=="Approved"&&v.st.formSt!=="Rejected", ["revision"]],
   ["new","New in last revision", v=>!v.gone&&v.newIn&&v.newIn===state.meta.rev&&state.meta.rev>1, ["revision"]],
   ["changed","Corrected in last revision", v=>!v.gone&&v.chgIn&&v.chgIn===state.meta.rev, ["revision"]],
@@ -603,7 +729,7 @@ function pillsFor(v){
   const md=mode();
   if(md!=="election"){ p.push(v.st.mob==="yes"?`<span class="pill ok">Mobile ✓</span>`:`<span class="pill">Mobile</span>`);
     p.push(v.st.aad==="yes"?`<span class="pill ok">Aadhaar ✓</span>`:`<span class="pill">Aadhaar</span>`); }
-  if(v.st.asd && md!=="normal") p.push(`<span class="pill warn">${esc(v.st.asd)}</span>`);
+  if(asdOf(v) && md!=="normal") p.push(`<span class="pill warn">${esc(asdOf(v))}${asdEntry(v)&&!v.st.asd?" · list":""}</span>`);
   if(v.photo==="no") p.push(`<span class="pill bad">No photo</span>`);
   if(v.corr&&v.corr.length&&!v.corrDone) p.push(`<span class="pill warn">Corrected by me</span>`);
   if(v.photoIn && v.photoIn===state.meta.rev) p.push(`<span class="pill ok">Photo added</span>`);
@@ -687,7 +813,8 @@ function openVoter(id, editMode){
       ${mode()!=="election"?kvRow("Mobile updated", seg("mob",[["yes","Yes"],["no","No"],["","Not checked"]],st.mob)):""}
       ${kvRow("Mobile number", `<input id="ePh" value="${esc(st.ph)}" inputmode="tel" maxlength="10" placeholder="10 digits (optional)">`)}
       ${mode()!=="election"?kvRow("Aadhaar linked", seg("aad",[["yes","Yes"],["no","No"],["","Not checked"]],st.aad)+`<div class="muted small" style="margin-top:4px">Only Yes / No. Never write the Aadhaar number.</div>`):""}
-      ${mode()!=="normal"?kvRow("ASD", seg("asd",ASD.map(a=>[a,a||"None"]),st.asd)):""}
+      ${asdEntry(v)?kvRow("ASD list", `<span class="pill warn">${esc(asdEntry(v).cat||"ASD")}</span>${asdEntry(v).remarks?` <span class="muted small">${esc(asdEntry(v).remarks)}</span>`:""}<div class="muted small" style="margin-top:4px">From your uploaded ASD list</div>`):""}
+      ${mode()!=="normal"?kvRow(asdEntry(v)?"ASD (my mark)":"ASD", seg("asd",ASD.map(a=>[a,a||"None"]),st.asd)):""}
       ${mode()==="election"?kvRow("Voter slip", seg("slip",[["true","Given"],["false","Not given"]],st.slip)):""}
       ${mode()==="revision"?kvRow("Form filed", seg("form",FORMS.map(a=>[a,a||"None"]),st.form)+`<div class="grid2" style="margin-top:6px"><input id="eFDt" type="date" value="${esc(st.formDt)}" aria-label="Form date"><select id="eFSt" aria-label="Form status">${["","Submitted","Verified","Approved","Rejected"].map(s=>`<option value="${s}" ${st.formSt===s?"selected":""}>${s||"Status —"}</option>`).join("")}</select></div>`):""}
       ${kvRow("Field note", `<textarea id="eNote" rows="2">${esc(st.note)}</textarea>`)}
@@ -1295,7 +1422,7 @@ function exportRows(){
     "Serial":v.sl, "EPIC":v.epic, "Name":v.name, "Name (English)":v.nameEn, "Relation":v.relType, "Relation name":v.relName||v.relNameEn,
     "House no":v.house, "Age":v.age, "Gender":v.gender, "Section":v.sec, "Photo in roll":v.photo==="yes"?"Available":v.photo==="no"?"Not available":"",
     "Mobile updated":v.st.mob==="yes"?"Yes":v.st.mob==="no"?"No":"", "Mobile no":v.st.ph,
-    "Aadhaar linked":v.st.aad==="yes"?"Yes":v.st.aad==="no"?"No":"", "ASD":v.st.asd, "Slip given":v.st.slip?"Yes":"",
+    "Aadhaar linked":v.st.aad==="yes"?"Yes":v.st.aad==="no"?"No":"", "ASD":v.st.asd, "In ASD list":asdEntry(v)?(asdEntry(v).cat||"Yes"):"", "Slip given":v.st.slip?"Yes":"",
     "Form":v.st.form, "Form date":v.st.formDt, "Form status":v.st.formSt, "Note":v.st.note,
     "Status":v.gone?"Removed in revision "+(v.goneRev||""):v.st.del?"Deleted by BLO":v.src==="manual"?"Added by BLO":"In roll",
     "New in revision":v.newIn&&v.newIn>1?v.newIn:"", "Correction in roll":v.changes||"", "My corrections":(v.corr||[]).join("; "), "My correction in roll":v.corr&&v.corr.length?(v.corrDone?"Yes (rev "+v.corrDone+")":"Waiting"):"" }));
@@ -1305,6 +1432,8 @@ function exportExcel(){
   if(typeof XLSX==="undefined"){ toast("Excel writer didn't load"); return; }
   const wb=XLSX.utils.book_new(), m=state.meta;
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows()), "Voters");
+  const AL=(m.asdList&&m.asdList.rows)||[];
+  if(AL.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(AL.map(r=>{ const v=asdMatch(r); return {"Serial":r.sl,"EPIC":r.epic,"Name":r.name,"Relation name":r.relName,"House no":r.house,"ASD category":r.cat,"Remarks":r.remarks,"Linked voter serial":v?v.sl:"Not in roll"}; })), "ASD list");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{AC:m.ac,"AC name":m.acName,Part:m.part,"Part name":m.partName,BLO:m.blo,Revision:m.rev,"Exported":new Date().toLocaleString("en-IN")}]), "Part");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(chunkStr(JSON.stringify({app:"blo-register-1",meta:state.meta,voters:state.voters}),30000).map(s=>[s])), "_restore");
   const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
@@ -1364,7 +1493,7 @@ function renderBackup(el){
   if($("#chp")) $("#chp").onclick=changePassword;
   if($("#toAuth")) $("#toAuth").onclick=()=>{ lsSet("bloreg:pending-upload", state); session=null; lsSet("bloreg:session",null); showAuth("signup"); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
-  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
+  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
 }
 function changePassword(){
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="cpf"><h2>Change password</h2>
