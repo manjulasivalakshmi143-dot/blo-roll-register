@@ -614,7 +614,7 @@ function openFly(btn, t){
   f.innerHTML=`<div class="fly-h">${esc(btn.textContent.trim())}</div>`+items.map((it,i)=>`<button type="button" data-i="${i}"><span>${it[0]}</span><span>${esc(it[1])}</span></button>`).join("");
   document.body.appendChild(f); btn.classList.add("fly-open");
   const top=Math.max(8, Math.min(r.top, innerHeight-f.offsetHeight-8)); f.style.top=top+"px"; f.style.left=(r.right+8)+"px";
-  f.addEventListener("click",e=>{ const b=e.target.closest("button[data-i]"); if(!b) return; items[+b.dataset.i][2](); closeFly(); render(); window.scrollTo(0,0); });
+  f.addEventListener("click",e=>{ const b=e.target.closest("button[data-i]"); if(!b) return; tab=t; resetSec(t); items[+b.dataset.i][2](); closeFly(); render(); window.scrollTo(0,0); });
 }
 document.addEventListener("pointerdown",e=>{ if(!e.target.closest("#fly") && !e.target.closest("#tabs")) closeFly(); });
 addEventListener("scroll",()=>closeFly(),{passive:true});
@@ -643,9 +643,15 @@ function render(){
   ({home:renderHome, voters:renderVoters, apps:renderApps, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
-document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } if(b.dataset.tab==="lists") window._openList=null; if(b.dataset.tab==="backup") window._accSec=null; if(b.dataset.tab==="voters") window._vSec=null; if(b.dataset.tab==="apps") window._appSec=null; if(b.dataset.tab==="import") window._impSec=null;
-  const same=tab===b.dataset.tab && document.getElementById("fly");
-  tab=b.dataset.tab; render(); window.scrollTo(0,0); if(same) closeFly(); else openFly(b, tab); });
+function resetSec(t){ if(t==="lists") window._openList=null; if(t==="backup") window._accSec=null; if(t==="voters") window._vSec=null; if(t==="apps") window._appSec=null; if(t==="import") window._impSec=null; }
+/* Rail buttons with a sub-list only open the floating list; the page behind stays on the last work.
+   Buttons without a sub-list (Home, ASD list, Revisions) open their page directly. */
+document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; }
+  const t=b.dataset.tab, wasOpen=b.classList.contains("fly-open");
+  closeFly(); if(wasOpen) return;
+  const items=subItems(t);
+  if(items && items.length){ openFly(b, t); return; }
+  tab=t; resetSec(t); render(); window.scrollTo(0,0); });
 
 function meterRow(label, n, total, cls){
   const p= total? Math.round(n*100/total):0;
