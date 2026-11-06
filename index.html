@@ -71,8 +71,11 @@ nav.tabs button[aria-current="true"]{color:var(--accent);background:var(--accent
 .panel{display:flex;flex-direction:column;gap:14px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;font-weight:600;font-size:.9rem}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 16px;font-weight:650;font-size:.9rem;box-shadow:0 1px 0 color-mix(in srgb,var(--ink) 8%,transparent);transition:transform .08s ease,box-shadow .15s ease,background .15s ease}
+.btn:hover{box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 18%,transparent)}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent));color:var(--accent-ink);border-color:var(--accent);box-shadow:0 2px 10px color-mix(in srgb,var(--accent) 35%,transparent)}
+.btn.small-btn{padding:6px 12px;font-size:.8rem;border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent)}
 .btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
 .btn.ghost{background:none;border-color:transparent;color:var(--accent);padding-inline:6px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -114,7 +117,7 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .voters{display:flex;flex-direction:column}
 .v{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
 .v:hover{background:var(--surface)}
-.v .sl{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);padding-top:2px}
+.v .sl{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);padding:2px 8px 0 0;border-right:2px solid var(--line);text-align:right}
 .v .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .v .nm small{font-weight:400;color:var(--muted);margin-left:6px}
 .v .meta{font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
@@ -131,10 +134,28 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .sheet{background:var(--surface);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;
   padding:16px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
 .sheet-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
-.seg button{flex:1;border:0;background:var(--paper);padding:8px 6px;font-size:.82rem;font-weight:600;color:var(--muted);border-right:1px solid var(--line);min-width:60px}
-.seg button:last-child{border-right:0}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1 1 auto;border:1px solid var(--line);background:var(--paper);padding:7px 11px;font-size:.8rem;font-weight:650;color:var(--muted);border-radius:999px;white-space:nowrap;line-height:1.2}
+.sheet>*{flex-shrink:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);box-shadow:0 1px 6px color-mix(in srgb,var(--accent) 35%,transparent)}
+/* label-left detail grid */
+.kv{display:grid;grid-template-columns:minmax(92px,30%) minmax(0,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.kv>.k,.kv>.val{padding:9px 10px;border-bottom:1px solid var(--line);min-width:0}
+.kv>.k{background:var(--paper);color:var(--muted);font-size:.78rem;font-weight:650;border-right:1px solid var(--line);display:flex;align-items:flex-start;padding-top:12px}
+.kv>.val{overflow-wrap:anywhere}
+.kv>.k:nth-last-child(2),.kv>.val:last-child{border-bottom:0}
+.kv input,.kv select,.kv textarea{width:100%;font-size:.95rem;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 9px;color:var(--ink)}
+.sec-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--f-display);font-weight:750;font-size:.8rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:4px}
+.sheet-top{position:sticky;top:-16px;z-index:2;background:var(--surface);display:flex;flex-direction:column;gap:10px;padding-top:4px;padding-bottom:8px;margin-top:-4px;border-bottom:1px solid var(--line)}
+.sheet-search{position:relative}
+.sheet-search input{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font-size:.92rem}
+.sq-res{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(20,10,40,.18);max-height:50vh;overflow:auto;z-index:3}
+.sq-res button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:9px 10px;font-size:.85rem}
+.sheet-bar{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom,0px));background:var(--surface);display:flex;gap:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);margin-bottom:calc(-18px - env(safe-area-inset-bottom,0px))}
+.sheet-bar .grow{flex:1}
+.sheet-bar .nav{min-width:84px}
+.home-search{display:flex;gap:8px}
+.home-search input{flex:1;min-width:0;font-size:1rem;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
 .field-block{display:flex;flex-direction:column;gap:6px}
 .field-block>span{font-size:.8rem;color:var(--muted);font-weight:500}
 
@@ -149,6 +170,10 @@ th{position:sticky;top:0;background:var(--surface);font-family:var(--f-display);
 td input{border:1px solid transparent;background:transparent;padding:3px 4px;border-radius:4px;min-width:3ch;font-size:.82rem}
 td input:focus{border-color:var(--accent);background:var(--paper)}
 tr.flag td{background:var(--warn-soft)}
+td,th{background:var(--surface)}
+.tablewrap tr>*:nth-child(1){position:sticky;left:0;z-index:1}
+.tablewrap tr>*:nth-child(2){position:sticky;left:var(--c1w,48px);z-index:1;border-right:2px solid var(--accent)}
+.tablewrap th:nth-child(1),.tablewrap th:nth-child(2){z-index:2}
 .diff-list{display:flex;flex-direction:column;gap:2px;max-height:40vh;overflow:auto}
 .diff-list div{font-size:.85rem;padding:6px 0;border-bottom:1px solid var(--line)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;font-size:.85rem;z-index:30;max-width:90vw}
@@ -436,6 +461,7 @@ function renderHome(el){
   }
   const bk=daysAgo(m.lastBackup);
   el.innerHTML = `<div class="panel">
+    <form class="home-search" id="hs" role="search"><input type="search" id="hsq" placeholder="Search voter: name, EPIC, house, mobile…" aria-label="Search voters"><button class="btn primary" type="submit">Search</button></form>
     ${m.demo?`<div class="note warn">You are looking at <strong>example data</strong>. Clear it in Account → Start fresh before importing your real roll.</div>`:""}
     ${bk>7?`<div class="note warn">Last Excel backup: ${bk===Infinity?"never":bk+" days ago"}. <button class="btn ghost" id="bkNow">Download backup</button></div>`:""}
     <div class="card panel">
@@ -470,6 +496,7 @@ function renderHome(el){
   el.insertAdjacentHTML("beforeend", installCard() ? `<div style="margin-top:14px">${installCard()}</div>` : ""); bindInstall();
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.shown=150; tab="voters"; render(); });
   $("#addV").onclick=()=>openVoter(null);
+  $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.shown=150; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
   if($("#bkNow")) $("#bkNow").onclick=exportExcel;
   bindSettings();
@@ -510,6 +537,7 @@ const FILTERS = [
   ["new","New in last revision", v=>!v.gone&&v.newIn&&v.newIn===state.meta.rev&&state.meta.rev>1],
   ["changed","Corrected in last revision", v=>!v.gone&&v.chgIn&&v.chgIn===state.meta.rev],
   ["manual","Added by me", v=>!v.gone&&!v.st.del&&v.src==="manual"],
+  ["corrected","Corrected by me", v=>!v.gone&&v.corr&&v.corr.length&&!v.corrDone],
   ["nophoto","Photo missing", v=>!v.gone&&!v.st.del&&v.photo==="no"],
   ["photoadded","Photo added in last revision", v=>!v.gone&&v.photoIn&&v.photoIn===state.meta.rev],
   ["young","Age 18–19", v=>!v.gone&&!v.st.del&&+v.age&&+v.age<=19],
@@ -563,6 +591,7 @@ function pillsFor(v){
   p.push(v.st.aad==="yes"?`<span class="pill ok">Aadhaar ✓</span>`:`<span class="pill">Aadhaar</span>`);
   if(v.st.asd) p.push(`<span class="pill warn">${esc(v.st.asd)}</span>`);
   if(v.photo==="no") p.push(`<span class="pill bad">No photo</span>`);
+  if(v.corr&&v.corr.length&&!v.corrDone) p.push(`<span class="pill warn">Corrected by me</span>`);
   if(v.photoIn && v.photoIn===state.meta.rev) p.push(`<span class="pill ok">Photo added</span>`);
   if(v.st.slip) p.push(`<span class="pill acc">Slip</span>`);
   if(v.st.form) p.push(`<span class="pill acc">${esc(v.st.form)}${v.st.formSt?" · "+esc(v.st.formSt):""}</span>`);
@@ -584,6 +613,7 @@ function voterRow(v){
 function drawList(){
   const f=FILTERS.find(x=>x[0]===listOpts.filter)[2], q=listOpts.q.trim().toLowerCase();
   const list=sorted(state.voters.filter(v=>f(v)&&matchQ(v,q))), total=list.length;
+  window._listIds=list.map(v=>v.id);
   const box=$("#list"); if(!box) return;
   let html=`<div class="muted small" style="padding:4px 2px">${total} voter${total===1?"":"s"}</div>`;
   if(listOpts.group!=="none"){
@@ -594,64 +624,115 @@ function drawList(){
   } else html+=`<div class="voters">${list.slice(0,listOpts.shown).map(voterRow).join("")}</div>`;
   if(total>listOpts.shown) html+=`<button class="btn block more" id="more">Show more (${total-listOpts.shown} left)</button>`;
   box.innerHTML=html;
-  box.onclick=e=>{ const b=e.target.closest(".v"); if(b) openVoter(b.dataset.id); if(e.target.id==="more"){ listOpts.shown+=300; drawList(); } };
+  box.onclick=e=>{ const b=e.target.closest(".v"); if(b){ if(listOpts.group!=="none") window._listIds=[...box.querySelectorAll(".v")].map(x=>x.dataset.id); openVoter(b.dataset.id); } if(e.target.id==="more"){ listOpts.shown+=300; drawList(); } };
 }
 
 /* ---------- voter sheet ---------- */
 function seg(name, opts, val){ return `<div class="seg" data-seg="${name}">${opts.map(([v,l])=>`<button type="button" data-v="${esc(v)}" aria-pressed="${String(val)===String(v)}">${l}</button>`).join("")}</div>`; }
 function closeSheet(){ $("#sheetRoot").innerHTML=""; }
-function openVoter(id){
+const EDIT_FIELDS=[["name","Name"],["nameEn","Name in English"],["relType","Relation"],["relName","Relation name"],["house","House no."],["age","Age"],["gender","Gender"],["epic","EPIC"]];
+function genderLabel(g){ return {M:"Male",F:"Female",T:"Third gender"}[g]||"—"; }
+function openVoter(id, editMode){
   const isNew = id==null;
   const v = isNew ? { id:"M-"+uid8(), sl:"", sec:"", house:"", name:"", nameEn:"", relType:"Father", relName:"", relNameEn:"", age:"", gender:"", epic:"", src:"manual", st:Object.assign(defSt(),{form:"Form 6",formSt:"Submitted",formDt:new Date().toISOString().slice(0,10)}) } : JSON.parse(JSON.stringify(state.voters[vIndex(id)]));
-  const st=v.st;
+  const st=v.st, editing = isNew || !!editMode;
+  const order=(window._listIds||[]).filter(x=>vIndex(x)>=0), pos=order.indexOf(v.id);
+  const prevId=pos>0?order[pos-1]:null, nextId=pos>=0&&pos<order.length-1?order[pos+1]:null;
+  const kvRow=(k,val)=>`<div class="k">${k}</div><div class="val">${val}</div>`;
+  const inp=(id,val,extra="")=>`<input id="${id}" value="${esc(val)}" ${extra}>`;
+  const details = editing ? `
+      ${kvRow("Name", inp("eName",v.name))}
+      ${kvRow("Name in English", inp("eNameEn",v.nameEn))}
+      ${kvRow("Relation", `<select id="eRelT">${["Father","Husband","Mother","Other"].map(r=>`<option ${v.relType===r?"selected":""}>${r}</option>`).join("")}</select>`)}
+      ${kvRow("Relation name", inp("eRel",v.relName))}
+      ${kvRow("House no.", inp("eHouse",v.house))}
+      ${kvRow("Age", inp("eAge",v.age,'inputmode="numeric" maxlength="3"'))}
+      ${kvRow("Gender", `<select id="eGen">${[["","—"],["M","Male"],["F","Female"],["T","Third gender"]].map(([a,b])=>`<option value="${a}" ${v.gender===a?"selected":""}>${b}</option>`).join("")}</select>`)}
+      ${kvRow("EPIC", inp("eEpic",v.epic,'class="mono"'))}`
+    : `
+      ${kvRow("Name", `<strong>${esc(v.name||"—")}</strong>${v.nameEn&&v.nameEn!==v.name?`<br><span class="muted">${esc(v.nameEn)}</span>`:""}`)}
+      ${kvRow(esc(v.relType||"Relation"), esc(v.relName||v.relNameEn||"—"))}
+      ${kvRow("House no.", `<span class="mono">${esc(v.house||"—")}</span>`)}
+      ${kvRow("Age / Gender", `${esc(v.age||"?")} · ${genderLabel(v.gender)}`)}
+      ${kvRow("EPIC", `<span class="mono">${esc(v.epic||"—")}</span>`)}
+      ${v.sec?kvRow("Section", esc(v.sec)):""}
+      ${v.photo?kvRow("Photo in roll", v.photo==="yes"?"Available":`<span class="pill bad">Not available</span>`):""}
+      ${v.corr&&v.corr.length?kvRow("My corrections", `${v.corr.map(c=>esc(c)).join("<br>")}${v.corrDone?`<br><span class="pill ok">Now in roll (rev ${v.corrDone})</span>`:`<br><span class="pill warn">Waiting for next roll</span>`}`):""}
+      ${v.changes?kvRow("Roll correction", esc(v.changes)):""}
+      ${v.newIn&&v.newIn>1?kvRow("Status", `New in revision ${v.newIn}`):""}`;
   $("#sheetRoot").innerHTML = `<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Voter details">
-    <div class="sheet-h"><div style="min-width:0"><div class="eyebrow">${isNew?"New voter":"Serial "+esc(v.sl||"—")+(v.sec?" · "+esc(v.sec):"")}</div><h2 style="overflow-wrap:anywhere">${esc(v.name||v.nameEn||"Add voter")}</h2>${!isNew&&v.nameEn&&v.nameEn!==v.name?`<div class="muted">${esc(v.nameEn)}</div>`:""}</div><button class="btn" id="xClose">Close</button></div>
-    ${isNew||v.src==="manual" ? `<div class="grid2">
-        <label class="f">Name (as in form)<input id="eName" value="${esc(v.name)}"></label>
-        <label class="f">Name in English<input id="eNameEn" value="${esc(v.nameEn)}"></label>
-        <label class="f">Relation<select id="eRelT">${["Father","Husband","Mother","Other"].map(r=>`<option ${v.relType===r?"selected":""}>${r}</option>`).join("")}</select></label>
-        <label class="f">Relation name<input id="eRel" value="${esc(v.relName)}"></label>
-        <label class="f">House no.<input id="eHouse" value="${esc(v.house)}"></label>
-        <label class="f">Age<input id="eAge" value="${esc(v.age)}" inputmode="numeric"></label>
-        <label class="f">Gender<select id="eGen">${[["","—"],["M","Male"],["F","Female"],["T","Third gender"]].map(([a,b])=>`<option value="${a}" ${v.gender===a?"selected":""}>${b}</option>`).join("")}</select></label>
-        <label class="f">EPIC (if any)<input id="eEpic" value="${esc(v.epic)}" class="mono"></label>
-      </div>` :
-      `<div class="card small" style="padding:10px"><span class="muted">${esc(v.relType||"Relation")}:</span> ${esc(v.relName||v.relNameEn||"—")} · <span class="muted">House</span> <span class="mono">${esc(v.house||"—")}</span> · <span class="muted">Age</span> ${esc(v.age||"?")} ${esc(v.gender||"")}<br><span class="muted">EPIC</span> <span class="mono">${esc(v.epic||"—")}</span>${v.photo?` · <span class="muted">Photo in roll:</span> ${v.photo==="yes"?"Available":"<strong>Not available</strong>"}`:""}${v.newIn&&v.newIn>1?` · <span class="muted">New in revision ${v.newIn}</span>`:""}${v.changes?`<br><span class="muted">Last correction:</span> ${esc(v.changes)}`:""}</div>`}
-    <div class="field-block"><span>Mobile number updated in ECI records?</span>${seg("mob",[["yes","Yes"],["no","No"],["","Not checked"]],st.mob)}
-      <label class="f">Mobile number (optional, private)<input id="ePh" value="${esc(st.ph)}" inputmode="tel" maxlength="10"></label></div>
-    <div class="field-block"><span>Aadhaar linked?</span>${seg("aad",[["yes","Yes"],["no","No"],["","Not checked"]],st.aad)}
-      <span class="muted small">Only Yes / No is kept. Do not write the Aadhaar number anywhere in this app.</span></div>
-    <div class="field-block"><span>ASD status</span>${seg("asd",ASD.map(a=>[a,a||"None"]),st.asd)}</div>
-    <div class="field-block"><span>Voter slip</span>${seg("slip",[["true","Given"],["false","Not given"]],st.slip)}</div>
-    <div class="field-block"><span>Form filed</span>${seg("form",FORMS.map(a=>[a,a||"None"]),st.form)}
-      <div class="grid2"><label class="f">Form date<input id="eFDt" type="date" value="${esc(st.formDt)}"></label>
-      <label class="f">Form status<select id="eFSt">${["","Submitted","Verified","Approved","Rejected"].map(s=>`<option value="${s}" ${st.formSt===s?"selected":""}>${s||"—"}</option>`).join("")}</select></label></div></div>
-    <label class="f">Field note<textarea id="eNote" rows="2">${esc(st.note)}</textarea></label>
-    <div class="row"><button class="btn primary" id="eSave">Save</button>
-      ${isNew?"":(v.gone||st.del?`<button class="btn" id="eRestore">Restore voter</button>`:`<button class="btn danger" id="eDel">Mark as deleted</button>`)}</div>
-    ${isNew?"":`<p class="muted small" style="margin:0">Marking as deleted only hides the voter. It stays under “Removed / deleted” and can be restored.</p>`}
+    <div class="sheet-top">
+      <div class="sheet-h"><div style="min-width:0"><div class="eyebrow">${isNew?"New voter":"Serial "+esc(v.sl||"—")+(v.src==="manual"?" · added by me":"")}</div><h2 style="overflow-wrap:anywhere">${esc(isNew?"Add voter":(v.nameEn||v.name||"Voter"))}</h2></div><button class="btn" id="xClose" aria-label="Close">✕</button></div>
+      ${isNew?"":`<div class="sheet-search"><input type="search" id="sq" placeholder="Find another voter: name, EPIC, house…" autocomplete="off" aria-label="Find another voter"><div id="sqRes" class="sq-res" hidden></div></div>`}
+    </div>
+    <div class="sec-h"><span>Voter details</span>${!isNew&&!editing&&!v.gone?`<button class="btn small-btn" id="eEdit">✎ Edit details</button>`:""}${editing&&!isNew?`<span class="pill warn">Editing</span>`:""}</div>
+    ${editing&&!isNew&&v.src!=="manual"?`<div class="note small">Change only what is wrong in the roll. Your corrections are saved separately, and the next roll shows whether they were made.</div>`:""}
+    <div class="kv">${details}</div>
+    <div class="sec-h"><span>Field work</span></div>
+    <div class="kv">
+      ${kvRow("Mobile updated", seg("mob",[["yes","Yes"],["no","No"],["","Not checked"]],st.mob))}
+      ${kvRow("Mobile number", `<input id="ePh" value="${esc(st.ph)}" inputmode="tel" maxlength="10" placeholder="10 digits (optional)">`)}
+      ${kvRow("Aadhaar linked", seg("aad",[["yes","Yes"],["no","No"],["","Not checked"]],st.aad)+`<div class="muted small" style="margin-top:4px">Only Yes / No. Never write the Aadhaar number.</div>`)}
+      ${kvRow("ASD", seg("asd",ASD.map(a=>[a,a||"None"]),st.asd))}
+      ${kvRow("Voter slip", seg("slip",[["true","Given"],["false","Not given"]],st.slip))}
+      ${kvRow("Form filed", seg("form",FORMS.map(a=>[a,a||"None"]),st.form)+`<div class="grid2" style="margin-top:6px"><input id="eFDt" type="date" value="${esc(st.formDt)}" aria-label="Form date"><select id="eFSt" aria-label="Form status">${["","Submitted","Verified","Approved","Rejected"].map(s=>`<option value="${s}" ${st.formSt===s?"selected":""}>${s||"Status —"}</option>`).join("")}</select></div>`)}
+      ${kvRow("Field note", `<textarea id="eNote" rows="2">${esc(st.note)}</textarea>`)}
+    </div>
+    ${isNew?"":`<div class="row" style="justify-content:space-between">${v.gone||st.del?`<button class="btn" id="eRestore">↺ Restore voter</button>`:`<button class="btn danger" id="eDel">Mark as deleted</button>`}<span class="muted small">Deleted voters can be restored.</span></div>`}
+    <div class="sheet-bar">
+      ${isNew?"":`<button class="btn nav" id="ePrev" ${prevId?"":"disabled"} aria-label="Previous voter">‹ Prev</button>`}
+      <button class="btn primary grow" id="eSave">${isNew?"Add voter":"Save"}</button>
+      ${isNew?"":`<button class="btn nav" id="eNext" ${nextId?"":"disabled"} aria-label="Save and go to next voter">Next ›</button>`}
+    </div>
   </div></div>`;
   const sheet=$("#sbg");
-  sheet.onclick=e=>{ if(e.target.id==="sbg"||e.target.id==="xClose") closeSheet(); };
+  sheet.onclick=e=>{ if(e.target.id==="sbg"||e.target.closest("#xClose")) closeSheet(); };
   sheet.querySelectorAll(".seg").forEach(sg=>sg.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; sg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
   const segVal = n => { const b=sheet.querySelector(`[data-seg="${n}"] [aria-pressed="true"]`); return b?b.dataset.v:""; };
-  $("#eSave").onclick=()=>{
+  // find another voter without leaving
+  const sq=$("#sq");
+  if(sq){ sq.addEventListener("input", ()=>{
+    const q=sq.value.trim().toLowerCase(), box=$("#sqRes");
+    if(q.length<2){ box.hidden=true; return; }
+    const hits=state.voters.filter(x=>matchQ(x,q)).slice(0,8);
+    box.innerHTML = hits.length ? hits.map(x=>`<button type="button" data-id="${esc(x.id)}"><span class="mono">${esc(x.sl||"—")}</span> ${esc(x.nameEn||x.name)} <span class="muted">H ${esc(x.house||"—")} · ${esc(x.epic||"")}</span></button>`).join("") : `<div class="muted small" style="padding:8px">No voter matches.</div>`;
+    box.hidden=false;
+  });
+  $("#sqRes").onclick=e=>{ const b=e.target.closest("button[data-id]"); if(!b) return; if(saveVoter(true)) openVoter(b.dataset.id); }; }
+  function saveVoter(quiet){
     const ph=$("#ePh").value.replace(/\D/g,"");
-    if(/\b\d{4}\s?\d{4}\s?\d{4}\b/.test($("#eNote").value) || ph.length>10){ toast("That looks like an Aadhaar number. Please don't store it."); return; }
+    if(/\b\d{4}\s?\d{4}\s?\d{4}\b/.test($("#eNote").value) || ph.length>10){ toast("That looks like an Aadhaar number. Please don't store it."); return false; }
+    if(ph && ph.length!==10){ toast("Mobile number must be 10 digits"); return false; }
     const nst={ mob:segVal("mob"), ph, aad:segVal("aad"), asd:segVal("asd"), slip:segVal("slip")==="true", form:segVal("form"), formDt:$("#eFDt").value, formSt:$("#eFSt").value, note:$("#eNote").value.trim(), del:st.del||false };
-    if(isNew||v.src==="manual"){
-      Object.assign(v,{ name:$("#eName").value.trim(), nameEn:$("#eNameEn").value.trim(), relType:$("#eRelT").value, relName:$("#eRel").value.trim(), house:$("#eHouse").value.trim(), age:$("#eAge").value.trim(), gender:$("#eGen").value, epic:normEpic($("#eEpic").value) });
-      if(!v.name && !v.nameEn){ toast("Enter the voter's name"); return; }
-      if(!v.nameEn && /[ఀ-౿]/.test(v.name)) v.nameEn=translit(v.name);
+    const before=isNew?null:state.voters[vIndex(v.id)];
+    let corrections=[];
+    if(editing){
+      const nv={ name:$("#eName").value.trim(), nameEn:$("#eNameEn").value.trim(), relType:$("#eRelT").value, relName:$("#eRel").value.trim(), house:$("#eHouse").value.trim(), age:$("#eAge").value.replace(/\D/g,""), gender:$("#eGen").value, epic:normEpic($("#eEpic").value) };
+      if(!nv.name && !nv.nameEn){ toast("Enter the voter's name"); return false; }
+      if(!nv.nameEn && /[ఀ-౿]/.test(nv.name)) nv.nameEn=translit(nv.name);
+      if(nv.relName!==v.relName && /[ఀ-౿]/.test(nv.relName)) nv.relNameEn=translit(nv.relName);
+      if(!isNew && v.src!=="manual"){
+        for(const [k,l] of EDIT_FIELDS){ if(String(nv[k]||"")!==String(v[k]||"")) corrections.push(`${l}: ${k==="gender"?genderLabel(v[k]):(v[k]||"—")} → ${k==="gender"?genderLabel(nv[k]):(nv[k]||"—")}`); }
+        if(corrections.length){ v.orig=v.orig||Object.fromEntries(EDIT_FIELDS.map(([k])=>[k,v[k]])); v.corr=(v.corr||[]).concat(corrections).slice(-10); v.corrBy=Date.now(); v.corrDone=0; }
+      }
+      Object.assign(v,nv);
     }
+    const changed = isNew || corrections.length || editing || JSON.stringify(nst)!==JSON.stringify(Object.assign(defSt(),before&&before.st));
+    if(!changed){ if(!quiet) toast("No changes"); return true; }
     v.st=nst;
     const label=(v.nameEn||v.name);
     pushUndo(isNew?"add "+label:"edit "+label);
     let idx; if(isNew){ state.voters.push(v); idx=state.voters.length-1; } else { idx=vIndex(v.id); state.voters[idx]=v; }
-    commit("edit", idx, (isNew?"Added ":"Updated ")+label+(v.sl?" (Sl "+v.sl+")":""));
-    closeSheet(); toast("Saved"); if(tab==="voters") drawList(); else render();
-  };
-  if($("#eDel")) $("#eDel").onclick=()=>{ const i=vIndex(v.id); pushUndo("delete "+(v.nameEn||v.name)); state.voters[i].st.del=true; commit("del",i,"Marked deleted: "+(v.nameEn||v.name)); closeSheet(); toast("Marked as deleted — can be restored"); tab==="voters"?renderVoters($("#view")):render(); };
+    commit("edit", idx, (isNew?"Added ":corrections.length?"Corrected ":"Updated ")+label+(v.sl?" (Sl "+v.sl+")":"")+(corrections.length?": "+corrections.join("; "):""));
+    if(tab==="voters") drawList();
+    if(!quiet) toast("Saved");
+    return true;
+  }
+  $("#eSave").onclick=()=>{ if(saveVoter()){ closeSheet(); if(tab!=="voters") render(); } };
+  if($("#eEdit")) $("#eEdit").onclick=()=>{ if(saveVoter(true)) openVoter(v.id, true); };
+  if($("#ePrev")) $("#ePrev").onclick=()=>{ if(prevId && saveVoter(true)) openVoter(prevId); };
+  if($("#eNext")) $("#eNext").onclick=()=>{ if(nextId && saveVoter(true)) openVoter(nextId); };
+  if($("#eDel")) $("#eDel").onclick=()=>confirmBox(`Mark ${v.nameEn||v.name} as deleted? You can restore the voter later.`, "Mark as deleted", ()=>{ const i=vIndex(v.id); pushUndo("delete "+(v.nameEn||v.name)); state.voters[i].st.del=true; commit("del",i,"Marked deleted: "+(v.nameEn||v.name)); toast("Marked as deleted — can be restored"); tab==="voters"?renderVoters($("#view")):render(); }, true);
   if($("#eRestore")) $("#eRestore").onclick=()=>{ const i=vIndex(v.id); pushUndo("restore "+(v.nameEn||v.name)); state.voters[i].st.del=false; state.voters[i].gone=false; commit("res",i,"Restored: "+(v.nameEn||v.name)); closeSheet(); toast("Restored"); tab==="voters"?renderVoters($("#view")):render(); };
 }
 
@@ -670,7 +751,7 @@ function translit(s){
     else if(ch==="‌"||ch==="‍"||TM[ch]||ch==="్") {}
     else o+=ch;
   }
-  return o.replace(/\b[a-z]/g,c=>c.toUpperCase()).replace(/\s+/g," ").trim();
+  return o.replace(/ayi\b/g,"ai").replace(/\b[a-z]/g,c=>c.toUpperCase()).replace(/\s+/g," ").trim();
 }
 
 /* ================= import ================= */
@@ -1069,6 +1150,7 @@ function drawReview(el){
     </div>
   </div>`;
   const tb=el.querySelector("tbody");
+  const th1=el.querySelector(".tablewrap th"); if(th1) el.querySelector(".tablewrap").style.setProperty("--c1w", th1.getBoundingClientRect().width+"px");
   if(tb){
     tb.addEventListener("change", e=>{ const inp=e.target, tr=inp.closest("tr"); if(!tr||!inp.dataset.k) return; const r=rows[+tr.dataset.i], k=inp.dataset.k;
       r[k]= k==="epic"?normEpic(inp.value):k==="gender"?normGender(inp.value):k==="photo"?normPhoto(inp.value):inp.value.trim();
@@ -1163,6 +1245,8 @@ function applyRevision(){
       nv.id=old.id; nv.st=Object.assign(defSt(),old.st); if(r.ph&&!nv.st.ph) nv.st.ph=r.ph;
       nv.addedRev=old.addedRev; nv.newIn=old.newIn;
       if(old.src==="manual" && nv.st.form==="Form 6") nv.st.formSt="Approved";
+      if(old.corr && old.corr.length){ nv.corr=old.corr; nv.corrBy=old.corrBy; nv.orig=old.orig; nv.corrDone=old.corrDone||0;
+        if(!nv.corrDone){ const keys=EDIT_FIELDS.map(([k])=>k).filter(k=>old.orig && String(old.orig[k]||"")!==String(old[k]||"")); if(keys.length && keys.every(k=>String(r[k]||"").trim().toLowerCase()===String(old[k]||"").trim().toLowerCase())) nv.corrDone=rev; } }
       if(old.photo==="no" && nv.photo==="yes") nv.photoIn=rev; else if(old.photoIn) nv.photoIn=old.photoIn;
       if(!nv.photo && old.photo) nv.photo=old.photo;
       if(chg.has(r.epic)){ nv.chgIn=rev; nv.changes=chg.get(r.epic); } else if(old.changes) nv.changes=old.changes;
@@ -1199,7 +1283,7 @@ function exportRows(){
     "Aadhaar linked":v.st.aad==="yes"?"Yes":v.st.aad==="no"?"No":"", "ASD":v.st.asd, "Slip given":v.st.slip?"Yes":"",
     "Form":v.st.form, "Form date":v.st.formDt, "Form status":v.st.formSt, "Note":v.st.note,
     "Status":v.gone?"Removed in revision "+(v.goneRev||""):v.st.del?"Deleted by BLO":v.src==="manual"?"Added by BLO":"In roll",
-    "New in revision":v.newIn&&v.newIn>1?v.newIn:"", "Correction":v.changes||"" }));
+    "New in revision":v.newIn&&v.newIn>1?v.newIn:"", "Correction in roll":v.changes||"", "My corrections":(v.corr||[]).join("; "), "My correction in roll":v.corr&&v.corr.length?(v.corrDone?"Yes (rev "+v.corrDone+")":"Waiting"):"" }));
 }
 function chunkStr(s,n){ const a=[]; for(let i=0;i<s.length;i+=n) a.push(s.slice(i,i+n)); return a; }
 function exportExcel(){
@@ -1265,7 +1349,7 @@ function renderBackup(el){
   if($("#chp")) $("#chp").onclick=changePassword;
   if($("#toAuth")) $("#toAuth").onclick=()=>{ lsSet("bloreg:pending-upload", state); session=null; lsSet("bloreg:session",null); showAuth("signup"); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
-  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? You can undo this until you close the page.`, "Clear all", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared"); }, true);
+  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
 }
 function changePassword(){
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="cpf"><h2>Change password</h2>
