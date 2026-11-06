@@ -215,6 +215,8 @@ body.narrow .win-s{font-size:.7rem}
 .fly-sec{padding:7px 12px 5px;font-size:.72rem;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--fc,var(--accent));background:color-mix(in srgb,var(--fc,var(--accent)) 8%,var(--surface));border-bottom:1px solid var(--line)}
 body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 
+.seg button:disabled{opacity:.4;text-decoration:line-through;cursor:not-allowed}
+.d4-age.bad{color:#B3261E;background:#FCE8E6;border-radius:8px;padding:8px 10px}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
 .hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -1067,8 +1069,9 @@ function declWindow(a, locked){
     <div class="panel" style="padding:12px;gap:10px">
       <label class="row small"><input type="checkbox" id="d4Use" ${d.use?"checked":""} ${dis}> Add the declaration form to the PDF${a.type==="f8"?" (Form 8 shifting from outside the state)":""}</label>
       <div class="field-block" id="d4Body" ${d.use?"":"hidden"}>
-        <span>Is the applicant's name in the last SIR (2002) roll?</span>
-        ${seg("d4sir",[["self","Yes, applicant is"],["rel","No, parent / relative is"],["none","Not in the list"]],d.sir)}
+        <span>Link with the last SIR (2002) roll</span>
+        ${seg("d4sir",[["self","Elector in 2002"],["rel","Progeny of 2002 elector"],["none","No linkage with last SIR"]],d.sir)}
+        <div class="small" id="d4AgeNote"></div>
       </div>
     </div>
     ${d4Lists()}
@@ -1095,6 +1098,23 @@ function bindDecl(sh){
   const g=sh.querySelector('[data-seg="d4sir"]');
   if(g) g.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const v=b.dataset.v;
     sh.querySelector('[data-blk="e"]').hidden=v!=="self"; sh.querySelector('[data-blk="r"]').hidden=v!=="rel"; sh.querySelector('[data-blk="n"]').hidden=v!=="none"; });
+  const dob=$("#pDob"); if(dob){ dob.addEventListener("input",()=>d4AgeCheck(sh)); dob.addEventListener("change",()=>d4AgeCheck(sh)); }
+  d4AgeCheck(sh, true);
+}
+/* ECI rule: "Elector in 2002" only when the applicant is above 38 years of age (date of birth) */
+const D4_MIN_AGE=38;
+function ageOn(dob, when){ const b=new Date(dob), w=when||new Date(); if(isNaN(b)) return null; let a=w.getFullYear()-b.getFullYear(); if(w.getMonth()<b.getMonth()||(w.getMonth()===b.getMonth()&&w.getDate()<b.getDate())) a--; return a; }
+function d4AgeCheck(sh, quiet){
+  const g=sh.querySelector('[data-seg="d4sir"]'), note=$("#d4AgeNote"); if(!g||!note) return;
+  const btn=g.querySelector('button[data-v="self"]'), dob=($("#pDob")&&$("#pDob").value)||"", age=dob?ageOn(dob):null;
+  const blocked = age!=null && age<D4_MIN_AGE;
+  btn.disabled=blocked; btn.title=blocked?"Elector should be above 38 years of age":"";
+  note.className="small "+(blocked?"d4-age bad":"muted");
+  note.innerHTML = blocked ? `<b>Elector in 2002</b> is not allowed: elector should be above ${D4_MIN_AGE} years of age (as per the year of the last SIR of the state). This applicant is ${age}. Choose <b>Progeny of 2002 elector</b> or <b>No linkage</b>.`
+    : age!=null ? `Age ${age} — all three choices are allowed.` : `Enter the date of birth first: <b>Elector in 2002</b> needs age above ${D4_MIN_AGE}.`;
+  if(blocked && btn.getAttribute("aria-pressed")==="true"){
+    const r=g.querySelector('button[data-v="rel"]'); r.click(); if(!quiet) toast("Age below "+D4_MIN_AGE+": switched to Progeny of 2002 elector");
+  }
 }
 function collectDecl(sh){
   const use=$("#d4Use"); if(!use) return undefined;
