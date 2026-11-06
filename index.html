@@ -591,6 +591,7 @@ function renderApps(el){
   $("#appQ").addEventListener("input", e=>{ window._appQ=e.target.value; const pos=e.target.selectionStart; renderApps(el); const n=$("#appQ"); n.focus(); n.setSelectionRange(pos,pos); });
   el.querySelectorAll(".v[data-id]").forEach(b=>b.onclick=()=>openApp(b.dataset.id));
 }
+function appAge(a){ if(!a.dob) return null; const t=new Date(a.dob); if(isNaN(t)) return null; return Math.floor((Date.now()-t.getTime())/31557600000); }
 function openApp(id, typeHint){
   const L=appsList(), isNew=!id;
   const a = isNew ? { id:"A"+Date.now().toString(36)+uid8().slice(0,3), type:typeHint||"f6", name:"", relType:"Father", relName:"", gender:"", age:"", dob:"", house:"", phone:"", familyEpic:"", epic:"", note:"", docs:{}, stage:"received", history:[], created:Date.now() } : JSON.parse(JSON.stringify(L.find(x=>x.id===id)));
@@ -620,12 +621,14 @@ function openApp(id, typeHint){
       ${kv("Application date", inp("oApp",(a.appDate||new Date(a.created).toISOString().slice(0,10)),'type="date"'))}
       ${kv("Area / locality", inp("oArea",a.area||state.meta.formDefaults&&state.meta.formDefaults.area||""))}
       ${kv("Town", inp("oTown",a.town||(state.meta.formDefaults&&state.meta.formDefaults.town)||state.meta.acName||""))}
-      ${kv("Part no. / Section", `<div class="grid2">${inp("oPart",a.partNo||state.meta.part||"",'inputmode="numeric" placeholder="Part"')}${inp("oSec",a.section||"",'placeholder="Section"')}</div>`)}
+      ${kv("Part no.", inp("oPart",a.partNo||state.meta.part||"",'inputmode="numeric"'))}
+      ${a.type==="f8"?kv("Serial no. in roll", inp("oSl",a.serialNo||"",'inputmode="numeric" placeholder="filled from EPIC if in your roll"')):""}
       ${kv("Notice date", inp("oNotice",a.noticeDate||new Date().toISOString().slice(0,10),'type="date"'))}
       ${kv("Hearing date", inp("oHDate",a.hearDate||"",'type="date"'))}
       ${kv("Hearing time", inp("oHTime",a.hearTime||(state.meta.formDefaults&&state.meta.formDefaults.hearTime)||"",'placeholder="11:00 AM"'))}
       ${kv("Hearing place", inp("oHPlace",a.hearPlace||(state.meta.formDefaults&&state.meta.formDefaults.hearPlace)||""))}
       ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
+      ${a.type==="f6"?kv("21+ declaration", `<label class="row small"><input type="checkbox" id="oDecl" ${a.decl===false?"":(a.decl||appAge(a)==null||appAge(a)>=21)?"checked":""}> Add Annexure III page (first-time applicant aged 21 or more)</label>`):""}
     </div>
     ${!isNew?`<button class="btn primary block" id="apPdf" style="margin-top:10px">⬇ Download filled PDF</button>`:""}
     <p class="muted small" style="margin:6px 0 0">Names are printed in English capitals. Check the PDF before submitting.</p></details>`:""}
@@ -646,7 +649,13 @@ function openApp(id, typeHint){
   const sh=$("#sbg");
   sh.onclick=e=>{ if(e.target.id==="sbg"||e.target.closest("#apX")) closeSheet(); };
   sh.querySelectorAll(".seg").forEach(sg=>sg.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; sg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
-    if(sg.dataset.seg==="atype"){ const t=APP_TYPES[b.dataset.v]; $("#docList").innerHTML=t.docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}"><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join(""); a.type=b.dataset.v; } });
+    if(sg.dataset.seg==="atype" && b.dataset.v!==a.type){ openApp(null, b.dataset.v); } });
+  if($("#pDob")&&$("#oDecl")) $("#pDob").addEventListener("change", ()=>{ const ag=appAge({dob:$("#pDob").value}); if(ag!=null) $("#oDecl").checked = ag>=21; });
+  if($("#pVE")) $("#pVE").addEventListener("change", ()=>{ const e=normEpic($("#pVE").value); const v=e&&state.voters.find(x=>x.epic===e&&!x.gone); if(!v){ if(e) toast("This EPIC is not in your roll — enter details by hand"); return; }
+    const set=(id,val)=>{ const el=$("#"+id); if(el && !el.value && val) el.value=val; };
+    set("pName",v.nameEn||v.name); set("pRel",v.relNameEn||v.relName); set("pHouse",v.house); set("oSl",v.sl); set("oPart",state.meta.part);
+    if($("#pRelT")&&v.relType) $("#pRelT").value=v.relType; if($("#pGen")&&!$("#pGen").value) $("#pGen").value=v.gender||"";
+    toast("Filled from your roll: Sl "+v.sl); });
   $("#docList").addEventListener("change", ()=>{ const t=APP_TYPES[a.type]||APP_TYPES.f6; const need=t.docs.filter(x=>x[2]); const done=need.filter(x=>{ const c=sh.querySelector(`[data-doc="${x[0]}"]`); return c&&c.checked; }).length; const dc=$("#docCount"); dc.textContent=`${done}/${need.length} required`; dc.className="pill "+(done===need.length?"ok":"warn"); });
   function collect(){
     const ph=$("#pPh").value.replace(/\D/g,"");
@@ -657,7 +666,7 @@ function openApp(id, typeHint){
     if(ref && L.some(y=>y.id!==a.id && String(y.refNo||"").toUpperCase()===ref)){ toast("Another application already has Ref ID "+ref); return null; }
     const docs={}; sh.querySelectorAll("[data-doc]").forEach(c=>{ if(c.checked) docs[c.dataset.doc]=true; });
     const od=id=>{ const e=$("#"+id); return e?e.value.trim():undefined; };
-    if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), section:od("oSec"), noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
+    if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), serialNo:od("oSl")??a.serialNo, decl:$("#oDecl")?$("#oDecl").checked:a.decl, noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
       state.meta.formDefaults=Object.assign({}, state.meta.formDefaults, { area:a.area, town:a.town, hearTime:a.hearTime, hearPlace:a.hearPlace }); }
     return Object.assign(a,{ name, relType:$("#pRelT").value, relName:$("#pRel").value.trim(), gender:$("#pGen").value, dob:$("#pDob").value, house:$("#pHouse").value.trim(), phone:ph,
       familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:ref, note:$("#pNote").value.trim(), docs });
@@ -682,8 +691,8 @@ function openApp(id, typeHint){
   if($("#apDel")) $("#apDel").onclick=()=>confirmBox(`Delete the application of ${a.name}?`, "Delete", ()=>{ pushUndo("delete application"); const i=L.findIndex(y=>y.id===a.id); if(i>=0) L.splice(i,1); commit("app",-1,"Deleted application: "+a.name); render(); }, true);
 }
 /* ---------- fill the office's PDF forms from an application ---------- */
-const FORM_TEMPLATES={"f6": {"file": "forms/form6-order-notice.pdf", "title": "Form 6 order & Form 12 notice", "pages": [[["orderDate", 396, 115.6, 50, "white"], ["applicant", 207, 160.6], ["noticeDate", 401, 160.6, 34, "white"], ["refId", 222, 173.5], ["relative", 315, 211.8], ["applicant", 202, 227], ["partNo", 305, 242.5], ["partNo", 118, 330.5], ["section", 174, 330.5], ["applicant", 148, 397], ["relative", 304, 397], ["house", 114, 411], ["area", 219, 411], ["town", 365, 411], ["orderDate", 396, 473.2, 50, "white"], ["applicant", 212, 519.3], ["appDate", 443, 519.3], ["relative", 315, 556], ["applicant", 202, 571.5], ["partNo", 305, 586.3], ["partNo", 118, 674.4], ["section", 174, 674.4], ["applicant", 150, 771], ["relative", 330, 771], ["house", 124, 785.4], ["area", 235, 785.4], ["town", 381, 785.4]], [["refId", 176, 136.5], ["hearDate", 145, 180], ["hearTime", 217, 180], ["hearPlace", 299, 180], ["place", 136, 232], ["noticeDate", 131, 248], ["applicant", 168, 277.5], ["address", 115, 294], ["refId", 176, 393], ["hearDate2", 113, 439.5], ["hearTime2", 186, 439.5], ["hearPlace2", 256, 439.5], ["place", 136, 491.7], ["noticeDate", 131, 507.6], ["applicant", 168, 537.5], ["address", 115, 552.5], ["noticeDate", 131, 627.9], ["applicant", 143, 648], ["noticeDate", 404, 649.9], ["place", 134, 708.7], ["noticeDate", 131, 729.7]]]}};
-const FORM_MAXW={hearTime:36,hearPlace:150,hearDate2:44,hearTime2:32,hearPlace2:150,section:16,partNo:24,house:72,area:105,town:70,applicant:125,relative:125,refId:125,address:160,appDate:60};
+const FORM_TEMPLATES={"f6": {"file": "forms/form6-v2.pdf", "pages": [[["orderDate", 406, 84.0, 50], ["applicant", 207, 128.0], ["noticeDate", 408, 128.0, 40], ["refId", 226, 144.0], ["relative", 304, 180.0], ["applicant", 202, 195.5], ["partNo", 309, 210.5], ["partNo", 122, 299.5], ["applicant", 152, 365.0], ["relative", 307, 365.0], ["house", 116, 380.0], ["area", 223, 380.0], ["town", 371, 380.0], ["orderDate", 406, 451.5, 50], ["applicant", 211, 496.0], ["appDate", 447, 496.0], ["relative", 304, 533.0], ["applicant", 202, 548.0], ["partNo", 309, 563.0], ["partNo", 122, 653.0], ["applicant", 154, 750.0], ["relative", 334, 750.0], ["house", 129, 765.0], ["area", 242, 765.0], ["town", 387, 765.0]], [["refId", 179, 106.0], ["hearDate", 149, 147.5, 0, 46], ["hearTime", 222, 147.5, 0, 35], ["hearPlace", 303, 147.5, 0, 152], ["place", 139, 201.5], ["noticeDate", 134, 218.5], ["applicant", 173, 248.0], ["address", 117, 265.0], ["refId", 179, 367.0], ["hearDate", 117, 410.0, 0, 46], ["hearTime", 184, 410.0, 0, 34], ["hearPlace", 259, 410.0, 0, 150], ["place", 139, 471], ["noticeDate", 134, 487], ["applicant", 173, 518.0], ["address", 117, 534.5], ["noticeDate", 134, 609], ["applicant", 146, 630.5], ["noticeDate", 409, 630.5], ["place", 137, 689.5], ["noticeDate", 134, 711.5]], [["applicant", 130, 129.0, 0, 165], ["relative", 402, 129.0, 0, 115], ["address", 123, 147.5, 0, 172], ["place", 134, 266.5], ["appDate", 131, 291.5], ["applicant", 130, 507.5, 0, 165], ["relative", 402, 507.5, 0, 115], ["address", 123, 526.0, 0, 172], ["place", 134, 644.5], ["appDate", 131, 669.5]]], "declPage": 2, "title": "Form 6 order, Form 12 notice & declaration"}, "f8": {"file": "forms/form8-v1.pdf", "pages": [[["orderDate", 406, 68.0, 50], ["applicant", 205, 113.0], ["noticeDate", 408, 113.0, 40], ["refId", 227, 128.5], ["relative", 302, 164.5], ["applicant", 205, 180.5], ["partNo", 326, 196.0, 0, 46], ["serial", 443, 196.0, 0, 28], ["epic", 113, 210.5, 0, 82], ["partNo", 349, 269.5, 0, 26], ["serial", 444, 269.5, 0, 26], ["epic", 112, 284.5, 0, 48], ["applicant", 152, 367.0], ["relative", 307, 367.0], ["house", 114, 381.0], ["area", 223, 381.0], ["town", 369, 381.0], ["orderDate", 406, 452.0, 50], ["applicant", 205, 497.0], ["noticeDate", 408, 497.0, 40], ["refId", 227, 512.0], ["relative", 302, 549.0], ["applicant", 205, 564.5], ["partNo", 326, 579.5, 0, 46], ["serial", 443, 579.5, 0, 28], ["epic", 113, 594.5, 0, 82], ["partNo", 349, 668.5, 0, 26], ["serial", 444, 668.5, 0, 26], ["epic", 112, 682.0, 0, 48], ["applicant", 152, 764.5], ["relative", 307, 764.5], ["house", 114, 778.5], ["area", 223, 778.5], ["town", 369, 778.5]], [["refId", 182, 92.0], ["partNo", 281, 112.0, 0, 28], ["serial", 371, 112.0, 0, 30], ["hearDate", 358, 132.5, 0, 46], ["hearTime", 437, 132.5, 0, 34], ["hearPlace", 107, 155.5, 0, 152], ["place", 132, 201], ["noticeDate", 125, 217], ["applicant", 162, 245.0], ["address", 107, 262.5], ["refId", 182, 361.5], ["partNo", 281, 381.5, 0, 28], ["serial", 371, 381.5, 0, 30], ["hearDate", 358, 402.5, 0, 46], ["hearTime", 442, 402.5, 0, 30], ["hearPlace", 107, 425.5, 0, 152], ["place", 132, 470.5], ["noticeDate", 125, 486.5], ["applicant", 162, 514.5], ["address", 107, 532.0], ["noticeDate", 125, 641.5], ["applicant", 164, 660.5], ["noticeDate", 426, 660.5], ["place", 130, 699.5], ["noticeDate", 125, 721.5]]], "title": "Form 8 order & Form 15 notice"}};
+const FORM_MAXW={hearTime:36,hearPlace:150,section:16,partNo:24,serial:28,epic:80,house:72,area:105,town:70,applicant:125,relative:125,refId:125,address:160,appDate:60};
 const dmy=d=>{ if(!d) return ""; const t=new Date(d); if(isNaN(t)) return String(d); return String(t.getDate()).padStart(2,"0")+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+t.getFullYear(); };
 const latin=s=>{ s=String(s||""); if(/[\u0C00-\u0C7F]/.test(s)) s=translit(s); return s.replace(/[^\x20-\x7E]/g,"").trim(); };
 function formValues(a){
@@ -691,8 +700,8 @@ function formValues(a){
   const v={ applicant:latin(a.name).toUpperCase(), relative:latin(a.relName).toUpperCase(), refId:a.refNo||"", partNo:a.partNo||state.meta.part||"", section:a.section||"",
     house:a.house||"", area:latin(a.area), town:latin(town), orderDate:dmy(a.orderDate), noticeDate:dmy(a.noticeDate), appDate:dmy(a.appDate||a.created),
     hearDate:dmy(a.hearDate), hearTime:a.hearTime||"", hearPlace:latin(a.hearPlace), place:latin(town),
-    address:[a.house,latin(a.area),latin(town)].filter(Boolean).join(", ") };
-  v.hearDate2=v.hearDate; v.hearTime2=v.hearTime; v.hearPlace2=v.hearPlace; return v;
+    address:[a.house,latin(a.area),latin(town)].filter(Boolean).join(", "), serial:a.serialNo||"", epic:a.voterEpic||"" };
+  return v;
 }
 async function downloadFormPdf(a){
   const T=FORM_TEMPLATES[a.type]; if(!T){ toast("No PDF form added for this type yet"); return; }
@@ -705,13 +714,14 @@ async function downloadFormPdf(a){
     const ink=PDFLib.rgb(0.05,0.1,0.45), white=PDFLib.rgb(1,1,1);
     const vals=formValues(a), pages=doc.getPages();
     T.pages.forEach((fields,pi)=>{ const pg=pages[pi], H=pg.getHeight();
-      for(const f of fields){ const [k,x,y,cover]=f; const text=vals[k]; const yb=H-(y-1.2);
+      for(const f of fields){ const [k,x,y,cover,maxw]=f; const text=vals[k]; const yb=H-(y-1.2);
         if(cover) pg.drawRectangle({x:x-1,y:yb-2.5,width:cover,height:11,color:white});
         if(!text) continue;
-        let size=9.5; const mw=FORM_MAXW[k]; while(mw && font.widthOfTextAtSize(text,size)>mw && size>6) size-=0.25;
+        let size=9.5; const mw=maxw||FORM_MAXW[k]; while(mw && font.widthOfTextAtSize(text,size)>mw && size>6) size-=0.25;
         pg.drawText(text,{x,y:yb,size,font,color:ink}); } });
+    if(T.declPage!=null && a.decl===false && pages.length>T.declPage) doc.removePage(T.declPage);
     const out=await doc.save();
-    const name=`Form6_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
+    const name=`${(APP_TYPES[a.type]||{short:"Form"}).short.replace(/\s+/g,"")}_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
     if(saveFile(name, new Blob([out],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); }
   }catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
 }
