@@ -702,6 +702,26 @@ function docRule(a){
   if(d<=new Date("2004-12-02")) return "Born 01-07-1987 to 02-12-2004: one document for self and one for father or mother.";
   return "Born after 02-12-2004: one document each for self, father and mother.";
 }
+const SIR_SEARCH_URL="https://voters.eci.gov.in/searchInSIR/S2UA4DPDF-JK4QWODSE";
+const IN_STATES=["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman and Nicobar Islands","Chandigarh","Dadra and Nagar Haveli and Daman and Diu","Delhi","Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry"];
+// Districts of undivided Andhra Pradesh as they were in 2002
+const AP_DIST_2002=["Adilabad","Anantapur","Chittoor","Cuddapah (Kadapa)","East Godavari","Guntur","Hyderabad","Karimnagar","Khammam","Krishna","Kurnool","Mahbubnagar","Medak","Nalgonda","Nellore","Nizamabad","Prakasam","Rangareddy","Srikakulam","Visakhapatnam","Vizianagaram","Warangal","West Godavari"];
+// Anantapur district assembly constituencies before the 2008 delimitation (suggestions; type if different)
+const ATP_AC_2002=["Anantapur","Dharmavaram","Gooty","Gorantla","Hindupur","Kadiri","Kalyandurg","Madakasira","Nallamada","Penukonda","Rayadurg","Singanamala","Tadpatri","Uravakonda"];
+function d4Lists(){
+  return `<datalist id="dlState">${IN_STATES.map(x=>`<option value="${x}">`).join("")}</datalist>
+    <datalist id="dlDistAP">${AP_DIST_2002.map(x=>`<option value="${x}">`).join("")}</datalist>
+    <datalist id="dlAcATP">${ATP_AC_2002.map(x=>`<option value="${x}">`).join("")}</datalist>`;
+}
+function d4Wire(sh){
+  ["e","r"].forEach(p=>{
+    const st=sh.querySelector(`#d4${p}State`), di=sh.querySelector(`#d4${p}Dist`), ac=sh.querySelector(`#d4${p}AcName`);
+    if(!st) return;
+    const sync=()=>{ const ap=/andhra/i.test(st.value); di.setAttribute("list", ap?"dlDistAP":"");
+      ac.setAttribute("list", ap && /anant/i.test(di.value)?"dlAcATP":""); };
+    st.addEventListener("input",sync); di.addEventListener("input",sync); sync();
+  });
+}
 function declWindow(a, locked){
   const d=Object.assign(declDefaults(a), a.d4||{}); d.e=Object.assign(declDefaults(a).e, (a.d4||{}).e); d.r=Object.assign(declDefaults(a).r, (a.d4||{}).r); d.f=Object.assign(declDefaults(a).f, (a.d4||{}).f);
   const dis=locked?"disabled":"";
@@ -712,19 +732,22 @@ function declWindow(a, locked){
       ${kv("EPIC no.", inp(`d4${p}Epic`,o.Epic,'class="mono"'))}
       ${kv("Relative's name", inp(`d4${p}Rel`,o.Rel))}
       ${kv("Relationship", `<select id="d4${p}RelType" ${dis}>${["Father","Mother","Husband","Wife","Guardian","Other"].map(r=>`<option ${o.RelType===r?"selected":""}>${r}</option>`).join("")}</select>`)}
-      ${kv("State (2002)", inp(`d4${p}State`,o.State,'placeholder="As in the 2002 roll"'))}
-      ${kv("District (2002)", inp(`d4${p}Dist`,o.Dist,'placeholder="As in the 2002 roll"'))}
-      ${kv("Constituency (2002)", inp(`d4${p}AcName`,o.AcName,'placeholder="AC name in 2002"'))}
+      ${kv("State (2002)", inp(`d4${p}State`,o.State,'list="dlState" placeholder="Choose or type"'))}
+      ${kv("District (2002)", inp(`d4${p}Dist`,o.Dist,'placeholder="Choose or type"'))}
+      ${kv("Constituency (2002)", inp(`d4${p}AcName`,o.AcName,'placeholder="Choose or type"'))}
       ${kv("AC no. / Part / Sr (2002)", `<div class="grid3">${inp(`d4${p}AcNo`,o.AcNo,'inputmode="numeric" placeholder="AC"')}${inp(`d4${p}Part`,o.Part,'inputmode="numeric" placeholder="Part"')}${inp(`d4${p}Sr`,o.Sr,'inputmode="numeric" placeholder="Sr"')}</div>`)}
     </div>
     <p class="muted small" style="margin:6px 12px 0">Copy these exactly from the 2002 roll. Constituency, part and serial numbers changed after 2008, so they won't match today's part ${esc(state.meta.part||"")}.</p></div>`;
   return `<section class="win" id="d4Win" style="--wc:var(--accent2)"><div class="win-h"><span>④ Declaration form</span><span class="win-s">Annexure IV · last SIR (2002)</span></div>
     <div class="panel" style="padding:12px;gap:10px">
       <label class="row small"><input type="checkbox" id="d4Use" ${d.use?"checked":""} ${dis}> Add the declaration form to the PDF${a.type==="f8"?" (Form 8 shifting from outside the state)":""}</label>
-      <div class="field-block" id="d4Body" ${d.use?"":"hidden"}><span>Is the applicant's name in the last SIR (2002) roll?</span>
+      <div class="field-block" id="d4Body" ${d.use?"":"hidden"}>
+        <a class="btn" href="${SIR_SEARCH_URL}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">🔎 Search the 2002 SIR roll on ECI ↗</a>
+        <span>Is the applicant's name in the last SIR (2002) roll?</span>
         ${seg("d4sir",[["self","Yes, applicant is"],["rel","No, parent / relative is"],["none","Not in the list"]],d.sir)}
       </div>
     </div>
+    ${d4Lists()}
     <div id="d4Fields" ${d.use?"":"hidden"}>
       ${block("e",d.e,"Applicant in the 2002 roll (left column)")}
       ${block("r",d.r,"Parent / relative in the 2002 roll (right column)")}
@@ -743,6 +766,7 @@ function declWindow(a, locked){
 }
 function bindDecl(sh){
   const use=$("#d4Use"); if(!use) return;
+  d4Wire(sh);
   use.addEventListener("change",()=>{ $("#d4Body").hidden=!use.checked; $("#d4Fields").hidden=!use.checked; });
   const g=sh.querySelector('[data-seg="d4sir"]');
   if(g) g.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const v=b.dataset.v;
