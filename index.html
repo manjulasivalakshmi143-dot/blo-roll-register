@@ -179,6 +179,12 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .win .checklist{border:0;border-radius:0}
 .win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
 .btn.grow{flex:1}
+.guide{display:block}
+.guide>summary{list-style:none;cursor:pointer}
+.guide>summary::-webkit-details-marker{display:none}
+.guide[open]>summary .win-s{visibility:hidden}
+.guide-list{margin:0;padding:12px 14px 12px 30px;display:flex;flex-direction:column;gap:7px;font-size:.88rem;line-height:1.4}
+.hint{font-size:.76rem;color:var(--muted);margin-top:4px}
 .list-win{overflow:visible}
 .list-win .win-h{border-radius:12px 12px 0 0}
 .list-win .toolbar{padding:10px 10px 8px;background:var(--surface);top:calc(env(safe-area-inset-top,0px) + 62px)}
@@ -591,9 +597,51 @@ function bindSettings(){
 
 /* ---------- applications: received → documents checked → sent to ERO → approved / rejected ---------- */
 const APP_TYPES={
-  f6:{label:"New voter (Form 6)", short:"Form 6", docs:[["form","Form 6 filled and signed",1],["photo","Passport-size photo",1],["age","Age proof (birth certificate / SSC memo / Aadhaar / PAN / passport)",1],["addr","Address proof (Aadhaar / ration card / bank passbook / power, water or gas bill / rent deed)",1],["family","Family member's EPIC copy",0],["field","Field verification done by BLO",1]]},
-  f8:{label:"Correction / shifting (Form 8)", short:"Form 8", docs:[["form","Form 8 filled and signed",1],["epic","Existing EPIC copy",1],["proof","Proof for the correction or new address",1],["photo","New photo (only if photo change)",0],["field","Field verification done by BLO",1]]},
-  f7:{label:"Deletion (Form 7)", short:"Form 7", docs:[["form","Form 7 filled and signed",1],["proof","Death certificate / proof of shifting",1],["field","Field verification done by BLO",1]]},
+  f6:{label:"New voter (Form 6)", short:"Form 6", docs:[
+    ["form","Form 6 filled, declaration part completed and signed",1],
+    ["photo","Photo pasted: recent colour, 4.5 × 3.5 cm, white background, unsigned, eyes open",1],
+    ["age","Age proof: self-attested copy of a listed document",1],
+    ["addr","Address proof with PIN code: self-attested, in name of applicant / parent / spouse",1],
+    ["aad","Aadhaar given in item 5, or “no Aadhaar” marked in 5(b) (don't note the number here)",1],
+    ["family","Family member's EPIC copy",0],
+    ["field","Field verification done by BLO",1]],
+   notes:[
+    "Name: exact spelling in both Telugu and English. If only one is filled, the system transliterates and spelling mistakes can happen.",
+    "Married woman: husband's name is preferred as relative.",
+    "Third gender applicants may choose Male, Female or Third Gender.",
+    "No listed age proof? Any other document can be given, named in item 7(ii) and the declaration; the applicant must then appear before the ERO.",
+    "Students can enrol at their parents' place or at the hostel where they stay. Homeless citizens without address proof: field verification is enough.",
+    "Service personnel must not already be enrolled as service or general elector elsewhere.",
+    "Form can be filled in English or Telugu; AC number/name missing is not a reason to reject. EPIC comes free by speed post after enrolment.",
+    "False declaration is punishable under Section 31, RP Act 1950."]},
+  f8:{label:"Correction / shifting (Form 8)", short:"Form 8", docs:[
+    ["epic","Applicant's EPIC no. and mobile written; Aadhaar given or “no Aadhaar” marked in I(b)",1],
+    ["one","Only one option ticked; other sections struck off",1],
+    ["proof","Shifting: new address + self-attested address proof (applicant / parent / spouse)",0],
+    ["corr","Correction: supporting document attached and its name written",0],
+    ["photo","Photo change: recent colour photo 4.5 × 3.5 cm, white background, unsigned",0],
+    ["repl","Replacement EPIC: old/damaged EPIC returned, or FIR / police report for lost EPIC",0],
+    ["form","Declaration completed and signed",1],
+    ["field","Field verification done by BLO",1]],
+   notes:[
+    "Use Form 8 for: shifting residence, correcting entries, replacement EPIC, or marking as PwD.",
+    "Shifting: apply to the ERO of the constituency where the new address is.",
+    "Tick only one option and strike off the sections that don't apply.",
+    "After approval of shifting / correction / replacement, a new EPIC is issued and the old EPIC must be returned to the ERO.",
+    "Mentioned documents give faster service; if another document is used, its name must be written in the blank.",
+    "False declaration is punishable under Section 31, RP Act 1950."]},
+  f7:{label:"Deletion / objection (Form 7)", short:"Form 7", docs:[
+    ["form","Applicant is a registered elector of this constituency; name, EPIC and mobile written",1],
+    ["reason","One option and one reason ticked (death / under age / absent-shifted / already enrolled / not a citizen)",1],
+    ["person","Details of the person objected to: name, surname, EPIC and address",1],
+    ["proof","Proof for the reason (e.g. death certificate)",1],
+    ["decl","Declaration signed",1],
+    ["field","Field verification done by BLO",1]],
+   notes:[
+    "Form 7 is for an objection to an existing entry, an objection to a proposed inclusion, or deleting one's own name.",
+    "The applicant must be registered in the roll of the same constituency.",
+    "The applicant must prove the reason given; the onus lies on the applicant.",
+    "False declaration is punishable under Section 31, RP Act 1950."]},
 };
 const STAGES=[["received","Received"],["verified","Documents checked"],["forwarded","Sent to ERO"],["approved","Approved"],["rejected","Rejected"]];
 const stageLabel=k=>(STAGES.find(x=>x[0]===k)||["",k])[1];
@@ -640,16 +688,20 @@ function openApp(id, typeHint){
     <section class="win" style="--wc:var(--accent)"><div class="win-h"><span>① Applicant details</span><span class="win-s">${esc(T.short)}</span></div>
     <div class="kv">
       ${kv("Ref ID", inp("pRef",a.refNo||"",`class="mono" placeholder="Application reference ID" autocapitalize="characters" ${locked?"disabled":""}`))}
-      ${kv("Name", inp("pName",a.name,locked?"disabled":""))}
+      ${kv("Name", inp("pName",a.name,locked?"disabled":"")+(a.type==="f6"?`<div class="hint">Exact spelling, as in the documents.</div>`:""))}
       ${kv("Relation", `<select id="pRelT" ${locked?"disabled":""}>${["Father","Husband","Mother","Other"].map(r=>`<option ${a.relType===r?"selected":""}>${r}</option>`).join("")}</select>`)}
-      ${kv("Father / husband name", inp("pRel",a.relName,locked?"disabled":""))}
+      ${kv("Father / husband name", inp("pRel",a.relName,locked?"disabled":"")+(a.type==="f6"?`<div class="hint">Married woman: husband's name preferred.</div>`:""))}
       ${kv("Gender", `<select id="pGen" ${locked?"disabled":""}>${[["","—"],["M","Male"],["F","Female"],["T","Third gender"]].map(([x,y])=>`<option value="${x}" ${a.gender===x?"selected":""}>${y}</option>`).join("")}</select>`)}
-      ${kv("Date of birth", inp("pDob",a.dob,`type="date" ${locked?"disabled":""}`))}
+      ${kv("Date of birth", inp("pDob",a.dob,`type="date" ${locked?"disabled":""}`)+(a.type==="f6"?`<div class="hint">Needs a self-attested age proof.</div>`:""))}
       ${kv("House no.", inp("pHouse",a.house,locked?"disabled":""))}
       ${kv("Phone", inp("pPh",a.phone,`inputmode="tel" maxlength="10" placeholder="10 digits" ${locked?"disabled":""}`))}
-      ${a.type==="f6"?kv("Family member EPIC", inp("pFam",a.familyEpic,`class="mono" ${locked?"disabled":""}`)):kv("Voter's EPIC", inp("pVE",a.voterEpic||"",`class="mono" ${locked?"disabled":""}`))}
+      ${a.type==="f6"?kv("Family member EPIC", inp("pFam",a.familyEpic,`class="mono" ${locked?"disabled":""}`)):kv(a.type==="f7"?"EPIC of person objected":"Voter's EPIC", inp("pVE",a.voterEpic||"",`class="mono" ${locked?"disabled":""}`)+(a.type==="f7"?`<div class="hint">Name, EPIC and address of the person to be deleted.</div>`:`<div class="hint">If the voter is in your roll, details fill in by themselves.</div>`))}
+      ${a.type==="f8"?kv("Request for", `<select id="pReq" ${locked?"disabled":""}>${["Correction of entries","Shifting of residence","Replacement EPIC","Marking as PwD"].map(r=>`<option ${a.req===r?"selected":""}>${r}</option>`).join("")}</select>`):""}
+      ${a.type==="f7"?kv("Reason", `<select id="pReason" ${locked?"disabled":""}>${["Death","Absent / permanently shifted","Already enrolled","Under age","Not an Indian citizen","Delete own name"].map(r=>`<option ${a.reason===r?"selected":""}>${r}</option>`).join("")}</select>`):""}
       ${kv("Note", `<textarea id="pNote" rows="2" ${locked?"disabled":""}>${esc(a.note)}</textarea>`)}
     </div></section>
+    <details class="win guide" style="--wc:var(--warn)"><summary class="win-h"><span>📘 ${esc(T.short)} guidelines</span><span class="win-s">tap to read</span></summary>
+      <ul class="guide-list">${(T.notes||[]).map(n=>`<li>${esc(n)}</li>`).join("")}</ul></details>
     ${FORM_TEMPLATES[a.type]?`<section class="win" id="ordBox" style="--wc:var(--info)"><div class="win-h"><span>② Details for the PDF</span><span class="win-s">${esc(FORM_TEMPLATES[a.type].title||"")}</span></div>
     <div class="kv">
       ${kv("Application date", inp("oApp",(a.appDate||new Date(a.created).toISOString().slice(0,10)),'type="date"'))}
@@ -669,7 +721,7 @@ function openApp(id, typeHint){
       <p class="muted small" style="margin:0">Names print in English capitals. Preview and check before submitting.</p>
     </div></section>`:""}
     <section class="win" style="--wc:var(--ok)"><div class="win-h"><span>③ Document checklist</span><span class="win-s" id="docCount">${d.done}/${d.need.length} required</span></div>
-    <div class="checklist" id="docList">${(isNew?APP_TYPES.f6:T).docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
+    <div class="checklist" id="docList">${T.docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
     <p class="muted small" style="margin:0;padding:8px 12px">Never write the Aadhaar number here. Tick only that you have seen the document.</p></section>
     ${a.history.length?`<div class="sec-h"><span>History</span></div><div class="diff-list">${a.history.slice().reverse().map(h=>`<div><span class="mono muted small">${fmtDate(h.at)}</span><br>${esc(stageLabel(h.stage))}${h.note?" — "+esc(h.note):""}</div>`).join("")}</div>`:""}
     <div class="sheet-bar">
@@ -705,7 +757,7 @@ function openApp(id, typeHint){
     if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), serialNo:od("oSl")??a.serialNo, decl:$("#oDecl")?$("#oDecl").checked:a.decl, noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
       state.meta.formDefaults=Object.assign({}, state.meta.formDefaults, { area:a.area, town:a.town, hearTime:a.hearTime, hearPlace:a.hearPlace }); }
     return Object.assign(a,{ name, relType:$("#pRelT").value, relName:$("#pRel").value.trim(), gender:$("#pGen").value, dob:$("#pDob").value, house:$("#pHouse").value.trim(), phone:ph,
-      familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:ref, note:$("#pNote").value.trim(), docs });
+      familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:ref, req:$("#pReq")?$("#pReq").value:a.req, reason:$("#pReason")?$("#pReason").value:a.reason, note:$("#pNote").value.trim(), docs });
   }
   function store(x, activity){
     x.updated=Date.now();
