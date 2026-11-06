@@ -183,6 +183,9 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .top-act{display:flex;align-items:center;gap:8px;flex:none}
 .view-tg{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 10px;font:inherit;font-size:.75rem;font-weight:650;color:var(--ink);cursor:pointer}
 @media (max-width:440px){ .view-tg #viewTx{display:none} .sync #syncText{display:none} .sync{padding:6px} }
+body.narrow .view-tg #viewTx,body.narrow .sync #syncText{display:none}
+body.narrow .sync{padding:6px}
+body.narrow .brand h1{font-size:1rem}
 /* coloured left buttons */
 nav.tabs button{--tc:var(--accent);border:1.5px solid color-mix(in srgb,var(--tc) 35%,transparent)!important;background:color-mix(in srgb,var(--tc) 9%,var(--surface))!important;color:var(--tc)!important;margin:0 2px}
 nav.tabs button[aria-current="true"],nav.tabs button.fly-open{background:var(--tc)!important;color:#fff!important;border-color:var(--tc)!important;box-shadow:0 3px 10px color-mix(in srgb,var(--tc) 40%,transparent)}
@@ -197,11 +200,11 @@ nav.tabs .add-tab{border-style:solid!important}
 @media (prefers-reduced-motion:reduce){.fly{animation:none}}
 /* app / desktop view */
 body.view-app{--rail:72px}
-body.view-app .wrap{max-width:560px}
+body.view-app .wrap{max-width:none}
 body.view-app nav.tabs{padding-inline:6px}
 body.view-app nav.tabs button{flex-direction:column;justify-content:center;gap:4px;padding:8px 2px;font-size:.68rem}
 body.view-desktop{--rail:212px}
-body.view-desktop .wrap{max-width:1100px}
+body.view-desktop .wrap{max-width:none}
 body.view-desktop nav.tabs{padding-inline:12px}
 body.view-desktop nav.tabs button{flex-direction:row;justify-content:flex-start;gap:12px;padding:11px 12px;font-size:.92rem}
 body.view-desktop .menu{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
@@ -567,9 +570,17 @@ async function signOut(){
 }
 
 /* ================= app view / desktop view ================= */
+function fitPhone(){
+  const sw=Math.min(screen.width, screen.height), iw=innerWidth;
+  const phone = sw<=600 && matchMedia("(pointer:coarse)").matches;
+  document.documentElement.style.zoom = (phone && iw>sw*1.3) ? String(Math.round(iw/sw*100)/100) : "";
+}
 function applyView(){
+  fitPhone();
   let v="auto"; try{ v=localStorage.getItem("bloreg:view")||"auto"; }catch(e){}
-  if(v==="auto") v = innerWidth>=900 ? "desktop" : "app";
+  const z=parseFloat(document.documentElement.style.zoom)||1;
+  if(v==="auto" || (z>1 && v==="desktop")) v = innerWidth/z>=900 ? "desktop" : "app";
+  document.body.classList.toggle("narrow", innerWidth/z<500);
   document.body.classList.toggle("view-desktop", v==="desktop"); document.body.classList.toggle("view-app", v==="app");
   const ic=$("#viewIc"), tx=$("#viewTx"); if(ic){ ic.textContent=v==="desktop"?"🖥":"📱"; tx.textContent=v==="desktop"?"Desktop view":"App view"; }
 }
