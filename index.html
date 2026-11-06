@@ -690,7 +690,7 @@ const DECL4={"file": "forms/declaration-annex4.pdf", "fields": [["name", 190, 13
 const D4_KEYS={e:["Name","Epic","Rel","RelType","Dist","State","AcName","AcNo","Part","Sr"]};
 function declDefaults(a){
   const m=state.meta, e=m.eci||{};
-  const base={ Dist:e.district||"", State:e.state||"Andhra Pradesh", AcName:m.acName||"", AcNo:m.ac||"" };
+  const base={ Dist:"", State:"", AcName:"", AcNo:"" };   // 2002 details differ from today's part, so nothing is prefilled
   return { use: a.type==="f6", sir:"self",
     e:Object.assign({ Name:a.name||"", Epic:"", Rel:a.relName||"", RelType:a.relType||"Father", Part:"", Sr:"" }, base),
     r:Object.assign({ Name:a.relName||"", Epic:"", Rel:"", RelType:"Father", Part:"", Sr:"" }, base),
@@ -712,11 +712,12 @@ function declWindow(a, locked){
       ${kv("EPIC no.", inp(`d4${p}Epic`,o.Epic,'class="mono"'))}
       ${kv("Relative's name", inp(`d4${p}Rel`,o.Rel))}
       ${kv("Relationship", `<select id="d4${p}RelType" ${dis}>${["Father","Mother","Husband","Wife","Guardian","Other"].map(r=>`<option ${o.RelType===r?"selected":""}>${r}</option>`).join("")}</select>`)}
-      ${kv("District", inp(`d4${p}Dist`,o.Dist))}
-      ${kv("State", inp(`d4${p}State`,o.State))}
-      ${kv("AC name", inp(`d4${p}AcName`,o.AcName))}
-      ${kv("AC no. / Part / Sr", `<div class="grid3">${inp(`d4${p}AcNo`,o.AcNo,'inputmode="numeric" placeholder="AC"')}${inp(`d4${p}Part`,o.Part,'inputmode="numeric" placeholder="Part"')}${inp(`d4${p}Sr`,o.Sr,'inputmode="numeric" placeholder="Sr"')}</div>`)}
-    </div></div>`;
+      ${kv("State (2002)", inp(`d4${p}State`,o.State,'placeholder="As in the 2002 roll"'))}
+      ${kv("District (2002)", inp(`d4${p}Dist`,o.Dist,'placeholder="As in the 2002 roll"'))}
+      ${kv("Constituency (2002)", inp(`d4${p}AcName`,o.AcName,'placeholder="AC name in 2002"'))}
+      ${kv("AC no. / Part / Sr (2002)", `<div class="grid3">${inp(`d4${p}AcNo`,o.AcNo,'inputmode="numeric" placeholder="AC"')}${inp(`d4${p}Part`,o.Part,'inputmode="numeric" placeholder="Part"')}${inp(`d4${p}Sr`,o.Sr,'inputmode="numeric" placeholder="Sr"')}</div>`)}
+    </div>
+    <p class="muted small" style="margin:6px 12px 0">Copy these exactly from the 2002 roll. Constituency, part and serial numbers changed after 2008, so they won't match today's part ${esc(state.meta.part||"")}.</p></div>`;
   return `<section class="win" id="d4Win" style="--wc:var(--accent2)"><div class="win-h"><span>④ Declaration form</span><span class="win-s">Annexure IV · last SIR (2002)</span></div>
     <div class="panel" style="padding:12px;gap:10px">
       <label class="row small"><input type="checkbox" id="d4Use" ${d.use?"checked":""} ${dis}> Add the declaration form to the PDF${a.type==="f8"?" (Form 8 shifting from outside the state)":""}</label>
