@@ -622,7 +622,8 @@ function openApp(id, typeHint){
       ${kv("Town", inp("oTown",a.town||(state.meta.formDefaults&&state.meta.formDefaults.town)||state.meta.acName||""))}
       ${kv("Part no. / Section", `<div class="grid2">${inp("oPart",a.partNo||state.meta.part||"",'inputmode="numeric" placeholder="Part"')}${inp("oSec",a.section||"",'placeholder="Section"')}</div>`)}
       ${kv("Notice date", inp("oNotice",a.noticeDate||new Date().toISOString().slice(0,10),'type="date"'))}
-      ${kv("Hearing date / time", `<div class="grid2">${inp("oHDate",a.hearDate||"",'type="date"')}${inp("oHTime",a.hearTime||(state.meta.formDefaults&&state.meta.formDefaults.hearTime)||"",'placeholder="11:00 AM"')}</div>`)}
+      ${kv("Hearing date", inp("oHDate",a.hearDate||"",'type="date"'))}
+      ${kv("Hearing time", inp("oHTime",a.hearTime||(state.meta.formDefaults&&state.meta.formDefaults.hearTime)||"",'placeholder="11:00 AM"'))}
       ${kv("Hearing place", inp("oHPlace",a.hearPlace||(state.meta.formDefaults&&state.meta.formDefaults.hearPlace)||""))}
       ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
     </div>
