@@ -258,6 +258,7 @@ td,th{background:var(--surface)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script>
 "use strict";
 /* ================= config ================= */
@@ -614,6 +615,19 @@ function openApp(id, typeHint){
       ${a.type==="f6"?kv("Family member EPIC", inp("pFam",a.familyEpic,`class="mono" ${locked?"disabled":""}`)):kv("Voter's EPIC", inp("pVE",a.voterEpic||"",`class="mono" ${locked?"disabled":""}`))}
       ${kv("Note", `<textarea id="pNote" rows="2" ${locked?"disabled":""}>${esc(a.note)}</textarea>`)}
     </div>
+    ${FORM_TEMPLATES[a.type]||isNew?`<details class="card" id="ordBox" ${isNew?"":"open"}><summary><h3 style="display:inline">For the order &amp; notice PDF</h3></summary>
+    <div class="kv" style="margin-top:10px">
+      ${kv("Application date", inp("oApp",(a.appDate||new Date(a.created).toISOString().slice(0,10)),'type="date"'))}
+      ${kv("Area / locality", inp("oArea",a.area||state.meta.formDefaults&&state.meta.formDefaults.area||""))}
+      ${kv("Town", inp("oTown",a.town||(state.meta.formDefaults&&state.meta.formDefaults.town)||state.meta.acName||""))}
+      ${kv("Part no. / Section", `<div class="grid2">${inp("oPart",a.partNo||state.meta.part||"",'inputmode="numeric" placeholder="Part"')}${inp("oSec",a.section||"",'placeholder="Section"')}</div>`)}
+      ${kv("Notice date", inp("oNotice",a.noticeDate||new Date().toISOString().slice(0,10),'type="date"'))}
+      ${kv("Hearing date / time", `<div class="grid2">${inp("oHDate",a.hearDate||"",'type="date"')}${inp("oHTime",a.hearTime||(state.meta.formDefaults&&state.meta.formDefaults.hearTime)||"",'placeholder="11:00 AM"')}</div>`)}
+      ${kv("Hearing place", inp("oHPlace",a.hearPlace||(state.meta.formDefaults&&state.meta.formDefaults.hearPlace)||""))}
+      ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
+    </div>
+    ${!isNew?`<button class="btn primary block" id="apPdf" style="margin-top:10px">⬇ Download filled PDF</button>`:""}
+    <p class="muted small" style="margin:6px 0 0">Names are printed in English capitals. Check the PDF before submitting.</p></details>`:""}
     <div class="sec-h"><span>Document checklist</span><span class="pill ${d.done===d.need.length?"ok":"warn"}" id="docCount">${d.done}/${d.need.length} required</span></div>
     <div class="checklist" id="docList">${(isNew?APP_TYPES.f6:T).docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
     <p class="muted small" style="margin:0">Never write the Aadhaar number here. Tick only that you have seen the document.</p>
@@ -641,6 +655,9 @@ function openApp(id, typeHint){
     const ref=$("#pRef").value.trim().toUpperCase();
     if(ref && L.some(y=>y.id!==a.id && String(y.refNo||"").toUpperCase()===ref)){ toast("Another application already has Ref ID "+ref); return null; }
     const docs={}; sh.querySelectorAll("[data-doc]").forEach(c=>{ if(c.checked) docs[c.dataset.doc]=true; });
+    const od=id=>{ const e=$("#"+id); return e?e.value.trim():undefined; };
+    if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), section:od("oSec"), noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
+      state.meta.formDefaults=Object.assign({}, state.meta.formDefaults, { area:a.area, town:a.town, hearTime:a.hearTime, hearPlace:a.hearPlace }); }
     return Object.assign(a,{ name, relType:$("#pRelT").value, relName:$("#pRel").value.trim(), gender:$("#pGen").value, dob:$("#pDob").value, house:$("#pHouse").value.trim(), phone:ph,
       familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:ref, note:$("#pNote").value.trim(), docs });
   }
@@ -660,8 +677,44 @@ function openApp(id, typeHint){
   if($("#apRej")) $("#apRej").onclick=()=>{ const x0=collect(); if(!x0) return; askNote("Rejected", "Reason for rejection", "Mark rejected", n=>{ const x=advance("rejected",n,x0); pushUndo("reject application"); store(x,"Application rejected: "+x.name); closeSheet(); render(); }); };
   if($("#apReopen")) $("#apReopen").onclick=()=>{ a.stage="forwarded"; a.history.push({stage:"forwarded",at:Date.now(),note:"Reopened"}); pushUndo("reopen application"); store(a,"Reopened application: "+a.name); openApp(a.id); };
   if($("#apOpenV")) $("#apOpenV").onclick=()=>openVoter(a.addedVoterId);
+  if($("#apPdf")) $("#apPdf").onclick=()=>{ const x=locked?a:collect(); if(!x) return; if(!x.refNo){ toast("Enter the Ref ID first"); return; } if(!locked) store(x,"Updated application: "+x.name); downloadFormPdf(x); };
   if($("#apDel")) $("#apDel").onclick=()=>confirmBox(`Delete the application of ${a.name}?`, "Delete", ()=>{ pushUndo("delete application"); const i=L.findIndex(y=>y.id===a.id); if(i>=0) L.splice(i,1); commit("app",-1,"Deleted application: "+a.name); render(); }, true);
 }
+/* ---------- fill the office's PDF forms from an application ---------- */
+const FORM_TEMPLATES={"f6": {"file": "forms/form6-order-notice.pdf", "title": "Form 6 order & Form 12 notice", "pages": [[["orderDate", 396, 115.6, 50, "white"], ["applicant", 207, 160.6], ["noticeDate", 401, 160.6, 34, "white"], ["refId", 222, 173.5], ["relative", 315, 211.8], ["applicant", 202, 227], ["partNo", 305, 242.5], ["partNo", 118, 330.5], ["section", 174, 330.5], ["applicant", 148, 397], ["relative", 304, 397], ["house", 114, 411], ["area", 219, 411], ["town", 365, 411], ["orderDate", 396, 473.2, 50, "white"], ["applicant", 212, 519.3], ["appDate", 443, 519.3], ["relative", 315, 556], ["applicant", 202, 571.5], ["partNo", 305, 586.3], ["partNo", 118, 674.4], ["section", 174, 674.4], ["applicant", 150, 771], ["relative", 330, 771], ["house", 124, 785.4], ["area", 235, 785.4], ["town", 381, 785.4]], [["refId", 176, 136.5], ["hearDate", 145, 180], ["hearTime", 217, 180], ["hearPlace", 299, 180], ["place", 136, 232], ["noticeDate", 131, 248], ["applicant", 168, 277.5], ["address", 115, 294], ["refId", 176, 393], ["hearDate2", 113, 439.5], ["hearTime2", 186, 439.5], ["hearPlace2", 256, 439.5], ["place", 136, 491.7], ["noticeDate", 131, 507.6], ["applicant", 168, 537.5], ["address", 115, 552.5], ["noticeDate", 131, 627.9], ["applicant", 143, 648], ["noticeDate", 404, 649.9], ["place", 134, 708.7], ["noticeDate", 131, 729.7]]]}};
+const FORM_MAXW={hearTime:36,hearPlace:150,hearDate2:44,hearTime2:32,hearPlace2:150,section:16,partNo:24,house:72,area:105,town:70,applicant:125,relative:125,refId:125,address:160,appDate:60};
+const dmy=d=>{ if(!d) return ""; const t=new Date(d); if(isNaN(t)) return String(d); return String(t.getDate()).padStart(2,"0")+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+t.getFullYear(); };
+const latin=s=>{ s=String(s||""); if(/[\u0C00-\u0C7F]/.test(s)) s=translit(s); return s.replace(/[^\x20-\x7E]/g,"").trim(); };
+function formValues(a){
+  const town=a.town||state.meta.acName||"";
+  const v={ applicant:latin(a.name).toUpperCase(), relative:latin(a.relName).toUpperCase(), refId:a.refNo||"", partNo:a.partNo||state.meta.part||"", section:a.section||"",
+    house:a.house||"", area:latin(a.area), town:latin(town), orderDate:dmy(a.orderDate), noticeDate:dmy(a.noticeDate), appDate:dmy(a.appDate||a.created),
+    hearDate:dmy(a.hearDate), hearTime:a.hearTime||"", hearPlace:latin(a.hearPlace), place:latin(town),
+    address:[a.house,latin(a.area),latin(town)].filter(Boolean).join(", ") };
+  v.hearDate2=v.hearDate; v.hearTime2=v.hearTime; v.hearPlace2=v.hearPlace; return v;
+}
+async function downloadFormPdf(a){
+  const T=FORM_TEMPLATES[a.type]; if(!T){ toast("No PDF form added for this type yet"); return; }
+  if(typeof PDFLib==="undefined"){ toast("PDF maker didn't load. Check internet and reopen."); return; }
+  try{
+    toast("Preparing PDF…");
+    const bytes=await (await fetch(T.file)).arrayBuffer();
+    const doc=await PDFLib.PDFDocument.load(bytes);
+    const font=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    const ink=PDFLib.rgb(0.05,0.1,0.45), white=PDFLib.rgb(1,1,1);
+    const vals=formValues(a), pages=doc.getPages();
+    T.pages.forEach((fields,pi)=>{ const pg=pages[pi], H=pg.getHeight();
+      for(const f of fields){ const [k,x,y,cover]=f; const text=vals[k]; const yb=H-(y-1.2);
+        if(cover) pg.drawRectangle({x:x-1,y:yb-2.5,width:cover,height:11,color:white});
+        if(!text) continue;
+        let size=9.5; const mw=FORM_MAXW[k]; while(mw && font.widthOfTextAtSize(text,size)>mw && size>6) size-=0.25;
+        pg.drawText(text,{x,y:yb,size,font,color:ink}); } });
+    const out=await doc.save();
+    const name=`Form6_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
+    if(saveFile(name, new Blob([out],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); }
+  }catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
+}
+
 function askNote(title, label, ok, fn){
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="nf"><h2>${esc(title)}</h2><label class="f">${esc(label)}<textarea id="nTxt" rows="2"></textarea></label><div class="row"><button class="btn primary" type="submit">${esc(ok)}</button><button class="btn" type="button" id="nX">Cancel</button></div></form></div>`;
   $("#nX").onclick=closeSheet; $("#nf").onsubmit=e=>{ e.preventDefault(); const n=$("#nTxt").value.trim(); closeSheet(); fn(n); };
