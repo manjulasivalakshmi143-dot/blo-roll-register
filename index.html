@@ -232,6 +232,19 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .pend-t small{color:var(--muted);font-size:.75rem}
 .pend-empty{padding:12px;text-align:center}
 .pend-foot{display:flex;justify-content:center;padding:8px 8px 10px;border-top:1px solid var(--line)}
+
+/* PS selector + view-only */
+.ps-sel{width:100%;max-width:100%;font:inherit;font-size:.62rem;font-weight:700;padding:4px 2px;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--ink);margin-top:2px}
+body.view-desktop .blo-card{flex-wrap:wrap} body.view-desktop .ps-sel{font-size:.8rem;padding:6px 6px;flex-basis:100%}
+.view-ban{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:#0F7C7C;color:#fff;border-radius:12px;padding:8px 10px;margin-bottom:10px;font-size:.88rem}
+.view-ban .btn{background:#fff!important;color:#0F7C7C!important;padding:6px 12px}
+body.viewing #tabs button[data-tab=import],body.viewing #tabs button[data-tab=backup]{opacity:.35;pointer-events:none}
+body.viewing .blo-card{background:color-mix(in srgb,#0F7C7C 12%,transparent);border-radius:12px}
+.perm-box{display:flex;flex-direction:column;gap:10px}
+.perm-i{display:flex;flex-direction:column;gap:6px;border:1.5px solid var(--line);border-left:5px solid #0F7C7C;border-radius:10px;padding:10px}
+.perm-i>div:first-child{display:flex;flex-direction:column;gap:2px}
+.perm-i small{color:var(--muted)} .perm-i .pill{align-self:flex-start}
+#tabs button[data-badge]::after{content:attr(data-badge);position:absolute;top:2px;right:2px;min-width:18px;height:18px;border-radius:9px;background:#D32F2F;color:#fff;font-size:.65rem;font-weight:800;display:grid;place-items:center;padding:0 4px}
 /* BLO photo card at the top of the rail */
 nav.tabs{padding-top:calc(10px + env(safe-area-inset-top,0px))!important}
 .blo-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--line)}
@@ -421,7 +434,7 @@ td,th{background:var(--surface)}
 
 <nav class="tabs" id="tabs" aria-label="Sections" hidden>
   <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Register</b></div>
-  <div class="blo-card" id="bloCard"><div role="button" tabindex="0" class="blo-ph" id="bloPh" title="Add or change your photo"></div><div role="button" tabindex="0" class="blo-tx" id="bloTx"><b id="bloNm"></b><small id="bloPt"></small></div><input type="file" id="bloPhIn" accept="image/*" hidden></div>
+  <div class="blo-card" id="bloCard"><div role="button" tabindex="0" class="blo-ph" id="bloPh" title="Add or change your photo"></div><div role="button" tabindex="0" class="blo-tx" id="bloTx"><b id="bloNm"></b><small id="bloPt"></small></div><input type="file" id="bloPhIn" accept="image/*" hidden><select id="psSel" class="ps-sel" aria-label="Polling station (part)" title="View another part"></select></div>
   <button data-tab="home" style="--tc:#5A2DA3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button data-tab="apps" style="--tc:#8A2D6B" class="add-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Applications</button>
   <button data-tab="lists" data-label="Rolls & voters" style="--tc:#0F7C7C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="13" height="16" rx="2"/><path d="M19 7v13a1 1 0 0 1-1 1H8"/><path d="M7 9h5M7 13h5"/></svg><span class="lb">Rolls &amp; <br>voters</span></button>
@@ -478,10 +491,11 @@ async function rpc(fn, args){
 const cloud = { ready:false, dirty:new Set(), busy:false, again:false, timer:null };
 function dataKey(){ return session && session.email ? "bloreg:data:"+session.email : "bloreg:data:device"; }
 function setSync(s, text){ const el=$("#sync"); el.dataset.s=s; $("#syncText").textContent=text; }
-function saveLocal(){ if(!lsSet(dataKey(), state)){ toast("Phone storage full — download an Excel backup now"); return false; } return true; }
+function saveLocal(){ if(viewing) return true; if(!lsSet(dataKey(), state)){ toast("Phone storage full — download an Excel backup now"); return false; } return true; }
 function markDirty(idx){ if(idx!=null && idx<0) return; if(idx==null){ const n=Math.max(1,Math.ceil(state.voters.length/CH)); for(let i=0;i<n;i++) cloud.dirty.add(i); } else cloud.dirty.add(Math.floor(idx/CH)); }
 
 function commit(label, idx, activity){
+  if(viewing){ if(label!=="list-sync") toast("View only — switch back to your part to make changes"); return; }
   state.savedAt = Date.now();
   if(activity){ state.meta.activity.unshift({t:state.savedAt, a:activity}); state.meta.activity = state.meta.activity.slice(0,150); }
   markDirty(idx); saveLocal(); scheduleCloud(); updateHeader();
@@ -490,13 +504,14 @@ function pushUndo(label){ undoStack.push({label, data:JSON.stringify({meta:state
 function undo(){ const u=undoStack.pop(); if(!u) return; const d=JSON.parse(u.data); state.meta=d.meta; state.voters=d.voters; commit("undo", null, "Undid: "+u.label); render(); toast("Undone: "+u.label); }
 
 function scheduleCloud(){
+  if(viewing) return;
   if(session && session.device){ setSync("local","Saved on this phone"); return; }
   if(!cloud.ready){ setSync("local","Saved on phone"); return; }
   setSync("saving","Saving…");
   clearTimeout(cloud.timer); cloud.timer=setTimeout(flushCloud, 1200);
 }
 async function flushCloud(){
-  if(!cloud.ready) return;
+  if(!cloud.ready || viewing) return;
   if(cloud.busy){ cloud.again=true; return; }
   cloud.busy=true;
   const todo=[...cloud.dirty].sort((a,b)=>a-b); cloud.dirty.clear();
@@ -535,9 +550,9 @@ async function connectAccount(){
       if(state.savedAt > (state.cloudSavedAt||0)) lsSet("bloreg:older-phone-copy:"+session.email, state);
       const voters=[]; for(const c of r.chunks) voters.push(...((c&&c.v)||[]));
       state = { meta:Object.assign(blank().meta, r.meta||{}), voters, savedAt:r.saved_at||0, cloudSavedAt:r.saved_at||0 };
-      saveLocal(); cloud.ready=true; setSync("saved","Saved to account"); render(); syncLists();
+      saveLocal(); cloud.ready=true; setSync("saved","Saved to account"); render(); syncLists(); psLoadDir(); permCount();
     } else {
-      cloud.ready=true; syncLists();
+      cloud.ready=true; syncLists(); psLoadDir(); permCount();
       if(state.voters.length || state.meta.part){ markDirty(null); scheduleCloud(); } else setSync("saved","Account ready");
     }
   }catch(e){
@@ -657,7 +672,7 @@ function subItems(t){
     ["📋","All applications",()=>{ window._appSec=null; window._appF="all"; }],
     ["📘","Guidelines",()=>{ window._appSec="guide"; }]];
   if(t==="import") return [["📄","Choose a roll file",()=>{ window._impSec="file"; }],["🌐","Download from ECI website",()=>{ window._impSec="eci"; }],["⇄","Compare revisions (what changed)",()=>{ tab="revisions"; }],["ℹ","How each file is read",()=>{ window._impSec="how"; }]];
-  if(t==="backup") return [["🖼","My photo & name",()=>{ window._accSec="part"; setTimeout(()=>{ const i=$("#bloPhIn"); if(i) i.click(); },150); }],["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["✍","My signature",()=>{ window._accSec="sign"; }],["⬇","Excel backup",()=>{ window._accSec="backup"; }],["↺","Restore from a backup",()=>{ window._accSec="restore"; }],["🕘","Recent work & undo",()=>{ window._accSec="recent"; }],["⚠","Start fresh",()=>{ window._accSec="fresh"; }]];
+  if(t==="backup") return [["🖼","My photo & name",()=>{ window._accSec="part"; setTimeout(()=>{ const i=$("#bloPhIn"); if(i) i.click(); },150); }],["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["🔐",window._permNew?`View permissions · ${window._permNew} new`:"View permissions",()=>{ window._accSec="perm"; }],["✍","My signature",()=>{ window._accSec="sign"; }],["⬇","Excel backup",()=>{ window._accSec="backup"; }],["↺","Restore from a backup",()=>{ window._accSec="restore"; }],["🕘","Recent work & undo",()=>{ window._accSec="recent"; }],["⚠","Start fresh",()=>{ window._accSec="fresh"; }]];
   if(t==="lists"){
     const V=state.voters.length? [["","Voters in my working roll",null], ...subItems("voters").map(it=>[it[0],it[1],()=>{ tab="voters"; window._vSec=null; it[2](); }])]
                               : [["★","My working roll",()=>{ tab="voters"; window._vSec=null; }]];
@@ -686,7 +701,7 @@ addEventListener("scroll",e=>{ if(!(e.target&&e.target.closest&&e.target.closest
 
 /* ================= BLO photo card ================= */
 function bloCard(){
-  const m=state.meta, ph=$("#bloPh"); if(!ph) return;
+  const m=myMeta(), ph=$("#bloPh"); if(!ph) return; psFill();
   ph.style.backgroundImage=m.bloPhoto?`url("${m.bloPhoto}")`:""; ph.textContent=m.bloPhoto?"":"👤";
   $("#bloNm").textContent=m.blo||"Add your name"; $("#bloPt").textContent=m.part?"Part "+m.part:"Set your part";
 }
@@ -702,6 +717,86 @@ $("#bloPh").onclick=()=>{ if(!state.meta.bloPhoto){ $("#bloPhIn").click(); retur
 document.addEventListener("click",e=>{ if(e.target&&e.target.id==="bloPhDel"){ delete state.meta.bloPhoto; commit("photo",-1,"Removed BLO photo"); render(); } });
 $("#bloPhIn").onchange=e=>{ setBloPhoto(e.target.files[0]); e.target.value=""; };
 $("#bloTx").onclick=()=>{ closeFly(); tab="backup"; window._accSec="part"; render(); window.scrollTo(0,0); };
+
+
+/* ================= other parts: view only, with the owner's permission ================= */
+let viewing=null, myState=null;            // viewing = {part, blo} while looking at another part
+const PS_RANGE=[35,176];                   // Guntakal municipality parts
+let psDir={};                              // part -> {blo, status}
+function myMeta(){ return (viewing?myState:state).meta; }
+function psFill(){
+  const sel=$("#psSel"); if(!sel) return; const mm=myMeta(), my=String(mm.part||"").replace(/^0+/,"");
+  const cur=viewing?viewing.part:my; const nums=[];
+  for(let i=PS_RANGE[0];i<=PS_RANGE[1];i++) nums.push(String(i));
+  if(my && !nums.includes(my)) nums.unshift(my);
+  const lab=n=>{ if(n===my) return "PS "+n+" · mine"; const d=psDir[n]; if(!d) return "PS "+n;
+    return "PS "+n+(d.status==="granted"?" · ✓ allowed":d.status==="pending"?" · ⏳ asked":d.status==="denied"?" · ✕":"")+(d.blo?" · "+d.blo:""); };
+  sel.innerHTML=nums.map(n=>`<option value="${n}" ${n===cur?"selected":""}>${esc(lab(n))}</option>`).join("");
+  sel.disabled=!(session&&session.token) || !mm.ac;
+  sel.title = !mm.ac ? "Fill your AC number in My part details first" : "View another part (only with that BLO's permission)";
+}
+async function psLoadDir(){
+  if(!(session&&session.token) || !myMeta().ac) return;
+  try{ const r=await rpc("blo_parts",{p_token:session.token,p_ac:String(myMeta().ac)}); psDir={}; (r||[]).forEach(x=>psDir[x.part]=x); psFill(); }catch(e){}
+}
+async function psChoose(part){
+  const mm=myMeta(), my=String(mm.part||"").replace(/^0+/,"");
+  if(part===my){ exitView(); return; }
+  if(!(session&&session.token)){ toast("Sign in to your account first"); psFill(); return; }
+  toast("Opening PS "+part+"…");
+  let r; try{ r=await rpc("blo_view_part",{p_token:session.token,p_ac:String(mm.ac),p_part:part}); }catch(e){ toast(e.message); psFill(); return; }
+  if(r.status==="granted"){ enterView(part, r); return; }
+  psFill();
+  if(r.status==="no_account"){ confirmBox(`PS ${part} has no BLO account in this app yet. Ask that BLO to install the app and fill their part details.`, "OK", ()=>{}); return; }
+  if(r.status==="pending"){ confirmBox(`You already asked ${r.blo||"the BLO"} of PS ${part}. You can view it after they allow.`, "OK", ()=>{}); return; }
+  confirmBox(`🔒 PS ${part}${r.blo?" · "+r.blo:""}. You need permission from this BLO to view their part. They will see your name and part number and can allow or refuse.`, "Ask permission", async()=>{
+    try{ await rpc("blo_request_access",{p_token:session.token,p_ac:String(mm.ac),p_part:part}); toast("Request sent to PS "+part); psLoadDir(); }catch(e){ toast(e.message); }
+  });
+}
+function enterView(part, r){
+  if(!viewing){ if(cloud.dirty.size) flushCloud(); myState=state; }
+  const voters=[]; for(const c of (r.chunks||[])) voters.push(...((c&&c.v)||[]));
+  state={ meta:Object.assign(blank().meta, r.meta||{}, {lists:[]}), voters, savedAt:r.saved_at||0, cloudSavedAt:r.saved_at||0 };
+  viewing={part, blo:state.meta.blo||""}; undoStack.length=0;
+  document.body.classList.add("viewing"); tab="home"; render(); window.scrollTo(0,0);
+  toast("Viewing PS "+part+" · view only");
+}
+function exitView(){
+  if(!viewing){ psFill(); return; }
+  state=myState; myState=null; viewing=null; undoStack.length=0;
+  document.body.classList.remove("viewing"); tab="home"; render(); window.scrollTo(0,0); toast("Back to your part");
+}
+$("#psSel").onchange=e=>psChoose(e.target.value);
+function viewBanner(){
+  return viewing?`<div class="view-ban"><span>👁 Viewing <b>PS ${esc(viewing.part)}</b>${viewing.blo?" · "+esc(viewing.blo):""} · view only</span><button class="btn" onclick="exitView()">‹ My part</button></div>`:"";
+}
+
+/* permissions page: who asked to view my part */
+async function permLoad(){
+  const box=$("#permBox"); if(!box) return;
+  if(!(session&&session.token)){ box.innerHTML=`<p class="muted small">Sign in to your account to use permissions.</p>`; return; }
+  let r; try{ r=await rpc("blo_access_list",{p_token:session.token}); }catch(e){ box.innerHTML=`<p class="muted small">${esc(e.message)}</p>`; return; }
+  window._permNew=(r.incoming||[]).filter(x=>x.status==="pending").length;
+  const lab={pending:"⏳ Asking", granted:"✓ Allowed", denied:"✕ Refused"};
+  const row=x=>`<div class="perm-i"><div style="min-width:0"><b>${esc(x.blo||x.email)}</b><small>${x.part?"PS "+esc(x.part)+" · ":""}${esc(x.email)}</small><span class="pill ${x.status==="granted"?"ok":x.status==="pending"?"warn":""}">${lab[x.status]||x.status}</span></div>
+      <div class="row">${x.status!=="granted"?`<button class="btn primary" data-allow="${esc(x.email)}">Allow</button>`:""}${x.status==="pending"?`<button class="btn" data-deny="${esc(x.email)}">Refuse</button>`:""}${x.status!=="pending"?`<button class="btn danger" data-rm="${esc(x.email)}">Remove</button>`:""}</div></div>`;
+  const out=(r.outgoing||[]);
+  box.innerHTML=`<p class="muted small" style="margin:0">Other BLOs who asked to <b>view</b> your part. Allowed BLOs can only look — they can never change your data. Your signature is never shared.</p>
+    ${(r.incoming||[]).length?(r.incoming||[]).map(row).join(""):`<div class="muted small">No requests yet.</div>`}
+    <h3 style="margin:8px 0 0">Parts I asked to view</h3>
+    ${out.length?out.map(x=>`<div class="perm-i"><div><b>PS ${esc(x.part||"?")}</b><small>${esc(x.blo||"")}</small><span class="pill ${x.status==="granted"?"ok":x.status==="pending"?"warn":""}">${lab[x.status]||x.status}</span></div></div>`).join(""):`<div class="muted small">None. Use the PS list under your photo to ask.</div>`}`;
+  const ans=(email,st)=>rpc("blo_answer_access",{p_token:session.token,p_email:email,p_status:st}).then(()=>{ toast(st==="granted"?"Allowed":st==="denied"?"Refused":"Removed"); permLoad(); }).catch(e=>toast(e.message));
+  box.querySelectorAll("[data-allow]").forEach(b=>b.onclick=()=>ans(b.dataset.allow,"granted"));
+  box.querySelectorAll("[data-deny]").forEach(b=>b.onclick=()=>ans(b.dataset.deny,"denied"));
+  box.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>confirmBox("Remove this BLO's permission to view your part?","Remove",()=>ans(b.dataset.rm,"remove"),true));
+}
+async function permCount(){
+  if(!(session&&session.token)) return;
+  try{ const r=await rpc("blo_access_list",{p_token:session.token}); const n=(r.incoming||[]).filter(x=>x.status==="pending").length;
+    if(n!==window._permNew){ window._permNew=n; const b=document.querySelector('#tabs button[data-tab=backup]'); if(b) b.dataset.badge=n||""; }
+    const b=document.querySelector('#tabs button[data-tab=backup]'); if(b){ if(n) b.setAttribute("data-badge",n); else b.removeAttribute("data-badge"); }
+  }catch(e){}
+}
 
 /* ================= stats ================= */
 function live(){ return state.voters.filter(v=>!v.gone && !v.st.del); }
@@ -724,7 +819,9 @@ function vIndex(id){ return state.voters.findIndex(v=>v.id===id); }
 /* ================= render ================= */
 function render(){
   const railTab=({voters:"lists",asd:"lists",revisions:"import"})[tab]||tab; document.querySelectorAll("#tabs button[data-tab]").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===railTab));
+  if(viewing && ["import","revisions","backup"].includes(tab)) tab="home";
   ({home:renderHome, voters:renderVoters, apps:renderApps, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
+  if(viewing) $("#view").insertAdjacentHTML("afterbegin", viewBanner());
   updateHeader();
 }
 function resetSec(t){ if(t==="lists") window._openList=null; if(t==="backup") window._accSec=null; if(t==="voters") window._vSec=null; if(t==="apps") window._appSec=null; if(t==="import") window._impSec=null; }
@@ -767,7 +864,7 @@ function renderHome(el){
   el.innerHTML = `<div class="panel">
     <form class="home-search" id="hs" role="search"><input type="search" id="hsq" placeholder="Search voter: name, EPIC, house, mobile…" aria-label="Search voters"><button class="btn primary" type="submit">Search</button></form>
     ${m.demo?`<div class="note warn">You are looking at <strong>example data</strong>. Clear it in Account settings → Start fresh before importing your real roll.</div>`:""}
-    ${bk>7?`<div class="note warn">Last Excel backup: ${bk===Infinity?"never":bk+" days ago"}. <button class="btn ghost" id="bkNow">Download backup</button></div>`:""}
+    ${bk>7&&!viewing?`<div class="note warn">Last Excel backup: ${bk===Infinity?"never":bk+" days ago"}. <button class="btn ghost" id="bkNow">Download backup</button></div>`:""}
     <div class="home-top">
       <div class="card hstat"><div class="eyebrow">Electors</div><div class="n">${s.n}</div><div class="muted mono hs-sub">M ${s.m} · F ${s.f} · TG ${s.t}</div></div>
       <div class="card hstat"><div class="eyebrow">Work now</div>
@@ -814,7 +911,7 @@ function bindSettings(){
   const b=$("#sSave"); if(!b) return;
   b.onclick=()=>{ pushUndo("part details");
     Object.assign(state.meta,{ac:$("#sAc").value.trim(),acName:$("#sAcN").value.trim(),part:$("#sPart").value.trim(),partName:$("#sPartN").value.trim(),blo:$("#sBlo").value.trim(), bloPhone:($("#sBloPh")?$("#sBloPh").value.replace(/\D/g,""):state.meta.bloPhone)||""});
-    commit("details", -1, "Updated part details"); toast("Details saved"); render(); };
+    commit("details", -1, "Updated part details"); toast("Details saved"); render(); setTimeout(psLoadDir, 3000); };
 }
 
 /* ---------- applications: received → documents checked → sent to ERO → approved / rejected ---------- */
@@ -1298,7 +1395,7 @@ function saveList(meta, rows){
   uploadList(meta.id, rows);
 }
 async function uploadList(id, rows){
-  if(!(session&&session.token)) return;
+  if(!(session&&session.token) || viewing) return;
   const m=listsMeta().find(x=>x.id===id); rows=rows||lsGet(listKey(id)); if(!m||!rows) return;
   try{
     const n=Math.max(1,Math.ceil(rows.length/CH));
@@ -1309,6 +1406,7 @@ async function uploadList(id, rows){
 }
 function syncLists(){ for(const m of listsMeta()) if(!m.synced) uploadList(m.id); }
 async function getListRows(id){
+  if(viewing) return null;
   let rows=lsGet(listKey(id)); if(rows) return rows;
   if(session&&session.token){ const r=await rpc("blo_load_list",{p_token:session.token,p_list:id}); rows=[]; for(const c of (r||[])) rows.push(...((c&&c.v)||[])); if(rows.length){ lsSet(listKey(id),rows); return rows; } }
   return null;
@@ -2408,6 +2506,7 @@ function renderBackup(el){
   const items=[
     { id:"account", icon:"👤", color:"var(--accent)", title: signed?"Your account":"Create a free account", sub: signed?esc(session.email):"Saved on this phone only" },
     { id:"part", icon:"🗳", color:"var(--info)", title:"My part details", sub:[m.ac&&("AC "+esc(m.ac)), m.part&&("Part "+esc(m.part)), m.blo&&esc(m.blo)].filter(Boolean).join(" · ")||"Not filled yet" },
+    { id:"perm", icon:"🔐", color:"#0F7C7C", title:"View permissions", sub: window._permNew?`${window._permNew} new request${window._permNew>1?"s":""} — tap to allow`:"Who can view my part" },
     { id:"sign", icon:"✍", color:"var(--accent)", title:"My signature", sub: sig?"Saved · asked each time you download":"Not added" },
     { id:"backup", icon:"⬇", color:"var(--ok)", title:"Excel backup", sub:"Last backup: "+fmtDate(m.lastBackup) },
     { id:"restore", icon:"↺", color:"var(--ok)", title:"Restore from a backup", sub:"Bring back data from an Excel backup" },
@@ -2435,6 +2534,7 @@ function renderBackup(el){
       <div class="row" style="align-items:center;gap:12px;margin-bottom:10px"><div class="blo-ph" style="width:64px;height:64px;${m.bloPhoto?`background-image:url('${m.bloPhoto}')`:""}">${m.bloPhoto?"":"👤"}</div><button type="button" class="btn" onclick="document.getElementById('bloPhIn').click()">📷 ${m.bloPhoto?"Change":"Add"} my photo</button>${m.bloPhoto?`<button type="button" class="btn" id="bloPhDel">Remove photo</button>`:""}</div>
       <div class="grid2"><label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label><label class="f">BLO phone<input id="sBloPh" value="${esc(m.bloPhone||"")}" inputmode="tel" maxlength="10"></label></div>
       <button class="btn primary" id="sSave">Save details</button>`;
+  if(sec==="perm") body=`<div id="permBox" class="perm-box"><span class="muted small">Loading…</span></div>`;
   if(sec==="sign") body=`<div class="sig-box">${sig?`<img src="${m.signature.png}" alt="My signature">`:`<span class="muted small">No signature yet</span>`}</div>
         <label class="f">Name to show as BLO<input id="sigName" value="${esc((m.signature&&m.signature.name)||m.blo||"")}" placeholder="Your name"></label>
         <div class="row">
@@ -2453,6 +2553,7 @@ function renderBackup(el){
       <button class="btn danger" id="wipe" ${state.voters.length?"":"disabled"}>Clear all voters</button>`;
   el.innerHTML=`<div class="panel">${secWin(it.icon+" "+it.title, it.color, body, "Account settings")}</div>`;
   $("#secBack").onclick=()=>{ window._accSec=null; render(); };
+  if(sec==="perm") permLoad();
   bindSettings(); bindInstall();
   if($("#xl")) $("#xl").onclick=exportExcel;
   if($("#sigFile")) $("#sigFile").onchange=e=>{ const f=e.target.files[0]; if(f) sigFromFile(f); };
