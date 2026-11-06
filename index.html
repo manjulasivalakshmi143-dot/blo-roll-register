@@ -382,6 +382,7 @@ function stats(){
   return { n, m:c(v=>v.gender==="M"), f:c(v=>v.gender==="F"), t:c(v=>v.gender==="T"),
     mob:c(v=>v.st.mob==="yes"), aad:c(v=>v.st.aad==="yes"), asd:c(v=>v.st.asd), slip:c(v=>v.st.slip),
     forms:c(v=>v.st.form && v.st.formSt!=="Approved" && v.st.formSt!=="Rejected"),
+    nophoto:c(v=>v.photo==="no"), photoKnown:c(v=>v.photo==="yes"||v.photo==="no"),
     newRev:c(v=>v.newIn && v.newIn===state.meta.rev && state.meta.rev>1), manual:c(v=>v.src==="manual") };
 }
 function updateHeader(){
@@ -435,6 +436,7 @@ function renderHome(el){
       ${meterRow("Mobile number updated", s.mob, s.n, "ok")}
       ${meterRow("Aadhaar linked", s.aad, s.n, "ok")}
       ${meterRow("Voter slip given", s.slip, s.n)}
+      ${s.photoKnown?meterRow("Photo in roll", s.n-s.nophoto, s.n, "ok"):""}
     </div>
     <div class="tally">
       <div><b>${s.asd}</b><small>ASD</small></div>
@@ -447,7 +449,7 @@ function renderHome(el){
       <div class="row">
         <button class="btn" data-f="nomob">Mobile pending</button><button class="btn" data-f="noaad">Aadhaar pending</button>
         <button class="btn" data-f="asd">ASD list</button><button class="btn" data-f="noslip">Slip pending</button>
-        <button class="btn" data-f="forms">Open forms</button><button class="btn" data-f="young">Age 18–19</button><button class="btn" data-f="senior">Age 80+</button>
+        <button class="btn" data-f="forms">Open forms</button><button class="btn" data-f="nophoto">Photo missing</button><button class="btn" data-f="young">Age 18–19</button><button class="btn" data-f="senior">Age 80+</button>
       </div>
       <button class="btn primary" id="addV">+ Add a voter (Form 6 / new)</button>
     </div>
@@ -499,6 +501,8 @@ const FILTERS = [
   ["new","New in last revision", v=>!v.gone&&v.newIn&&v.newIn===state.meta.rev&&state.meta.rev>1],
   ["changed","Corrected in last revision", v=>!v.gone&&v.chgIn&&v.chgIn===state.meta.rev],
   ["manual","Added by me", v=>!v.gone&&!v.st.del&&v.src==="manual"],
+  ["nophoto","Photo missing", v=>!v.gone&&!v.st.del&&v.photo==="no"],
+  ["photoadded","Photo added in last revision", v=>!v.gone&&v.photoIn&&v.photoIn===state.meta.rev],
   ["young","Age 18–19", v=>!v.gone&&!v.st.del&&+v.age&&+v.age<=19],
   ["senior","Age 80+", v=>!v.gone&&!v.st.del&&+v.age>=80],
   ["removed","Removed / deleted", v=>v.gone||v.st.del],
@@ -549,6 +553,8 @@ function pillsFor(v){
   p.push(v.st.mob==="yes"?`<span class="pill ok">Mobile ✓</span>`:`<span class="pill">Mobile</span>`);
   p.push(v.st.aad==="yes"?`<span class="pill ok">Aadhaar ✓</span>`:`<span class="pill">Aadhaar</span>`);
   if(v.st.asd) p.push(`<span class="pill warn">${esc(v.st.asd)}</span>`);
+  if(v.photo==="no") p.push(`<span class="pill bad">No photo</span>`);
+  if(v.photoIn && v.photoIn===state.meta.rev) p.push(`<span class="pill ok">Photo added</span>`);
   if(v.st.slip) p.push(`<span class="pill acc">Slip</span>`);
   if(v.st.form) p.push(`<span class="pill acc">${esc(v.st.form)}${v.st.formSt?" · "+esc(v.st.formSt):""}</span>`);
   if(v.src==="manual") p.push(`<span class="pill warn">Added by me</span>`);
@@ -601,7 +607,7 @@ function openVoter(id){
         <label class="f">Gender<select id="eGen">${[["","—"],["M","Male"],["F","Female"],["T","Third gender"]].map(([a,b])=>`<option value="${a}" ${v.gender===a?"selected":""}>${b}</option>`).join("")}</select></label>
         <label class="f">EPIC (if any)<input id="eEpic" value="${esc(v.epic)}" class="mono"></label>
       </div>` :
-      `<div class="card small" style="padding:10px"><span class="muted">${esc(v.relType||"Relation")}:</span> ${esc(v.relName||v.relNameEn||"—")} · <span class="muted">House</span> <span class="mono">${esc(v.house||"—")}</span> · <span class="muted">Age</span> ${esc(v.age||"?")} ${esc(v.gender||"")}<br><span class="muted">EPIC</span> <span class="mono">${esc(v.epic||"—")}</span>${v.newIn&&v.newIn>1?` · <span class="muted">New in revision ${v.newIn}</span>`:""}${v.changes?`<br><span class="muted">Last correction:</span> ${esc(v.changes)}`:""}</div>`}
+      `<div class="card small" style="padding:10px"><span class="muted">${esc(v.relType||"Relation")}:</span> ${esc(v.relName||v.relNameEn||"—")} · <span class="muted">House</span> <span class="mono">${esc(v.house||"—")}</span> · <span class="muted">Age</span> ${esc(v.age||"?")} ${esc(v.gender||"")}<br><span class="muted">EPIC</span> <span class="mono">${esc(v.epic||"—")}</span>${v.photo?` · <span class="muted">Photo in roll:</span> ${v.photo==="yes"?"Available":"<strong>Not available</strong>"}`:""}${v.newIn&&v.newIn>1?` · <span class="muted">New in revision ${v.newIn}</span>`:""}${v.changes?`<br><span class="muted">Last correction:</span> ${esc(v.changes)}`:""}</div>`}
     <div class="field-block"><span>Mobile number updated in ECI records?</span>${seg("mob",[["yes","Yes"],["no","No"],["","Not checked"]],st.mob)}
       <label class="f">Mobile number (optional, private)<input id="ePh" value="${esc(st.ph)}" inputmode="tel" maxlength="10"></label></div>
     <div class="field-block"><span>Aadhaar linked?</span>${seg("aad",[["yes","Yes"],["no","No"],["","Not checked"]],st.aad)}
@@ -706,6 +712,7 @@ const FIELDS = [
   ["gender","Gender",["gender","sex","లింగ"]],
   ["sec","Section / street",["section","street","area","locality"]],
   ["ph","Mobile",["mobile","phone","cell"]],
+  ["photo","Photo in roll",["photo"]],
 ];
 function readSheet(file){
   if(typeof XLSX==="undefined"){ toast("Excel reader didn't load. Check internet and reopen."); return; }
@@ -733,7 +740,7 @@ function drawMapping(head, body, map, fname){
     el.querySelectorAll("select[data-k]").forEach(s=>map[s.dataset.k]=+s.value);
     if(map.name<0 && map.nameEn<0){ toast("Pick the Name column"); return; }
     const g=(r,k)=> map[k]>=0? String(r[map[k]]??"").trim() : "";
-    const rows=body.map(r=>mkRow({ sl:g(r,"sl"), epic:g(r,"epic"), name:g(r,"name"), nameEn:g(r,"nameEn"), relType:g(r,"relType"), relName:g(r,"relName"), house:g(r,"house"), age:g(r,"age"), gender:g(r,"gender"), sec:g(r,"sec"), ph:g(r,"ph") }));
+    const rows=body.map(r=>mkRow({ sl:g(r,"sl"), epic:g(r,"epic"), name:g(r,"name"), nameEn:g(r,"nameEn"), relType:g(r,"relType"), relName:g(r,"relName"), house:g(r,"house"), age:g(r,"age"), gender:g(r,"gender"), sec:g(r,"sec"), ph:g(r,"ph"), photo:g(r,"photo") }));
     staging={ rows:rows.filter(r=>r.name||r.nameEn), source:fname, header:{}, skipped:0, failed:[] };
     render();
   };
@@ -748,7 +755,9 @@ function mkRow(o){
   let nameEn=String(o.nameEn||"").trim(); if(!nameEn && /[ఀ-౿]/.test(name)) nameEn=translit(name);
   let relNameEn=String(o.relNameEn||"").trim(); if(!relNameEn && /[ఀ-౿]/.test(relName)) relNameEn=translit(relName);
   return { sl:String(o.sl||"").replace(/\D/g,""), epic:normEpic(o.epic), name, nameEn, relType:normRel(o.relType)||"Father", relName, relNameEn,
-    house:String(o.house||"").trim(), age:String(o.age||"").replace(/\D/g,"").slice(0,3), gender:normGender(o.gender), sec:String(o.sec||"").trim(), ph:String(o.ph||"").replace(/\D/g,"").slice(-10) };
+    house:String(o.house||"").trim(), age:String(o.age||"").replace(/\D/g,"").slice(0,3), gender:normGender(o.gender), sec:String(o.sec||"").trim(), ph:String(o.ph||"").replace(/\D/g,"").slice(-10), photo:normPhoto(o.photo) };
+}
+function normPhoto(p){ p=String(p||"").trim().toLowerCase(); if(!p) return ""; if(/^(no|n|not|false|0)$|not\s*avai|missing/.test(p)) return "no"; if(/^(yes|y|true|1)$|avai/.test(p)) return "yes"; return "";
 }
 
 /* --- PDF / photos: positioned words → elector boxes → fields --- */
@@ -844,10 +853,12 @@ const RE = {
 function after(line, re){ const m=line.split(/[:：;]/); if(m.length>1) return m.slice(1).join(":").trim(); return line.replace(re,"").replace(/^[\s'’s\-.]+/i,"").trim(); }
 function cleanName(s){ return String(s||"").replace(/(?<=[A-Z])!|!(?=[A-Z])/g,"I").replace(/\b(photo|available|not)\b/ig,"").replace(/[|_~*©®]/g,"").replace(/\s+/g," ").trim(); }
 function parseBox(lines){
+  const rawAll=lines.join(" ");
+  const photo=/not\s*avai|no\s*photo|ఫోటో\s*లేదు/i.test(rawAll)?"no":(/avail|ఫోటో/i.test(rawAll)?"yes":"");
   lines=lines.map(l=>l.replace(/\b(photo|available|not)\b/ig," ").replace(/\s+/g," ").trim()).filter(Boolean);
   const full=lines.join("\n");
   if(!RE.name.test(full)) return null;
-  const o={ sl:"", epic:"", name:"", relType:"", relName:"", house:"", age:"", gender:"", deleted:RE.deleted.test(full) };
+  const o={ sl:"", epic:"", name:"", relType:"", relName:"", house:"", age:"", gender:"", photo, deleted:RE.deleted.test(full) };
   const em=full.toUpperCase().match(RE.epic); if(em) o.epic=fixEpic(em[1]||em[2]);
   const first=(lines[0]||"").toUpperCase().replace(em?em[0]:"","");
   const sm=first.match(/\b(\d{1,4})\b/); if(sm) o.sl=sm[1];
@@ -955,6 +966,10 @@ async function analysePage(job,p){
     const c=cropCanvas(canvas, b.x0+5, b.y0+5, bw-10, bh-10), cx=c.getContext("2d");
     cx.fillStyle="#fff"; cx.fillRect(0,0,c.width*0.335,c.height*0.17); cx.fillRect(c.width*0.74,c.height*0.17,c.width,c.height);
     const lines=await ocrText(w, c, 6);
+    // the photo frame says "Photo Available" / "Photo Not Available", or holds a real photo
+    const pc=cropCanvas(canvas, b.x0+bw*0.75, b.y0+bh*0.2, bw*0.23, bh*0.75);
+    let photoTxt=(await ocrText(w, pc, 6)).join(" ");
+    if(!/avai/i.test(photoTxt)){ const pd=pc.getContext("2d").getImageData(0,0,pc.width,pc.height).data; let dark=0; for(let k=0;k<pd.length;k+=16) if(pd[k]+pd[k+1]+pd[k+2]<380) dark++; if(dark/(pd.length/16)>0.15) photoTxt="Photo Available"; }
     let sl="";
     if(i===0){ const sc=cropCanvas(canvas, b.x0+bw*0.02, b.y0+bh*0.025, bw*0.302, bh*0.13); sl=((await ocrText(w, sc, 7)).join(" ").match(/\d{1,4}/)||[""])[0]; }
     const boxLines=lines.slice(); if(!boxLines.length) continue;
@@ -963,6 +978,7 @@ async function analysePage(job,p){
     if(ei>0){ const [e]=boxLines.splice(ei,1); boxLines.unshift(e); }
     if(ei<0) boxLines.unshift("·");
     boxLines[0]=(sl?sl+" ":"")+boxLines[0];
+    if(photoTxt) boxLines.push(photoTxt.replace(/photo/ig,"Photo"));
     const r=parseBox(boxLines);
     if(r){ if(!sl) r.sl=""; r.anchor=!!sl; r.sec=section; r.page=p.n; r.ord=i; r.raw=lines.join(" | "); recs.push(r); }
     job.boxNote=`Box ${i+1} of ${boxes.length}`; if(i%3===0) drawJob($("#view"));
@@ -1026,7 +1042,7 @@ function drawReview(el){
   const flagged=rows.map(r=>!r.epic||seen.get(r.epic)>1||!r.house||!r.age||!r.gender||!/^[A-Z]{3}\d{7}$|\//.test(r.epic));
   const nFlag=flagged.filter(Boolean).length;
   const showEn=rows.some(r=>r.nameEn && r.nameEn!==r.name);
-  const cols=[["sl","Sl",5],["epic","EPIC",12],["name","Name",22],...(showEn?[["nameEn","English",20]]:[]),["relType","Rel",8],["relName","Relation name",22],["house","House",12],["age","Age",4],["gender","G",3],["sec","Section",16]];
+  const cols=[["sl","Sl",5],["epic","EPIC",12],["name","Name",22],...(showEn?[["nameEn","English",20]]:[]),["relType","Rel",8],["relName","Relation name",22],["house","House",12],["age","Age",4],["gender","G",3],["photo","Photo",4],["sec","Section",16]];
   el.innerHTML=`<div class="panel">
     <h2>Check ${rows.length} voters</h2>
     <div class="small muted">From ${esc(S.source)}${S.skipped?` · ${S.skipped} boxes stamped DELETED were left out`:""}</div>
@@ -1046,7 +1062,7 @@ function drawReview(el){
   const tb=el.querySelector("tbody");
   if(tb){
     tb.addEventListener("change", e=>{ const inp=e.target, tr=inp.closest("tr"); if(!tr||!inp.dataset.k) return; const r=rows[+tr.dataset.i], k=inp.dataset.k;
-      r[k]= k==="epic"?normEpic(inp.value):k==="gender"?normGender(inp.value):inp.value.trim();
+      r[k]= k==="epic"?normEpic(inp.value):k==="gender"?normGender(inp.value):k==="photo"?normPhoto(inp.value):inp.value.trim();
       if(k==="name" && /[ఀ-౿]/.test(r.name)) r.nameEn=translit(r.name); });
     tb.addEventListener("click", e=>{ const b=e.target.closest("[data-del]"); if(!b) return; rows.splice(+b.dataset.del,1); drawReview(el); });
   }
@@ -1058,7 +1074,7 @@ function drawReview(el){
 }
 function rowToVoter(r, rev){
   const st=defSt(); if(r.ph) st.ph=r.ph;
-  return { id: r.epic || ("R-"+(r.sl||uid8())+"-"+uid8()), sl:r.sl, sec:r.sec, house:r.house, name:r.name, nameEn:r.nameEn, relType:r.relType, relName:r.relName, relNameEn:r.relNameEn, age:r.age, gender:r.gender, epic:r.epic, src:"roll", addedRev:rev, st };
+  return { id: r.epic || ("R-"+(r.sl||uid8())+"-"+uid8()), sl:r.sl, sec:r.sec, house:r.house, name:r.name, nameEn:r.nameEn, relType:r.relType, relName:r.relName, relNameEn:r.relNameEn, age:r.age, gender:r.gender, epic:r.epic, photo:r.photo||"", src:"roll", addedRev:rev, st };
 }
 function fixIds(list){ const used=new Set(); for(const v of list){ if(used.has(v.id)) v.id=v.id+"-"+uid8(); used.add(v.id); } return list; }
 function firstSave(){
@@ -1086,11 +1102,13 @@ function diffRoll(){
     const diffs=[];
     for(const [k,l] of CMP){ if(String(r[k]||"").trim() && String(r[k]||"").trim()!==String(old[k]||"").trim()) diffs.push(l+": "+(old[k]||"—")+" → "+r[k]); }
     if(r.age && old.age && Math.abs(+r.age-+old.age)>1) diffs.push("age: "+old.age+" → "+r.age);
+    if(r.photo && old.photo && r.photo!==old.photo) diffs.push("photo: "+(old.photo==="yes"?"available":"not available")+" → "+(r.photo==="yes"?"available":"not available"));
     if(diffs.length) changed.push({r,old,diffs});
   }
   const removed=[...curMap.values()].filter(v=>!inMap.has(v.epic));
+  const photoAdded=inc.filter(r=>r.photo==="yes" && r.epic && curMap.get(r.epic) && curMap.get(r.epic).photo==="no");
   const manualFound=state.voters.filter(v=>v.src==="manual"&&!v.gone&&v.epic&&inMap.has(v.epic));
-  return {added,removed,changed,manualFound,noEpic:inc.filter(r=>!r.epic).length};
+  return {added,removed,changed,manualFound,photoAdded,noEpic:inc.filter(r=>!r.epic).length};
 }
 function renderRevisions(el){
   const m=state.meta;
@@ -1100,6 +1118,7 @@ function renderRevisions(el){
       <h2>Revision ${rev}: what changed</h2>
       <div class="small muted">New roll from ${esc(staging.source)} · ${staging.rows.length} voters, compared by EPIC number with your ${live().filter(v=>v.src!=="manual").length}.</div>
       <div class="tally"><div><b>${d.added.length}</b><small>New</small></div><div><b>${d.removed.length}</b><small>Removed</small></div><div><b>${d.changed.length}</b><small>Corrected</small></div><div><b>${d.manualFound.length}</b><small>My Form 6 now in roll</small></div></div>
+      ${d.photoAdded.length?`<div class="note ok">${d.photoAdded.length} voter${d.photoAdded.length>1?"s":""} who had no photo now have a photo in the roll.</div>`:""}
       ${d.noEpic?`<div class="note warn">${d.noEpic} rows in the new roll have no EPIC, so they'll be added as new. Fix them in Import → review if possible.</div>`:""}
       <details class="card" ${d.added.length?"open":""}><summary><h3 style="display:inline">New voters (${d.added.length})</h3></summary><div class="diff-list">${d.added.slice(0,400).map(r=>`<div><span class="mono">${esc(r.sl)}</span> ${esc(r.name)} ${r.nameEn&&r.nameEn!==r.name?`<span class="muted">${esc(r.nameEn)}</span>`:""} · H ${esc(r.house)} · ${esc(r.age)}${esc(r.gender)} · <span class="mono">${esc(r.epic)}</span></div>`).join("")}</div></details>
       <details class="card"><summary><h3 style="display:inline">Removed from roll (${d.removed.length})</h3></summary><div class="diff-list">${d.removed.slice(0,400).map(v=>`<div><span class="mono">${esc(v.sl)}</span> ${esc(v.name)} · H ${esc(v.house)} · <span class="mono">${esc(v.epic)}</span>${v.st.asd?` · <span class="pill warn">${esc(v.st.asd)}</span>`:""}</div>`).join("")}</div></details>
@@ -1135,6 +1154,8 @@ function applyRevision(){
       nv.id=old.id; nv.st=Object.assign(defSt(),old.st); if(r.ph&&!nv.st.ph) nv.st.ph=r.ph;
       nv.addedRev=old.addedRev; nv.newIn=old.newIn;
       if(old.src==="manual" && nv.st.form==="Form 6") nv.st.formSt="Approved";
+      if(old.photo==="no" && nv.photo==="yes") nv.photoIn=rev; else if(old.photoIn) nv.photoIn=old.photoIn;
+      if(!nv.photo && old.photo) nv.photo=old.photo;
       if(chg.has(r.epic)){ nv.chgIn=rev; nv.changes=chg.get(r.epic); } else if(old.changes) nv.changes=old.changes;
       byEpic.delete(r.epic);
     } else nv.newIn=rev;
@@ -1164,7 +1185,7 @@ function saveFile(filename, blob){
 function exportRows(){
   return state.voters.map(v=>({
     "Serial":v.sl, "EPIC":v.epic, "Name":v.name, "Name (English)":v.nameEn, "Relation":v.relType, "Relation name":v.relName||v.relNameEn,
-    "House no":v.house, "Age":v.age, "Gender":v.gender, "Section":v.sec,
+    "House no":v.house, "Age":v.age, "Gender":v.gender, "Section":v.sec, "Photo in roll":v.photo==="yes"?"Available":v.photo==="no"?"Not available":"",
     "Mobile updated":v.st.mob==="yes"?"Yes":v.st.mob==="no"?"No":"", "Mobile no":v.st.ph,
     "Aadhaar linked":v.st.aad==="yes"?"Yes":v.st.aad==="no"?"No":"", "ASD":v.st.asd, "Slip given":v.st.slip?"Yes":"",
     "Form":v.st.form, "Form date":v.st.formDt, "Form status":v.st.formSt, "Note":v.st.note,
