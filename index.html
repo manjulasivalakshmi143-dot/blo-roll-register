@@ -179,6 +179,11 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .win .checklist{border:0;border-radius:0}
 .win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
 .btn.grow{flex:1}
+.sig-box{display:grid;place-items:center;min-height:90px;border:1.5px dashed var(--line);border-radius:10px;background:#fff;padding:10px}
+.sig-box img{max-width:100%;max-height:90px}
+.sig-box.big img{max-height:160px}
+.sig-mini{height:22px;background:#fff;border-radius:4px;padding:1px 4px;border:1px solid var(--line)}
+.sig-pad{width:100%;height:200px;background:#fff;border:1.5px solid var(--line);border-radius:10px;touch-action:none;display:block}
 /* PDF preview */
 .pv-bg{position:fixed;inset:0;z-index:40;background:#2A2733;display:flex;flex-direction:column}
 .pv-band .btn{white-space:nowrap;color:var(--ink);background:var(--surface);border-color:transparent}
@@ -651,6 +656,7 @@ function openApp(id, typeHint){
       ${a.type==="f6"?kv("21+ declaration", `<label class="row small"><input type="checkbox" id="oDecl" ${a.decl===false?"":(a.decl||appAge(a)==null||appAge(a)>=21)?"checked":""}> Add Annexure III page (first-time applicant aged 21 or more)</label>`):""}
     </div>
     <div class="win-f">
+      ${state.meta.signature&&state.meta.signature.png?`<label class="row small"><input type="checkbox" id="oSig" ${a.useSig===false?"":"checked"}> Put my signature on the receipt (జారీచేసిన అధికారి) <img src="${state.meta.signature.png}" alt="" class="sig-mini"></label>`:`<div class="small muted">Add your signature in <strong>Account → My signature</strong> to sign the receipt automatically.</div>`}
       <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
       <p class="muted small" style="margin:0">Names print in English capitals. Preview and check before submitting.</p>
     </div></section>`:""}
@@ -688,7 +694,7 @@ function openApp(id, typeHint){
     if(ref && L.some(y=>y.id!==a.id && String(y.refNo||"").toUpperCase()===ref)){ toast("Another application already has Ref ID "+ref); return null; }
     const docs={}; sh.querySelectorAll("[data-doc]").forEach(c=>{ if(c.checked) docs[c.dataset.doc]=true; });
     const od=id=>{ const e=$("#"+id); return e?e.value.trim():undefined; };
-    if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), serialNo:od("oSl")??a.serialNo, decl:$("#oDecl")?$("#oDecl").checked:a.decl, noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
+    if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), serialNo:od("oSl")??a.serialNo, useSig:$("#oSig")?$("#oSig").checked:a.useSig, decl:$("#oDecl")?$("#oDecl").checked:a.decl, noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
       state.meta.formDefaults=Object.assign({}, state.meta.formDefaults, { area:a.area, town:a.town, hearTime:a.hearTime, hearPlace:a.hearPlace }); }
     return Object.assign(a,{ name, relType:$("#pRelT").value, relName:$("#pRel").value.trim(), gender:$("#pGen").value, dob:$("#pDob").value, house:$("#pHouse").value.trim(), phone:ph,
       familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:ref, note:$("#pNote").value.trim(), docs });
@@ -716,7 +722,7 @@ function openApp(id, typeHint){
   if($("#apDel")) $("#apDel").onclick=()=>confirmBox(`Delete the application of ${a.name}?`, "Delete", ()=>{ pushUndo("delete application"); const i=L.findIndex(y=>y.id===a.id); if(i>=0) L.splice(i,1); commit("app",-1,"Deleted application: "+a.name); render(); }, true);
 }
 /* ---------- fill the office's PDF forms from an application ---------- */
-const FORM_TEMPLATES={"f6": {"file": "forms/form6-v2.pdf", "pages": [[["orderDate", 406, 84.0, 50], ["applicant", 207, 128.0], ["noticeDate", 408, 128.0, 40], ["refId", 226, 144.0], ["relative", 304, 180.0], ["applicant", 202, 195.5], ["partNo", 309, 210.5], ["partNo", 122, 299.5], ["applicant", 152, 365.0], ["relative", 307, 365.0], ["house", 116, 380.0], ["area", 223, 380.0], ["town", 371, 380.0], ["orderDate", 406, 451.5, 50], ["applicant", 211, 496.0], ["appDate", 447, 496.0], ["relative", 304, 533.0], ["applicant", 202, 548.0], ["partNo", 309, 563.0], ["partNo", 122, 653.0], ["applicant", 154, 750.0], ["relative", 334, 750.0], ["house", 129, 765.0], ["area", 242, 765.0], ["town", 387, 765.0]], [["refId", 179, 106.0], ["hearDate", 149, 147.5, 0, 46], ["hearTime", 222, 147.5, 0, 35], ["hearPlace", 303, 147.5, 0, 152], ["place", 139, 201.5], ["noticeDate", 134, 218.5], ["applicant", 173, 248.0], ["address", 117, 265.0], ["refId", 179, 367.0], ["hearDate", 117, 410.0, 0, 46], ["hearTime", 184, 410.0, 0, 34], ["hearPlace", 259, 410.0, 0, 150], ["place", 139, 471], ["noticeDate", 134, 487], ["applicant", 173, 518.0], ["address", 117, 534.5], ["noticeDate", 134, 609], ["applicant", 146, 630.5], ["noticeDate", 409, 630.5], ["place", 137, 689.5], ["noticeDate", 134, 711.5]], [["applicant", 130, 129.0, 0, 165], ["relative", 402, 129.0, 0, 115], ["address", 123, 147.5, 0, 172], ["place", 134, 266.5], ["appDate", 131, 291.5], ["applicant", 130, 507.5, 0, 165], ["relative", 402, 507.5, 0, 115], ["address", 123, 526.0, 0, 172], ["place", 134, 644.5], ["appDate", 131, 669.5]]], "declPage": 2, "title": "Form 6 order, Form 12 notice & declaration"}, "f8": {"file": "forms/form8-v1.pdf", "pages": [[["orderDate", 406, 68.0, 50], ["applicant", 205, 113.0], ["noticeDate", 408, 113.0, 40], ["refId", 227, 128.5], ["relative", 302, 164.5], ["applicant", 205, 180.5], ["partNo", 326, 196.0, 0, 46], ["serial", 443, 196.0, 0, 28], ["epic", 113, 210.5, 0, 82], ["partNo", 349, 269.5, 0, 26], ["serial", 444, 269.5, 0, 26], ["epic", 112, 284.5, 0, 48], ["applicant", 152, 367.0], ["relative", 307, 367.0], ["house", 114, 381.0], ["area", 223, 381.0], ["town", 369, 381.0], ["orderDate", 406, 452.0, 50], ["applicant", 205, 497.0], ["noticeDate", 408, 497.0, 40], ["refId", 227, 512.0], ["relative", 302, 549.0], ["applicant", 205, 564.5], ["partNo", 326, 579.5, 0, 46], ["serial", 443, 579.5, 0, 28], ["epic", 113, 594.5, 0, 82], ["partNo", 349, 668.5, 0, 26], ["serial", 444, 668.5, 0, 26], ["epic", 112, 682.0, 0, 48], ["applicant", 152, 764.5], ["relative", 307, 764.5], ["house", 114, 778.5], ["area", 223, 778.5], ["town", 369, 778.5]], [["refId", 182, 92.0], ["partNo", 281, 112.0, 0, 28], ["serial", 371, 112.0, 0, 30], ["hearDate", 358, 132.5, 0, 46], ["hearTime", 437, 132.5, 0, 34], ["hearPlace", 107, 155.5, 0, 152], ["place", 132, 201], ["noticeDate", 125, 217], ["applicant", 162, 245.0], ["address", 107, 262.5], ["refId", 182, 361.5], ["partNo", 281, 381.5, 0, 28], ["serial", 371, 381.5, 0, 30], ["hearDate", 358, 402.5, 0, 46], ["hearTime", 442, 402.5, 0, 30], ["hearPlace", 107, 425.5, 0, 152], ["place", 132, 470.5], ["noticeDate", 125, 486.5], ["applicant", 162, 514.5], ["address", 107, 532.0], ["noticeDate", 125, 641.5], ["applicant", 164, 660.5], ["noticeDate", 426, 660.5], ["place", 130, 699.5], ["noticeDate", 125, 721.5]]], "title": "Form 8 order & Form 15 notice"}};
+const FORM_TEMPLATES={"f6": {"file": "forms/form6-v2.pdf", "pages": [[["orderDate", 406, 84.0, 50], ["applicant", 207, 128.0], ["noticeDate", 408, 128.0, 40], ["refId", 226, 144.0], ["relative", 304, 180.0], ["applicant", 202, 195.5], ["partNo", 309, 210.5], ["partNo", 122, 299.5], ["applicant", 152, 365.0], ["relative", 307, 365.0], ["house", 116, 380.0], ["area", 223, 380.0], ["town", 371, 380.0], ["orderDate", 406, 451.5, 50], ["applicant", 211, 496.0], ["appDate", 447, 496.0], ["relative", 304, 533.0], ["applicant", 202, 548.0], ["partNo", 309, 563.0], ["partNo", 122, 653.0], ["applicant", 154, 750.0], ["relative", 334, 750.0], ["house", 129, 765.0], ["area", 242, 765.0], ["town", 387, 765.0]], [["refId", 179, 106.0], ["hearDate", 149, 147.5, 0, 46], ["hearTime", 222, 147.5, 0, 35], ["hearPlace", 303, 147.5, 0, 152], ["place", 139, 201.5], ["noticeDate", 134, 218.5], ["applicant", 173, 248.0], ["address", 117, 265.0], ["refId", 179, 367.0], ["hearDate", 117, 410.0, 0, 46], ["hearTime", 184, 410.0, 0, 34], ["hearPlace", 259, 410.0, 0, 150], ["place", 139, 471], ["noticeDate", 134, 487], ["applicant", 173, 518.0], ["address", 117, 534.5], ["noticeDate", 134, 609], ["applicant", 146, 630.5], ["noticeDate", 409, 630.5], ["place", 137, 689.5], ["noticeDate", 134, 711.5]], [["applicant", 130, 129.0, 0, 165], ["relative", 402, 129.0, 0, 115], ["address", 123, 147.5, 0, 172], ["place", 134, 266.5], ["appDate", 131, 291.5], ["applicant", 130, 507.5, 0, 165], ["relative", 402, 507.5, 0, 115], ["address", 123, 526.0, 0, 172], ["place", 134, 644.5], ["appDate", 131, 669.5]]], "declPage": 2, "title": "Form 6 order, Form 12 notice & declaration", "sig": {"page": 1, "x": 404, "y": 681, "w": 88, "h": 25}}, "f8": {"file": "forms/form8-v1.pdf", "pages": [[["orderDate", 406, 68.0, 50], ["applicant", 205, 113.0], ["noticeDate", 408, 113.0, 40], ["refId", 227, 128.5], ["relative", 302, 164.5], ["applicant", 205, 180.5], ["partNo", 326, 196.0, 0, 46], ["serial", 443, 196.0, 0, 28], ["epic", 113, 210.5, 0, 82], ["partNo", 349, 269.5, 0, 26], ["serial", 444, 269.5, 0, 26], ["epic", 112, 284.5, 0, 48], ["applicant", 152, 367.0], ["relative", 307, 367.0], ["house", 114, 381.0], ["area", 223, 381.0], ["town", 369, 381.0], ["orderDate", 406, 452.0, 50], ["applicant", 205, 497.0], ["noticeDate", 408, 497.0, 40], ["refId", 227, 512.0], ["relative", 302, 549.0], ["applicant", 205, 564.5], ["partNo", 326, 579.5, 0, 46], ["serial", 443, 579.5, 0, 28], ["epic", 113, 594.5, 0, 82], ["partNo", 349, 668.5, 0, 26], ["serial", 444, 668.5, 0, 26], ["epic", 112, 682.0, 0, 48], ["applicant", 152, 764.5], ["relative", 307, 764.5], ["house", 114, 778.5], ["area", 223, 778.5], ["town", 369, 778.5]], [["refId", 182, 92.0], ["partNo", 281, 112.0, 0, 28], ["serial", 371, 112.0, 0, 30], ["hearDate", 358, 132.5, 0, 46], ["hearTime", 437, 132.5, 0, 34], ["hearPlace", 107, 155.5, 0, 152], ["place", 132, 201], ["noticeDate", 125, 217], ["applicant", 162, 245.0], ["address", 107, 262.5], ["refId", 182, 361.5], ["partNo", 281, 381.5, 0, 28], ["serial", 371, 381.5, 0, 30], ["hearDate", 358, 402.5, 0, 46], ["hearTime", 442, 402.5, 0, 30], ["hearPlace", 107, 425.5, 0, 152], ["place", 132, 470.5], ["noticeDate", 125, 486.5], ["applicant", 162, 514.5], ["address", 107, 532.0], ["noticeDate", 125, 641.5], ["applicant", 164, 660.5], ["noticeDate", 426, 660.5], ["place", 130, 699.5], ["noticeDate", 125, 721.5]]], "title": "Form 8 order & Form 15 notice", "sig": {"page": 1, "x": 398, "y": 688, "w": 88, "h": 25}}};
 const FORM_MAXW={hearTime:36,hearPlace:150,section:16,partNo:24,serial:28,epic:80,house:72,area:105,town:70,applicant:125,relative:125,refId:125,address:160,appDate:60};
 const dmy=d=>{ if(!d) return ""; const t=new Date(d); if(isNaN(t)) return String(d); return String(t.getDate()).padStart(2,"0")+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+t.getFullYear(); };
 const latin=s=>{ s=String(s||""); if(/[\u0C00-\u0C7F]/.test(s)) s=translit(s); return s.replace(/[^\x20-\x7E]/g,"").trim(); };
@@ -742,6 +748,12 @@ async function buildFormPdf(a){
       if(!text) continue;
       let size=9.5; const mw=maxw||FORM_MAXW[k]; while(mw && font.widthOfTextAtSize(text,size)>mw && size>6) size-=0.25;
       pg.drawText(text,{x,y:yb,size,font,color:ink}); } });
+  const sig=state.meta.signature;
+  if(T.sig && sig && sig.png && a.useSig!==false){
+    try{ const img=await doc.embedPng(sig.png); const b=T.sig, pg=pages[b.page], H=pg.getHeight();
+      const k=Math.min(b.w/img.width, b.h/img.height), w=img.width*k, h=img.height*k;
+      pg.drawImage(img,{ x:b.x+(b.w-w)/2, y:H-(b.y+b.h)+(b.h-h)/2, width:w, height:h }); }catch(e){}
+  }
   if(T.declPage!=null && a.decl===false && pages.length>T.declPage) doc.removePage(T.declPage);
   const out=await doc.save();
   const name=`${(APP_TYPES[a.type]||{short:"Form"}).short.replace(/\s+/g,"")}_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
@@ -1860,6 +1872,17 @@ function renderBackup(el){
         <div class="row"><button class="btn" id="rl">Reload from my account</button><button class="btn" id="chp">Change password</button><button class="btn danger" id="so">Sign out</button></div>
         <p class="muted small" style="margin:0">Used this account on another phone? Tap Reload to bring those changes here.</p></div>`
       :`<div class="card panel"><h3>Create a free account</h3><p class="muted small" style="margin:0">Save your list to your own account so it is safe even if this phone is lost. Your current voters will be uploaded to the new account.</p><button class="btn primary" id="toAuth">Sign in or create account</button></div>`}
+    <section class="win" style="--wc:var(--accent)"><div class="win-h"><span>✍ My signature</span><span class="win-s">for PDF receipts</span></div>
+      <div class="panel" style="padding:14px">
+        <div class="sig-box">${m.signature&&m.signature.png?`<img src="${m.signature.png}" alt="My signature">`:`<span class="muted small">No signature yet</span>`}</div>
+        <label class="f">Name to show as BLO<input id="sigName" value="${esc((m.signature&&m.signature.name)||m.blo||"")}" placeholder="Your name"></label>
+        <div class="row">
+          <label class="btn primary" for="sigFile">📷 Upload photo</label><input type="file" id="sigFile" accept="image/*" hidden>
+          <button class="btn" id="sigDraw">✎ Sign with finger</button>
+          ${m.signature&&m.signature.png?`<button class="btn danger" id="sigDel">Remove</button>`:""}
+        </div>
+        <p class="muted small" style="margin:0">Sign in dark ink on plain white paper and take a photo. The app removes the background and crops it. It's used only on PDFs you download.</p>
+      </div></section>
     <div class="card panel">
       <h3>Excel backup</h3>
       <p class="muted small" style="margin:0">One file with every voter and all your marks. Open it in Excel or Google Sheets, or restore the app from it on any phone. Last backup: <strong>${fmtDate(m.lastBackup)}</strong>.</p>
@@ -1878,6 +1901,10 @@ function renderBackup(el){
     </div>
   </div>`;
   $("#xl").onclick=exportExcel;
+  $("#sigFile").onchange=e=>{ const f=e.target.files[0]; if(f) sigFromFile(f); };
+  $("#sigDraw").onclick=sigDrawPad;
+  if($("#sigDel")) $("#sigDel").onclick=()=>confirmBox("Remove your saved signature?", "Remove", ()=>{ pushUndo("remove signature"); delete state.meta.signature; commit("sig",-1,"Removed signature"); render(); }, true);
+  $("#sigName").addEventListener("change", e=>{ if(state.meta.signature){ state.meta.signature.name=e.target.value.trim(); commit("sig",-1); } });
   $("#rf").onchange=e=>{ if(e.target.files[0]) restoreFile(e.target.files[0]); };
   if($("#rl")) $("#rl").onclick=async()=>{ cloud.ready=false; state.savedAt=0; await connectAccount(); toast("Reloaded from your account"); };
   if($("#so")) $("#so").onclick=()=>confirmBox("Sign out on this phone? Your list stays safe in your account.", "Sign out", signOut);
@@ -1886,6 +1913,60 @@ function renderBackup(el){
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
   $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists,apps:k.apps}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
 }
+/* ---------- BLO signature: clean a photo or drawing into a transparent PNG ---------- */
+function cleanSignature(srcCanvas){
+  const W=srcCanvas.width, H=srcCanvas.height, d=srcCanvas.getContext("2d",{willReadFrequently:true}).getImageData(0,0,W,H);
+  const px=d.data; let sum=0; for(let i=0;i<px.length;i+=4) sum+=px[i]+px[i+1]+px[i+2];
+  const avg=sum/(px.length/4)/3, thr=Math.min(150, avg*0.72);
+  let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const i=(y*W+x)*4, a=px[i+3], g=(px[i]+px[i+1]+px[i+2])/3;
+    if(a>40 && g<thr){ const ink=Math.min(255, Math.round((thr-g)/thr*255*1.6)); px[i]=18; px[i+1]=28; px[i+2]=92; px[i+3]=ink;
+      if(ink>60){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+    else px[i+3]=0; }
+  if(x1<0) return null;
+  const pad=6; x0=Math.max(0,x0-pad); y0=Math.max(0,y0-pad); x1=Math.min(W-1,x1+pad); y1=Math.min(H-1,y1+pad);
+  const t=document.createElement("canvas"); t.width=W; t.height=H; t.getContext("2d").putImageData(d,0,0);
+  const cw=x1-x0+1, ch=y1-y0+1, k=Math.min(1, 600/cw, 220/ch);
+  const out=document.createElement("canvas"); out.width=Math.round(cw*k); out.height=Math.round(ch*k);
+  out.getContext("2d").drawImage(t,x0,y0,cw,ch,0,0,out.width,out.height);
+  return out.toDataURL("image/png");
+}
+function saveSignature(png, how){
+  if(!png){ toast("No signature found. Use dark ink on white paper."); return; }
+  if(png.length>400000){ toast("Signature image is too large. Try a closer photo."); return; }
+  pushUndo("signature");
+  state.meta.signature={ png, name:($("#sigName")&&$("#sigName").value.trim())||state.meta.blo||"", at:Date.now(), how };
+  commit("sig",-1,"Saved signature ("+how+")"); closeSheet(); render(); toast("Signature saved");
+}
+async function sigFromFile(file){
+  try{
+    const bmp=await createImageBitmap(file); const k=Math.min(1, 1400/Math.max(bmp.width,bmp.height));
+    const c=document.createElement("canvas"); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k);
+    const cx=c.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,c.width,c.height); cx.drawImage(bmp,0,0,c.width,c.height);
+    const png=cleanSignature(c); if(!png){ toast("No signature found. Use dark ink on white paper."); return; }
+    $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet"><section class="win" style="--wc:var(--accent)"><div class="win-h"><span>Check your signature</span></div>
+      <div class="panel" style="padding:14px"><div class="sig-box big"><img src="${png}" alt="Cleaned signature"></div><p class="muted small" style="margin:0">Background removed and cropped. If it looks faint or has marks, take the photo again in good light.</p></div></section>
+      <div class="sheet-bar"><button class="btn" id="sgNo">Retake</button><button class="btn primary grow" id="sgOk">Use this signature</button></div></div></div>`;
+    $("#sgNo").onclick=closeSheet; $("#sgOk").onclick=()=>saveSignature(png,"photo");
+  }catch(e){ toast("Couldn't read that photo"); }
+}
+function sigDrawPad(){
+  $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet"><section class="win" style="--wc:var(--accent)"><div class="win-h"><span>✎ Sign here</span><span class="win-s">use your finger</span></div>
+    <div style="padding:12px"><canvas id="sigPad" class="sig-pad"></canvas></div></section>
+    <div class="sheet-bar"><button class="btn" id="spClr">Clear</button><button class="btn" id="spX">Cancel</button><button class="btn primary grow" id="spOk">Save signature</button></div></div></div>`;
+  const c=$("#sigPad"), r=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr);
+  const cx=c.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,c.width,c.height); cx.lineCap="round"; cx.lineJoin="round"; cx.strokeStyle="#111"; cx.lineWidth=3.2*dpr;
+  let drawing=false, drew=false, last=null;
+  const pt=e=>{ const b=c.getBoundingClientRect(); return [(e.clientX-b.left)*dpr,(e.clientY-b.top)*dpr]; };
+  c.addEventListener("pointerdown",e=>{ drawing=true; last=pt(e); c.setPointerCapture(e.pointerId); e.preventDefault(); });
+  c.addEventListener("pointermove",e=>{ if(!drawing) return; const p=pt(e); cx.beginPath(); cx.moveTo(last[0],last[1]); cx.lineTo(p[0],p[1]); cx.stroke(); last=p; drew=true; e.preventDefault(); });
+  ["pointerup","pointercancel","pointerleave"].forEach(t=>c.addEventListener(t,()=>{ drawing=false; }));
+  $("#spClr").onclick=()=>{ cx.fillStyle="#fff"; cx.fillRect(0,0,c.width,c.height); drew=false; };
+  $("#spX").onclick=closeSheet;
+  $("#spOk").onclick=()=>{ if(!drew){ toast("Sign in the box first"); return; } saveSignature(cleanSignature(c),"drawn"); };
+}
+
 function changePassword(){
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="cpf"><h2>Change password</h2>
     <label class="f">Current password<input id="op" type="password" autocomplete="current-password"></label>
