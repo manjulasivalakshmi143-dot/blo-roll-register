@@ -179,6 +179,8 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .win .checklist{border:0;border-radius:0}
 .win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
 .btn.grow{flex:1}
+.d4-links{display:flex;flex-direction:column;gap:2px;padding:10px 14px;background:color-mix(in srgb,var(--accent2) 8%,var(--surface));border-bottom:1px solid var(--line)}
+.d4-links a{color:var(--accent2);font-weight:650;text-decoration:underline;text-underline-offset:3px;padding:5px 0;font-size:.92rem}
 .guide-sec{border-top:1px solid var(--line)}
 .guide-sec>summary{padding:12px 14px;font-weight:650;cursor:pointer}
 .guide-sec[open]>summary{color:var(--warn)}
@@ -651,7 +653,7 @@ function renderGuides(el){
     <details class="guide-sec"><summary>Declaration form (Annexure IV)</summary><ul class="guide-list">
       <li>Needed with Form 6, and with Form 8 for shifting from outside the state.</li>
       <li>Applicant in the 2002 SIR roll: fill the left column. Only a parent / relative is: fill the right column. Neither: fill only the family table.</li>
-      <li>Copy 2002 state, district, constituency, part and serial exactly from the 2002 roll (search on voters.eci.gov.in).</li>
+      <li>Copy 2002 state, district, constituency, part and serial exactly from the 2002 roll. Use the search links at the top of the declaration window (CEO AP link is for Andhra Pradesh).</li>
       <li>If details are missing or don't match, the ERO sends a notice. Documents then needed: born before 01-07-1987: self; 01-07-1987 to 02-12-2004: self + one parent; after 02-12-2004: self + father + mother.</li>
       <li>BLO verifies the details from the 2002 roll and signs the undertaking.</li></ul></details>
     </section></div>`;
@@ -702,6 +704,7 @@ function docRule(a){
   return "Born after 02-12-2004: one document each for self, father and mother.";
 }
 const SIR_SEARCH_URL="https://voters.eci.gov.in/searchInSIR/S2UA4DPDF-JK4QWODSE";
+const CEO_AP_ROLL_URL="https://ceoaperolls.ap.gov.in/Application_Elector_Roll/Application_Roll";
 const IN_STATES=["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Andaman and Nicobar Islands","Chandigarh","Dadra and Nagar Haveli and Daman and Diu","Delhi","Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry"];
 // Andhra Pradesh 2002 roll: 13 districts and their assembly constituencies (1976 delimitation), as on the CEO AP portal
 const AP2002=[{"d": "1-Srikakulam", "acs": ["1-Ichapuram", "2-Sompeta", "3-Tekkali", "4-Harishchandrapuram", "5-Narasannapeta", "6-Patapatnam", "7-Kothuru", "13-Vunukuru", "14-Palakonda", "15-Amadalavalasa", "16-Srikakulam", "17-Etcherla"]}, {"d": "2-Vizianagaram", "acs": ["8-Naguru", "9-Parvathipuram", "10-Salur", "11-Bobbili", "12-Therlam", "18-Cheepurupalli", "19-Gajapathinagaram", "20-Vizianagaram", "21-Sathivada", "22-Bhogapuram", "27-Uttarapalli", "28-Srungavarapukota"]}, {"d": "3-Visakhapatnam", "acs": ["23-Bheemunipatnam", "24-Visakhapatnam-I", "25-Visakhapatnam-II", "26-Pendurthi", "29-Paderu", "30-Madugula", "31-Chodavaram", "32-Anakapalli", "33-Paravada", "34-Elamanchili", "35-Payakaraopeta", "36-Narsipatnam", "37-Chintapalli"]}, {"d": "4-East Godavari", "acs": ["38-Yellavaram", "39-Burugupudi", "40-Rajahmundry", "41-Kadiam", "42-Jaggampeta", "43-Peddapuram", "44-Prathipadu", "45-Tuni", "46-Pithapuram", "47-Sampara", "48-Kakinada", "49-Tallarevu", "50-Anaparthy", "51-Ramachandrapuram", "52-Alamuru", "53-Mummidivaram", "54-Allavaram", "55-Amalapuram", "56-Kothapeta", "57-Nagaram", "58-Razole"]}, {"d": "5-West Godavari", "acs": ["59-Narasapur", "60-Palakol", "61-Achanta", "62-Bhimavaram", "63-Undi", "64-Penugonda", "65-Tanuku", "66-Attili", "67-Tadepalligudem", "68-Unguturu", "69-Denduluru", "70-Eluru", "71-Gopalapuram", "72-Kovvur", "73-Polavaram", "74-Chintalapudi"]}, {"d": "6-Krishna", "acs": ["75-Jaggayyapeta", "76-Nandigama", "77-Vijayawada West", "78-Vijayawada East", "79-Kankipadu", "80-Mylavaram", "81-Tiruvuru", "82-Nuzvid", "83-Gannavaram", "84-Vuyyur", "85-Gudivada", "86-Mudinepalli", "87-Kaikalur", "88-Malleswaram", "89-Bandar (Machilipatnam)", "90-Nidumolu", "91-Avanigadda"]}, {"d": "7-Guntur", "acs": ["92-Kuchinapudi", "93-Repalle", "94-Vemuru", "95-Duggirala", "96-Tenali", "97-Ponnur", "98-Bapatla", "99-Prathipadu", "100-Guntur-I", "101-Guntur-II", "102-Mangalagiri", "103-Tadikonda", "104-Sattenapalle", "105-Peddakurapadu", "106-Gurazala", "107-Macherla", "108-Vinukonda", "109-Narasaraopet", "110-Chilakaluripet"]}, {"d": "8-Prakasam", "acs": ["111-Chirala", "112-Parchur", "113-Martur", "114-Addanki", "115-Ongole", "116-Santhanuthalapadu", "117-Kandukur", "118-Kanigiri", "119-Kondapi", "120-Cumbum", "121-Darsi", "122-Markapur", "123-Giddalur"]}, {"d": "9-Nellore", "acs": ["124-Udayagiri", "125-Kavali", "126-Allur", "127-Kovur", "128-Atmakur", "129-Rapur", "130-Nellore", "131-Sarvepalli", "132-Gudur", "133-Sullurpeta", "134-Venkatagiri"]}, {"d": "10-Chittoor", "acs": ["135-Sri Kalahasti", "136-Satyavedu", "137-Nagari", "138-Puttur", "139-Vepanjeri", "140-Chittoor", "141-Palamaner", "142-Kuppam", "143-Punganur", "144-Madanapalle", "145-Thamballapalle", "146-Vayalpad", "147-Pileru", "148-Chandragiri", "149-Tirupati"]}, {"d": "11-Kadapa", "acs": ["150-Badvel", "151-Mydukur", "152-Proddatur", "153-Jammalamadugu", "154-Kamalapuram", "155-Pulivendla", "156-Kodur", "157-Rajampet", "158-Rayachoti", "159-Lakkireddipalli", "160-Cuddapah"]}, {"d": "12-Anantapur", "acs": ["161-Kadiri", "162-Nallamada", "163-Gorantla", "164-Hindupur", "165-Madakasira", "166-Penukonda", "167-Kalyandurg", "168-Rayadurg", "169-Uravakonda", "170-Gooty", "171-Singanamala", "172-Anantapur", "173-Dharmavaram", "174-Tadpatri"]}, {"d": "13-Kurnool", "acs": ["175-Alur", "176-Adoni", "177-Yemmiganur", "178-Kodumur", "179-Kurnool", "180-Pattikonda", "181-Dhone", "182-Koilkuntla", "183-Allagadda", "184-Panyam", "185-Nandikotkur", "186-Nandyal", "187-Atmakur"]}];
@@ -737,10 +740,13 @@ function declWindow(a, locked){
     </div>
     <p class="muted small" style="margin:6px 12px 0">Copy these exactly from the 2002 roll. Constituency, part and serial numbers changed after 2008, so they won't match today's part${state.meta.part?" "+esc(state.meta.part):""}. For Andhra Pradesh, choose district and constituency from the lists; for other states, type them.</p></div>`;
   return `<section class="win" id="d4Win" style="--wc:var(--accent2)"><div class="win-h"><span>④ Declaration form</span><span class="win-s">Annexure IV · last SIR (2002)</span></div>
+    <div class="d4-links">
+      <a href="${SIR_SEARCH_URL}" target="_blank" rel="noopener">🔎 Search your name in the electoral roll (last SIR)</a>
+      <a href="${CEO_AP_ROLL_URL}" target="_blank" rel="noopener">📄 Andhra Pradesh 2002 electoral roll (CEO AP)</a>
+    </div>
     <div class="panel" style="padding:12px;gap:10px">
       <label class="row small"><input type="checkbox" id="d4Use" ${d.use?"checked":""} ${dis}> Add the declaration form to the PDF${a.type==="f8"?" (Form 8 shifting from outside the state)":""}</label>
       <div class="field-block" id="d4Body" ${d.use?"":"hidden"}>
-        <a class="btn" href="${SIR_SEARCH_URL}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">🔎 Search the 2002 SIR roll on ECI ↗</a>
         <span>Is the applicant's name in the last SIR (2002) roll?</span>
         ${seg("d4sir",[["self","Yes, applicant is"],["rel","No, parent / relative is"],["none","Not in the list"]],d.sir)}
       </div>
@@ -759,7 +765,7 @@ function declWindow(a, locked){
         ${kv("Spouse", inp("d4sName",d.f.sName))}
         ${kv("Spouse's EPIC", inp("d4sEpic",d.f.sEpic,'class="mono"'))}
       </div>
-      <p class="muted small" style="margin:8px 12px 12px">BLO name and phone are printed from Account → My part details. Check names in the 2002 roll at voters.eci.gov.in.</p>
+      <p class="muted small" style="margin:8px 12px 12px">BLO name and phone are printed from Account → My part details. Use the search links at the top of this window to find the 2002 details.</p>
     </div></section>`;
 }
 function bindDecl(sh){
@@ -848,10 +854,10 @@ function openApp(id, typeHint){
       <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
       <p class="muted small" style="margin:0">Names print in English capitals. Preview and check before submitting.</p>
     </div></section>`:""}
-    ${(a.type==="f6"||a.type==="f8")?declWindow(a, locked):""}
     <section class="win" style="--wc:var(--ok)"><div class="win-h"><span>③ Document checklist</span><span class="win-s" id="docCount">${d.done}/${d.need.length} required</span></div>
     <div class="checklist" id="docList">${T.docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
     <p class="muted small" style="margin:0;padding:8px 12px">Tick what you have checked. Details: Applications → Guidelines.</p></section>
+    ${(a.type==="f6"||a.type==="f8")?declWindow(a, locked):""}
     ${a.history.length?`<div class="sec-h"><span>History</span></div><div class="diff-list">${a.history.slice().reverse().map(h=>`<div><span class="mono muted small">${fmtDate(h.at)}</span><br>${esc(stageLabel(h.stage))}${h.note?" — "+esc(h.note):""}</div>`).join("")}</div>`:""}
     <div class="sheet-bar">
       ${isNew?`<button class="btn primary grow" id="apSave">Save application</button>`:
