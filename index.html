@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#5A2DA3">
 <meta name="description" content="Free register for Booth Level Officers: import the electoral roll, mark mobile, Aadhaar, ASD, slips and forms, compare each revision.">
 <title>BLO Roll Register</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans:wght@400;500;600&family=Noto+Sans+Telugu:wght@400;500;600&display=swap">
 <style>
@@ -328,11 +333,13 @@ function showAuth(mode){
       ${mode==="login"?`<button type="button" class="linkbtn" id="forgot">Forgot password?</button>`:""}
       ${mode==="reset"?`<button type="button" class="linkbtn" id="backLogin">Back to sign in</button>`:""}
     </form>
+    ${installCard()}
     <div class="card small"><strong>No internet or no account?</strong><span class="muted">You can also use the app on this phone only. Your data stays on this phone; download Excel backups often.</span><button class="btn" id="deviceMode">Use on this phone only</button></div>
   </div>`;
   v.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>showAuth(b.dataset.m));
   if($("#forgot")) $("#forgot").onclick=()=>showAuth("reset");
   if($("#backLogin")) $("#backLogin").onclick=()=>showAuth("login");
+  bindInstall();
   $("#deviceMode").onclick=()=>{ session={device:true}; lsSet("bloreg:session", session); startData(); };
   $("#authForm").onsubmit=async e=>{
     e.preventDefault();
@@ -422,9 +429,10 @@ function renderHome(el){
       </div>
       ${settingsCard()}
       <div class="card panel"><h3>Where your data is kept</h3>${whereText()}</div>
+      ${installCard()}
     </div>`;
     $("#goImport").onclick=()=>{tab="import";render();};
-    $("#demo").onclick=loadDemo; bindSettings(); return;
+    $("#demo").onclick=loadDemo; bindSettings(); bindInstall(); return;
   }
   const bk=daysAgo(m.lastBackup);
   el.innerHTML = `<div class="panel">
@@ -459,6 +467,7 @@ function renderHome(el){
       ${undoStack.length?`<button class="btn" id="undoBtn">Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:""}
     </div>
   </div>`;
+  el.insertAdjacentHTML("beforeend", installCard() ? `<div style="margin-top:14px">${installCard()}</div>` : ""); bindInstall();
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.shown=150; tab="voters"; render(); });
   $("#addV").onclick=()=>openVoter(null);
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
@@ -1277,6 +1286,22 @@ function loadDemo(){
   state.meta=Object.assign(state.meta,{demo:true,rev:1,revisions:[{n:1,t:Date.now(),source:"Example data",total:12,added:12,removed:0,changed:0,first:true}],partName:state.meta.partName||"Example part"});
   commit("demo",null,"Loaded example data"); render();
 }
+
+/* ================= install as phone app ================= */
+let installPrompt=null;
+window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); installPrompt=e; refreshInstall(); });
+window.addEventListener("appinstalled", ()=>{ installPrompt=null; toast("Installed. Open it from your home screen."); refreshInstall(); });
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone===true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+function installCard(){
+  if(isStandalone()) return "";
+  if(installPrompt) return `<div class="card panel" id="installCard"><h3>Install on this phone</h3><p class="muted small" style="margin:0">Add BLO Register to your home screen. It opens like a normal app, works without internet, and your data stays the same.</p><button class="btn primary" id="installBtn">Install app</button></div>`;
+  if(isIOS()) return `<div class="card panel" id="installCard"><h3>Install on this iPhone</h3><p class="muted small" style="margin:0">In Safari, tap the Share button, then <strong>Add to Home Screen</strong>.</p></div>`;
+  return `<div class="card panel" id="installCard"><h3>Install on this phone</h3><p class="muted small" style="margin:0">In Chrome, tap the ⋮ menu at the top right, then <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p></div>`;
+}
+function bindInstall(){ const b=$("#installBtn"); if(b) b.onclick=async()=>{ if(!installPrompt) return; installPrompt.prompt(); try{ await installPrompt.userChoice; }catch(e){} installPrompt=null; refreshInstall(); }; }
+function refreshInstall(){ const c=$("#installCard"); if(!c) return; const t=document.createElement("div"); t.innerHTML=installCard(); if(t.firstElementChild) c.replaceWith(t.firstElementChild); else c.remove(); bindInstall(); }
+if("serviceWorker" in navigator){ window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
 
 /* ================= start ================= */
 (function start(){
