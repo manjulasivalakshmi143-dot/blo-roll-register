@@ -18,7 +18,7 @@
 :root{
   --paper:#F5F4F8; --surface:#FFFFFF; --ink:#1E1A2B; --muted:#686279; --line:#E1DEE9;
   --accent:#5A2DA3; --accent-ink:#FFFFFF; --accent-soft:#EEE7FA;
-  --ok:#1D7349; --ok-soft:#E3F3EA; --warn:#9A5B00; --warn-soft:#FBF0DD; --bad:#B3261E; --bad-soft:#FBE6E4;
+  --ok:#1D7349; --ok-soft:#E3F3EA; --info:#1E5A9E; --band-ink:#FFFFFF; --warn:#9A5B00; --warn-soft:#FBF0DD; --bad:#B3261E; --bad-soft:#FBE6E4;
   --f-display:"Archivo","Noto Sans",system-ui,sans-serif;
   --f-body:"Noto Sans","Noto Sans Telugu",system-ui,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -27,11 +27,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --paper:#121019; --surface:#1B1824; --ink:#ECE9F3; --muted:#A49EB6; --line:#2F2A3C;
   --accent:#B896F3; --accent-ink:#1A1030; --accent-soft:#2A2141;
-  --ok:#62C893; --ok-soft:#173326; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}}
+  --ok:#62C893; --ok-soft:#173326; --info:#7DB4F0; --band-ink:#0F1420; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#121019; --surface:#1B1824; --ink:#ECE9F3; --muted:#A49EB6; --line:#2F2A3C;
   --accent:#B896F3; --accent-ink:#1A1030; --accent-soft:#2A2141;
-  --ok:#62C893; --ok-soft:#173326; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}
+  --ok:#62C893; --ok-soft:#173326; --info:#7DB4F0; --band-ink:#0F1420; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
@@ -171,6 +171,26 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .sheet-bar .grow{flex:1}
 .sheet-bar .nav{min-width:84px}
 .home-search{display:flex;gap:8px}
+/* named windows with a coloured band */
+.win{border:2px solid var(--wc);border-radius:14px;overflow:hidden;background:var(--surface);box-shadow:0 2px 12px color-mix(in srgb,var(--wc) 14%,transparent)}
+.win-h{background:var(--wc);color:var(--band-ink);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--f-display);font-weight:750;font-size:.95rem}
+.win-s{font-family:var(--f-body);font-weight:600;font-size:.75rem;opacity:.9;text-align:right}
+.win .kv{border:0;border-radius:0}
+.win .checklist{border:0;border-radius:0}
+.win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
+.btn.grow{flex:1}
+/* PDF preview */
+.pv-bg{position:fixed;inset:0;z-index:40;background:#2A2733;display:flex;flex-direction:column}
+.pv-band .btn{white-space:nowrap;color:var(--ink);background:var(--surface);border-color:transparent}
+.pv-band .btn.primary{color:var(--accent-ink);background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 88%,#fff),var(--accent))}
+.pv-band{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--info);color:var(--band-ink);
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px))}
+.pv-k{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;opacity:.85}
+.pv-n{font-family:var(--f-mono);font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-pages{flex:1;overflow:auto;padding:12px max(8px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;align-items:center;gap:14px}
+.pv-page{display:flex;flex-direction:column;gap:4px;align-items:center}
+.pv-page canvas{background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.35);border-radius:2px;max-width:100%}
+.pv-pn{color:#fff;font-size:.75rem;opacity:.85}
 .stepper{display:flex;gap:4px;margin-top:6px}
 .stepper i{flex:1;height:5px;border-radius:3px;background:var(--line)}
 .stepper i.done{background:var(--accent)}
@@ -603,7 +623,7 @@ function openApp(id, typeHint){
     <div class="sheet-top"><div class="sheet-h"><div style="min-width:0"><div class="eyebrow">${isNew?"New application":esc(T.label)+" · "+esc(stageLabel(a.stage))}</div><h2>${esc(isNew?"Add applicant":(a.name||"Applicant"))}</h2></div><button class="btn" id="apX" aria-label="Close">✕</button></div>
     ${isNew?"":`<div class="stepper big">${STAGES.slice(0,4).map((st,i)=>{ const si=STAGES.findIndex(x=>x[0]===a.stage); return `<span class="${a.stage==="rejected"&&i>1?"":i<=si?"done":""}"><i></i>${st[1]}</span>`; }).join("")}</div>`}</div>
     ${isNew?`<div class="field-block"><span>Type of application</span>${seg("atype",Object.entries(APP_TYPES).map(([k,t])=>[k,t.short]),a.type)}</div>`:""}
-    <div class="sec-h"><span>Applicant details</span></div>
+    <section class="win" style="--wc:var(--accent)"><div class="win-h"><span>① Applicant details</span><span class="win-s">${esc(T.short)}</span></div>
     <div class="kv">
       ${kv("Ref ID", inp("pRef",a.refNo||"",`class="mono" placeholder="Application reference ID" autocapitalize="characters" ${locked?"disabled":""}`))}
       ${kv("Name", inp("pName",a.name,locked?"disabled":""))}
@@ -615,9 +635,9 @@ function openApp(id, typeHint){
       ${kv("Phone", inp("pPh",a.phone,`inputmode="tel" maxlength="10" placeholder="10 digits" ${locked?"disabled":""}`))}
       ${a.type==="f6"?kv("Family member EPIC", inp("pFam",a.familyEpic,`class="mono" ${locked?"disabled":""}`)):kv("Voter's EPIC", inp("pVE",a.voterEpic||"",`class="mono" ${locked?"disabled":""}`))}
       ${kv("Note", `<textarea id="pNote" rows="2" ${locked?"disabled":""}>${esc(a.note)}</textarea>`)}
-    </div>
-    ${FORM_TEMPLATES[a.type]||isNew?`<details class="card" id="ordBox" ${isNew?"":"open"}><summary><h3 style="display:inline">For the order &amp; notice PDF</h3></summary>
-    <div class="kv" style="margin-top:10px">
+    </div></section>
+    ${FORM_TEMPLATES[a.type]?`<section class="win" id="ordBox" style="--wc:var(--info)"><div class="win-h"><span>② Details for the PDF</span><span class="win-s">${esc(FORM_TEMPLATES[a.type].title||"")}</span></div>
+    <div class="kv">
       ${kv("Application date", inp("oApp",(a.appDate||new Date(a.created).toISOString().slice(0,10)),'type="date"'))}
       ${kv("Area / locality", inp("oArea",a.area||state.meta.formDefaults&&state.meta.formDefaults.area||""))}
       ${kv("Town", inp("oTown",a.town||(state.meta.formDefaults&&state.meta.formDefaults.town)||state.meta.acName||""))}
@@ -630,11 +650,13 @@ function openApp(id, typeHint){
       ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
       ${a.type==="f6"?kv("21+ declaration", `<label class="row small"><input type="checkbox" id="oDecl" ${a.decl===false?"":(a.decl||appAge(a)==null||appAge(a)>=21)?"checked":""}> Add Annexure III page (first-time applicant aged 21 or more)</label>`):""}
     </div>
-    ${!isNew?`<button class="btn primary block" id="apPdf" style="margin-top:10px">⬇ Download filled PDF</button>`:""}
-    <p class="muted small" style="margin:6px 0 0">Names are printed in English capitals. Check the PDF before submitting.</p></details>`:""}
-    <div class="sec-h"><span>Document checklist</span><span class="pill ${d.done===d.need.length?"ok":"warn"}" id="docCount">${d.done}/${d.need.length} required</span></div>
+    <div class="win-f">
+      <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
+      <p class="muted small" style="margin:0">Names print in English capitals. Preview and check before submitting.</p>
+    </div></section>`:""}
+    <section class="win" style="--wc:var(--ok)"><div class="win-h"><span>③ Document checklist</span><span class="win-s" id="docCount">${d.done}/${d.need.length} required</span></div>
     <div class="checklist" id="docList">${(isNew?APP_TYPES.f6:T).docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
-    <p class="muted small" style="margin:0">Never write the Aadhaar number here. Tick only that you have seen the document.</p>
+    <p class="muted small" style="margin:0;padding:8px 12px">Never write the Aadhaar number here. Tick only that you have seen the document.</p></section>
     ${a.history.length?`<div class="sec-h"><span>History</span></div><div class="diff-list">${a.history.slice().reverse().map(h=>`<div><span class="mono muted small">${fmtDate(h.at)}</span><br>${esc(stageLabel(h.stage))}${h.note?" — "+esc(h.note):""}</div>`).join("")}</div>`:""}
     <div class="sheet-bar">
       ${isNew?`<button class="btn primary grow" id="apSave">Save application</button>`:
@@ -656,7 +678,7 @@ function openApp(id, typeHint){
     set("pName",v.nameEn||v.name); set("pRel",v.relNameEn||v.relName); set("pHouse",v.house); set("oSl",v.sl); set("oPart",state.meta.part);
     if($("#pRelT")&&v.relType) $("#pRelT").value=v.relType; if($("#pGen")&&!$("#pGen").value) $("#pGen").value=v.gender||"";
     toast("Filled from your roll: Sl "+v.sl); });
-  $("#docList").addEventListener("change", ()=>{ const t=APP_TYPES[a.type]||APP_TYPES.f6; const need=t.docs.filter(x=>x[2]); const done=need.filter(x=>{ const c=sh.querySelector(`[data-doc="${x[0]}"]`); return c&&c.checked; }).length; const dc=$("#docCount"); dc.textContent=`${done}/${need.length} required`; dc.className="pill "+(done===need.length?"ok":"warn"); });
+  $("#docList").addEventListener("change", ()=>{ const t=APP_TYPES[a.type]||APP_TYPES.f6; const need=t.docs.filter(x=>x[2]); const done=need.filter(x=>{ const c=sh.querySelector(`[data-doc="${x[0]}"]`); return c&&c.checked; }).length; const dc=$("#docCount"); dc.textContent=`${done}/${need.length} required${done===need.length?" ✓":""}`; });
   function collect(){
     const ph=$("#pPh").value.replace(/\D/g,"");
     if(ph && ph.length!==10){ toast("Phone number must be 10 digits"); return null; }
@@ -687,7 +709,10 @@ function openApp(id, typeHint){
   if($("#apRej")) $("#apRej").onclick=()=>{ const x0=collect(); if(!x0) return; askNote("Rejected", "Reason for rejection", "Mark rejected", n=>{ const x=advance("rejected",n,x0); pushUndo("reject application"); store(x,"Application rejected: "+x.name); closeSheet(); render(); }); };
   if($("#apReopen")) $("#apReopen").onclick=()=>{ a.stage="forwarded"; a.history.push({stage:"forwarded",at:Date.now(),note:"Reopened"}); pushUndo("reopen application"); store(a,"Reopened application: "+a.name); openApp(a.id); };
   if($("#apOpenV")) $("#apOpenV").onclick=()=>openVoter(a.addedVoterId);
-  if($("#apPdf")) $("#apPdf").onclick=()=>{ const x=locked?a:collect(); if(!x) return; if(!x.refNo){ toast("Enter the Ref ID first"); return; } if(!locked) store(x,"Updated application: "+x.name); downloadFormPdf(x); };
+  const pdfReady=()=>{ const x=locked?a:collect(); if(!x) return null; if(!x.refNo){ toast("Enter the Ref ID first"); return null; }
+    if(!locked){ if(!x.history.length) x.history.push({stage:"received",at:Date.now(),note:""}); store(x,(isNew&&!L.some(y=>y.id===x.id)?"New application: ":"Updated application: ")+x.name); } return x; };
+  if($("#apPdf")) $("#apPdf").onclick=()=>{ const x=pdfReady(); if(x) downloadFormPdf(x); };
+  if($("#apPrev")) $("#apPrev").onclick=()=>{ const x=pdfReady(); if(x) previewFormPdf(x); };
   if($("#apDel")) $("#apDel").onclick=()=>confirmBox(`Delete the application of ${a.name}?`, "Delete", ()=>{ pushUndo("delete application"); const i=L.findIndex(y=>y.id===a.id); if(i>=0) L.splice(i,1); commit("app",-1,"Deleted application: "+a.name); render(); }, true);
 }
 /* ---------- fill the office's PDF forms from an application ---------- */
@@ -703,27 +728,53 @@ function formValues(a){
     address:[a.house,latin(a.area),latin(town)].filter(Boolean).join(", "), serial:a.serialNo||"", epic:a.voterEpic||"" };
   return v;
 }
+async function buildFormPdf(a){
+  const T=FORM_TEMPLATES[a.type]; if(!T) throw new Error("No PDF form added for this type yet");
+  if(typeof PDFLib==="undefined") throw new Error("PDF maker didn't load. Check internet and reopen.");
+  const bytes=await (await fetch(T.file)).arrayBuffer();
+  const doc=await PDFLib.PDFDocument.load(bytes);
+  const font=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+  const ink=PDFLib.rgb(0.05,0.1,0.45), white=PDFLib.rgb(1,1,1);
+  const vals=formValues(a), pages=doc.getPages();
+  T.pages.forEach((fields,pi)=>{ const pg=pages[pi], H=pg.getHeight();
+    for(const f of fields){ const [k,x,y,cover,maxw]=f; const text=vals[k]; const yb=H-(y-1.2);
+      if(cover) pg.drawRectangle({x:x-1,y:yb-2.5,width:cover,height:11,color:white});
+      if(!text) continue;
+      let size=9.5; const mw=maxw||FORM_MAXW[k]; while(mw && font.widthOfTextAtSize(text,size)>mw && size>6) size-=0.25;
+      pg.drawText(text,{x,y:yb,size,font,color:ink}); } });
+  if(T.declPage!=null && a.decl===false && pages.length>T.declPage) doc.removePage(T.declPage);
+  const out=await doc.save();
+  const name=`${(APP_TYPES[a.type]||{short:"Form"}).short.replace(/\s+/g,"")}_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
+  return { bytes:out, name };
+}
 async function downloadFormPdf(a){
-  const T=FORM_TEMPLATES[a.type]; if(!T){ toast("No PDF form added for this type yet"); return; }
-  if(typeof PDFLib==="undefined"){ toast("PDF maker didn't load. Check internet and reopen."); return; }
+  try{ toast("Preparing PDF…"); const {bytes,name}=await buildFormPdf(a);
+    if(saveFile(name, new Blob([bytes],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); } }
+  catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
+}
+async function previewFormPdf(a){
+  let built; try{ toast("Preparing preview…"); built=await buildFormPdf(a); }catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); return; }
+  const ov=document.createElement("div"); ov.className="pv-bg"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-label","PDF preview");
+  ov.innerHTML=`<div class="pv-band"><div style="min-width:0"><div class="pv-k">Preview</div><div class="pv-n">${esc(built.name)}</div></div>
+    <div class="row" style="flex-wrap:nowrap"><button class="btn primary" id="pvDl">⬇ Download</button><button class="btn" id="pvX" aria-label="Close preview">✕</button></div></div>
+    <div class="pv-pages" id="pvPages"><div class="muted small" style="padding:20px;text-align:center">Loading pages…</div></div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.querySelector("#pvX").onclick=close;
+  ov.querySelector("#pvDl").onclick=()=>{ if(saveFile(built.name, new Blob([built.bytes],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); } };
   try{
-    toast("Preparing PDF…");
-    const bytes=await (await fetch(T.file)).arrayBuffer();
-    const doc=await PDFLib.PDFDocument.load(bytes);
-    const font=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
-    const ink=PDFLib.rgb(0.05,0.1,0.45), white=PDFLib.rgb(1,1,1);
-    const vals=formValues(a), pages=doc.getPages();
-    T.pages.forEach((fields,pi)=>{ const pg=pages[pi], H=pg.getHeight();
-      for(const f of fields){ const [k,x,y,cover,maxw]=f; const text=vals[k]; const yb=H-(y-1.2);
-        if(cover) pg.drawRectangle({x:x-1,y:yb-2.5,width:cover,height:11,color:white});
-        if(!text) continue;
-        let size=9.5; const mw=maxw||FORM_MAXW[k]; while(mw && font.widthOfTextAtSize(text,size)>mw && size>6) size-=0.25;
-        pg.drawText(text,{x,y:yb,size,font,color:ink}); } });
-    if(T.declPage!=null && a.decl===false && pages.length>T.declPage) doc.removePage(T.declPage);
-    const out=await doc.save();
-    const name=`${(APP_TYPES[a.type]||{short:"Form"}).short.replace(/\s+/g,"")}_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
-    if(saveFile(name, new Blob([out],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); }
-  }catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
+    if(typeof pdfjsLib==="undefined") throw new Error("viewer not loaded");
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const pdf=await pdfjsLib.getDocument({data:built.bytes.slice(0), isEvalSupported:false}).promise;
+    const box=ov.querySelector("#pvPages"); box.innerHTML="";
+    const w=Math.min(box.clientWidth-16, 900);
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i), vp0=page.getViewport({scale:1}), scale=w/vp0.width*(window.devicePixelRatio||1);
+      const vp=page.getViewport({scale}), c=document.createElement("canvas"); c.width=vp.width; c.height=vp.height; c.style.width=w+"px";
+      const wrap=document.createElement("div"); wrap.className="pv-page"; wrap.innerHTML=`<div class="pv-pn">Page ${i} of ${pdf.numPages}</div>`; wrap.appendChild(c); box.appendChild(wrap);
+      await page.render({canvasContext:c.getContext("2d"), viewport:vp}).promise;
+    }
+  }catch(e){ ov.querySelector("#pvPages").innerHTML=`<div class="note warn" style="margin:16px">Preview isn't available here (${esc(e.message||"error")}). Tap Download to open the PDF.</div>`; }
 }
 
 function askNote(title, label, ok, fn){
