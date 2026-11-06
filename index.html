@@ -146,8 +146,8 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .more{margin:12px auto}
 
 /* sheet */
-.sheet-bg{position:fixed;inset:0;background:rgba(10,8,18,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--surface);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;
+.sheet-bg{position:fixed;inset:0;height:var(--vhpx,100dvh);background:rgba(10,8,18,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:640px;max-height:92vh;max-height:calc(var(--vhpx,100dvh) - 12px);overflow:auto;border-radius:16px 16px 0 0;
   padding:16px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
 .sheet-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .seg{display:flex;gap:4px;flex-wrap:wrap}
@@ -252,7 +252,7 @@ body.view-desktop .menu{display:grid;grid-template-columns:repeat(auto-fill,minm
 .tick{display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:none;background:var(--surface);border:1.5px solid color-mix(in srgb,var(--accent2) 40%,var(--line));border-left:5px solid var(--accent2);border-radius:10px;padding:8px 12px;font:inherit;color:var(--ink);cursor:pointer;min-width:170px}
 .tick small{color:var(--muted);font-size:.75rem}
 /* dialogs: large text, large centred buttons at the bottom */
-.dlg-bg{position:fixed;inset:0;z-index:45;background:rgba(15,10,30,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+.dlg-bg{position:fixed;inset:0;height:var(--vhpx,100dvh);z-index:45;background:rgba(15,10,30,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .dlg{width:100%;max-width:460px;background:var(--surface);border-radius:18px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:14px;align-items:stretch;text-align:center;border-top:6px solid var(--accent);box-shadow:0 20px 50px rgba(0,0,0,.35);animation:dlgUp .16s ease-out}
 .dlg.warn{border-top-color:var(--bad)}
 @keyframes dlgUp{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
@@ -605,6 +605,12 @@ function fitPhone(){
   const phone = sw<=600 && matchMedia("(pointer:coarse)").matches;
   document.documentElement.style.zoom = (phone && iw>sw*1.3) ? String(Math.round(iw/sw*100)/100) : "";
 }
+function setVh(){
+  const z=parseFloat(document.documentElement.style.zoom)||1;
+  const h=(window.visualViewport?visualViewport.height:innerHeight)/z;
+  document.documentElement.style.setProperty("--vhpx", Math.round(h)+"px");
+}
+addEventListener("resize",setVh); if(window.visualViewport) visualViewport.addEventListener("resize",setVh);
 function applyView(){
   let v="auto"; try{ v=localStorage.getItem("bloreg:view")||"auto"; }catch(e){}
   // Mobile app view: fill the whole phone screen, even when the browser shows a desktop-size page
@@ -612,7 +618,7 @@ function applyView(){
   const z=parseFloat(document.documentElement.style.zoom)||1;
   if(v==="auto") v = innerWidth/z>=900 ? "desktop" : "app";
   document.body.classList.toggle("narrow", innerWidth/z<500);
-  document.body.classList.toggle("view-desktop", v==="desktop"); document.body.classList.toggle("view-app", v==="app");
+  setVh(); document.body.classList.toggle("view-desktop", v==="desktop"); document.body.classList.toggle("view-app", v==="app");
   const ic=$("#viewIc"), tx=$("#viewTx"); if(ic){ ic.textContent=v==="desktop"?"🖥":"📱"; tx.textContent=v==="desktop"?"Desktop view":"Mobile app view"; }
 }
 document.getElementById("viewTg").addEventListener("click",()=>{ const now=document.body.classList.contains("view-desktop")?"app":"desktop"; try{ localStorage.setItem("bloreg:view",now); }catch(e){} applyView(); toast(now==="desktop"?"Desktop view":"Mobile app view"); });
