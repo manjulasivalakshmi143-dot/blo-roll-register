@@ -214,6 +214,24 @@ body.narrow .win-s{font-size:.7rem}
 .fly-list{overflow-y:auto;overscroll-behavior:contain}
 .fly-sec{padding:7px 12px 5px;font-size:.72rem;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--fc,var(--accent));background:color-mix(in srgb,var(--fc,var(--accent)) 8%,var(--surface));border-bottom:1px solid var(--line)}
 body.narrow .fly button{font-size:.85rem;padding:10px 10px}
+
+/* compact home */
+.home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
+.hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
+.hstat .eyebrow{margin:0}
+.hstat .n{font-family:var(--f-display);font-size:1.9rem;font-weight:800;font-stretch:80%;line-height:1;font-variant-numeric:tabular-nums}
+.hs-sub{font-size:.68rem;line-height:1.3}
+.hstat .mode-sel{padding:8px 8px;font-size:.92rem}
+.tally-c{margin:0}
+.tally-c b{font-size:1.1rem}
+.pend-win{display:flex;flex-direction:column}
+.pend-list{overflow-y:auto;max-height:max(220px, calc(var(--vhpx,100dvh) - 360px));overscroll-behavior:contain;padding:6px 8px;display:flex;flex-direction:column;gap:6px}
+.pend-i{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--surface);border:1.5px solid color-mix(in srgb,var(--accent2) 30%,var(--line));border-left:5px solid var(--accent2);border-radius:10px;padding:9px 10px;font:inherit;color:var(--ink);cursor:pointer}
+.pend-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.pend-t b,.pend-t small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pend-t small{color:var(--muted);font-size:.75rem}
+.pend-empty{padding:12px;text-align:center}
+.pend-foot{display:flex;justify-content:center;padding:8px 8px 10px;border-top:1px solid var(--line)}
 /* BLO photo card at the top of the rail */
 nav.tabs{padding-top:calc(10px + env(safe-area-inset-top,0px))!important}
 .blo-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--line)}
@@ -748,26 +766,26 @@ function renderHome(el){
   const bk=daysAgo(m.lastBackup);
   el.innerHTML = `<div class="panel">
     <form class="home-search" id="hs" role="search"><input type="search" id="hsq" placeholder="Search voter: name, EPIC, house, mobile…" aria-label="Search voters"><button class="btn primary" type="submit">Search</button></form>
-    ${m.demo?`<div class="note warn">You are looking at <strong>example data</strong>. Clear it in Account → Start fresh before importing your real roll.</div>`:""}
+    ${m.demo?`<div class="note warn">You are looking at <strong>example data</strong>. Clear it in Account settings → Start fresh before importing your real roll.</div>`:""}
     ${bk>7?`<div class="note warn">Last Excel backup: ${bk===Infinity?"never":bk+" days ago"}. <button class="btn ghost" id="bkNow">Download backup</button></div>`:""}
-    <div class="card panel">
-      <div class="eyebrow">Electors in roll</div>
-      <div class="bigline"><span class="n">${s.n}</span><span class="muted small mono">M ${s.m} · F ${s.f} · TG ${s.t}</span></div>
+    <div class="home-top">
+      <div class="card hstat"><div class="eyebrow">Electors</div><div class="n">${s.n}</div><div class="muted mono hs-sub">M ${s.m} · F ${s.f} · TG ${s.t}</div></div>
+      <div class="card hstat"><div class="eyebrow">Work now</div>
+        <select id="modeSel" class="mode-sel" aria-label="Work going on now" title="${esc(MODE_HELP[mode()])}">${MODES.map(([k,l])=>`<option value="${k}" ${mode()===k?"selected":""}>${l}</option>`).join("")}</select></div>
     </div>
-    <div class="card panel">
-      <div class="row" style="justify-content:space-between"><h3>Work going on now</h3></div>
-      <select id="modeSel" class="mode-sel" aria-label="Work going on now">${MODES.map(([k,l])=>`<option value="${k}" ${mode()===k?"selected":""}>${l}</option>`).join("")}</select>
-      <p class="muted small" style="margin:0">${MODE_HELP[mode()]}</p>
-      ${mode()==="election"?`${meterRow("Voter slips given", s.slip, s.n-s.asd)}<div class="tally" style="grid-template-columns:repeat(2,1fr)"><div><b>${s.n-s.asd-s.slip}</b><small>Slips pending</small></div><div><b>${s.asd}</b><small>ASD</small></div></div>`:""}
-      ${mode()==="revision"?`<div class="tally"><div><b>${s.asd}</b><small>ASD</small></div><div><b>${s.forms}</b><small>Forms open</small></div><div><b>${s.newRev}</b><small>New this rev.</small></div><div><b>${s.manual}</b><small>Added by me</small></div></div>`:""}
-    </div>
-    ${appsPending()?`<section class="win" style="--wc:var(--accent2)"><div class="win-h"><span>⏳ Pending applications</span><span class="win-s">${appsPending()} · tap to open</span></div>
-      <div class="ticker" id="ticker"><div class="ticker-track">${(()=>{ const P=appsList().filter(a=>a.stage!=="approved"&&a.stage!=="rejected"); const one=P.map(a=>`<button class="tick" data-id="${esc(a.id)}"><b>${esc(a.name||"—")}</b><small>${esc((APP_TYPES[a.type]||{}).short||"")} · ${esc(stageLabel(a.stage))}${a.refNo?" · "+esc(a.refNo):""}</small></button>`).join(""); return one+(P.length>1?one:""); })()}</div></div></section>`:""}
+    ${mode()==="election"?`<div class="tally tally-c"><div><b>${s.slip}</b><small>Slips given</small></div><div><b>${s.n-s.asd-s.slip}</b><small>Slips pending</small></div><div><b>${s.asd}</b><small>ASD</small></div></div>`:""}
+    ${mode()==="revision"?`<div class="tally tally-c"><div><b>${s.asd}</b><small>ASD</small></div><div><b>${s.forms}</b><small>Forms open</small></div><div><b>${s.newRev}</b><small>New this rev.</small></div><div><b>${s.manual}</b><small>Added by me</small></div></div>`:""}
+    <section class="win pend-win" style="--wc:var(--accent2)"><div class="win-h"><span>⏳ Pending applications</span><span class="win-s">${appsPending()}</span></div>
+      <div class="pend-list" id="pendList">${(()=>{ const P=appsList().filter(a=>a.stage!=="approved"&&a.stage!=="rejected").sort((x,y)=>(y.created||0)-(x.created||0));
+        return P.length? P.map(a=>`<button class="pend-i" data-id="${esc(a.id)}"><span class="pend-t"><b>${esc(a.name||"—")}</b><small>${esc((APP_TYPES[a.type]||{}).short||"")} · ${esc(stageLabel(a.stage))}${a.refNo?" · "+esc(a.refNo):""}</small></span><span class="menu-ch">›</span></button>`).join("")
+          : `<div class="pend-empty muted small">No pending applications.</div>`; })()}</div>
+      <div class="pend-foot"><button class="btn primary" id="pendNew">＋ New application</button></div>
+    </section>
     ${undoStack.length?`<button class="btn" id="undoBtn" style="align-self:flex-start">↶ Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:""}
   </div>`;
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.group="none"; listOpts.q=""; listOpts.shown=150; window._vSec="f:"+b.dataset.f; tab="voters"; render(); });
-  if($("#ticker")){ const tk=$("#ticker"); tk.querySelectorAll(".tick").forEach(b=>b.onclick=()=>{ tab="apps"; render(); openApp(b.dataset.id); });
-    if(appsPending()<2) tk.classList.add("still"); }
+  el.querySelectorAll(".pend-i").forEach(b=>b.onclick=()=>{ tab="apps"; render(); openApp(b.dataset.id); });
+  $("#pendNew").onclick=()=>{ tab="apps"; window._appSec=null; render(); openApp(null); };
   $("#modeSel").onchange=e=>{ const v=e.target.value; if(mode()===v) return; state.meta.mode=v; commit("mode",-1,"Switched to "+MODES.find(x=>x[0]===v)[1]); render(); };
   $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.group="none"; listOpts.shown=150; window._vSec="f:all"; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
