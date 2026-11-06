@@ -1279,7 +1279,8 @@ async function buildFormPdf(a){
   if(T.declPage!=null && a.decl===false && pages.length>T.declPage) doc.removePage(T.declPage);
   await appendDecl(doc, a, font);
   const out=await doc.save();
-  const name=`${(APP_TYPES[a.type]||{short:"Form"}).short.replace(/\s+/g,"")}_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
+  const clean=x=>String(x||"").trim().replace(/[^\w\-]+/g,"_").replace(/_+/g,"_").replace(/^_|_$/g,"");
+  const name=[clean(a.name||vals.applicant)||"Applicant", clean(a.refNo||vals.refId)].filter(Boolean).join("_")+".pdf";
   return { bytes:out, name };
 }
 async function downloadFormPdf(a){
@@ -1287,10 +1288,11 @@ async function downloadFormPdf(a){
     if(saveFile(name, new Blob([bytes],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); } }
   catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
 }
-function printPages(ov){
+function printPages(ov, fname){
   const cs=[...ov.querySelectorAll(".pv-page canvas")]; if(!cs.length){ toast("Pages are still loading"); return; }
   let pa=document.getElementById("printArea"); if(!pa){ pa=document.createElement("div"); pa.id="printArea"; document.body.appendChild(pa); }
   pa.innerHTML=cs.map(c=>`<img src="${c.toDataURL("image/png")}" alt="">`).join("");
+  const t0=document.title; if(fname) document.title=fname.replace(/\.pdf$/,""); addEventListener("afterprint",()=>{ document.title=t0; },{once:true});
   setTimeout(()=>{ try{ window.print(); }catch(e){ toast("Printing isn't available here. Download the PDF and print it."); } }, 150);
 }
 async function previewFormPdf(a){
@@ -1302,7 +1304,7 @@ async function previewFormPdf(a){
   document.body.appendChild(ov);
   const close=()=>ov.remove();
   ov.querySelector("#pvEd").onclick=()=>{ close(); const w=document.getElementById("ordBox")||document.querySelector(".sheet"); if(w) w.scrollIntoView({block:"start",behavior:"smooth"}); };
-  ov.querySelector("#pvPr").onclick=()=>printPages(ov);
+  ov.querySelector("#pvPr").onclick=()=>printPages(ov, built.name);
   ov.querySelector("#pvDl").onclick=()=>{ if(saveFile(built.name, new Blob([built.bytes],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); } };
   try{
     if(typeof pdfjsLib==="undefined") throw new Error("viewer not loaded");
