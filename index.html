@@ -179,6 +179,9 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .win .checklist{border:0;border-radius:0}
 .win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
 .btn.grow{flex:1}
+.list-win{overflow:visible}
+.list-win .win-h{border-radius:12px 12px 0 0}
+.list-win .toolbar{padding:10px 10px 8px;background:var(--surface);top:calc(env(safe-area-inset-top,0px) + 62px)}
 .menu{display:flex;flex-direction:column;gap:8px}
 .menu-i{display:grid;grid-template-columns:42px 1fr 16px;gap:12px;align-items:center;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--mc);border-radius:12px;padding:12px;font:inherit;color:inherit;cursor:pointer;transition:box-shadow .15s ease}
 .menu-i:hover{box-shadow:0 2px 10px color-mix(in srgb,var(--mc) 20%,transparent)}
@@ -502,7 +505,7 @@ function render(){
   ({home:renderHome, voters:renderVoters, apps:renderApps, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
-document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } if(b.dataset.tab==="lists") window._openList=null; if(b.dataset.tab==="backup") window._accSec=null; if(b.dataset.tab==="import") window._impSec=null; tab=b.dataset.tab; render(); window.scrollTo(0,0); });
+document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } if(b.dataset.tab==="lists") window._openList=null; if(b.dataset.tab==="backup") window._accSec=null; if(b.dataset.tab==="voters") window._vSec=null; if(b.dataset.tab==="import") window._impSec=null; tab=b.dataset.tab; render(); window.scrollTo(0,0); });
 
 function meterRow(label, n, total, cls){
   const p= total? Math.round(n*100/total):0;
@@ -553,10 +556,10 @@ function renderHome(el){
     </div>
     ${undoStack.length?`<button class="btn" id="undoBtn" style="align-self:flex-start">↶ Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:""}
   </div>`;
-  el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.shown=150; tab="voters"; render(); });
+  el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.group="none"; listOpts.q=""; listOpts.shown=150; window._vSec="f:"+b.dataset.f; tab="voters"; render(); });
   if($("#goApps")) $("#goApps").onclick=()=>{ tab="apps"; render(); };
   el.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ if(mode()===b.dataset.mode) return; state.meta.mode=b.dataset.mode; commit("mode",-1,"Switched to "+MODES.find(x=>x[0]===b.dataset.mode)[1]); render(); });
-  $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.shown=150; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
+  $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.group="none"; listOpts.shown=150; window._vSec="f:all"; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
   if($("#bkNow")) $("#bkNow").onclick=exportExcel;
   bindSettings();
@@ -1123,19 +1126,44 @@ function groupOf(v){
   }
 }
 function matchQ(v,q){ if(!q) return true; return [v.name,v.nameEn,v.relName,v.relNameEn,v.house,v.epic,v.sl,v.st.ph,v.sec,v.st.note].some(x=>String(x||"").toLowerCase().includes(q)); }
+const VIEW_BY=[["house","By house number","🏠"],["family","By family","👪"],["section","By section / street","🛣"],["gender","By gender","⚥"],["age","By age band","🎂"]];
+const FILTER_ICON={all:"👥",nomob:"📱",noaad:"🆔",asd:"✕",noslip:"🧾",forms:"📝",new:"✨",changed:"✎",manual:"➕",corrected:"✎",nophoto:"📷",photoadded:"🖼",young:"🌱",senior:"🧓",removed:"🗑"};
 function renderVoters(el){
   if(!state.voters.length){ el.innerHTML=`<div class="card empty"><h2>No voters yet</h2><p class="muted small">Import your roll first.</p><button class="btn primary" id="gi">Import roll</button></div>`; $("#gi").onclick=()=>{tab="import";render();}; return; }
   const counts = Object.fromEntries(FILTERS.map(([k,,f])=>[k,state.voters.filter(f).length]));
-  el.innerHTML = `<div class="toolbar">
-      <input class="search" id="q" type="search" placeholder="Search name, EPIC, house, mobile…" value="${esc(listOpts.q)}" aria-label="Search voters">
-      <div class="chips" id="chips">${FILTERS.filter(f=>!f[3]||f[3].includes(mode())||listOpts.filter===f[0]).map(([k,l])=>`<button class="chip" data-k="${k}" aria-pressed="${listOpts.filter===k}">${l}<span class="c">${counts[k]}</span></button>`).join("")}</div>
+  if(!window._vSec){
+    const lists=FILTERS.filter(f=>f[0]!=="all"&&f[0]!=="removed"&&(!f[3]||f[3].includes(mode())));
+    el.innerHTML=`<div class="panel">
+      <h2>Electoral roll</h2>
+      <form class="home-search" id="vs" role="search"><input type="search" id="vsq" placeholder="Search name, EPIC, house, mobile…" aria-label="Search voters"><button class="btn primary" type="submit">Search</button></form>
+      ${menuList([{ id:"f:all", icon:"👥", color:"var(--accent)", title:"All voters", sub:`${counts.all} in roll · serial order` }])}
+      <div class="eyebrow">Lists for ${esc(MODES.find(x=>x[0]===mode())[1])} work</div>
+      ${menuList(lists.map(f=>({ id:"f:"+f[0], icon:FILTER_ICON[f[0]]||"•", color:counts[f[0]]?"var(--warn)":"var(--ok)", title:f[1], sub:`${counts[f[0]]} voter${counts[f[0]]===1?"":"s"}` })))}
+      <div class="eyebrow">View the roll</div>
+      ${menuList(VIEW_BY.map(([k,l,ic])=>({ id:"g:"+k, icon:ic, color:"var(--info)", title:l, sub:"Grouped list" })))}
+      ${menuList([{ id:"f:removed", icon:"🗑", color:"var(--bad)", title:"Removed / deleted", sub:`${counts.removed} voter${counts.removed===1?"":"s"} · can be restored` }])}
+    </div>`;
+    el.querySelectorAll(".menu-i").forEach(b=>b.onclick=()=>{ const [t,k]=b.dataset.sec.split(":");
+      if(t==="f"){ listOpts.filter=k; listOpts.group="none"; } else { listOpts.filter="all"; listOpts.group=k; listOpts.sort=k==="house"?"house":"sl"; }
+      listOpts.q=""; listOpts.shown=150; window._vSec=b.dataset.sec; render(); window.scrollTo(0,0); });
+    $("#vs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#vsq").value; listOpts.filter="all"; listOpts.group="none"; listOpts.shown=150; window._vSec="f:all"; render(); };
+    return;
+  }
+  const fdef=FILTERS.find(x=>x[0]===listOpts.filter)||FILTERS[0];
+  const vb=VIEW_BY.find(x=>x[0]===listOpts.group);
+  const title=(listOpts.filter!=="all"?(FILTER_ICON[fdef[0]]||"")+" "+fdef[1]:vb?vb[2]+" "+vb[1].replace("By ","Roll by "):"👥 All voters");
+  const color=listOpts.filter==="removed"?"var(--bad)":listOpts.filter!=="all"?"var(--warn)":vb?"var(--info)":"var(--accent)";
+  el.innerHTML = `<div class="panel" style="gap:10px"><button class="btn ghost" id="secBack" style="align-self:flex-start">‹ Electoral roll</button>
+    <section class="win list-win" style="--wc:${color}"><div class="win-h"><span>${esc(title)}</span><span class="win-s">${counts[fdef[0]]} voters</span></div>
+    <div class="toolbar">
+      <input class="search" id="q" type="search" placeholder="Search in this list…" value="${esc(listOpts.q)}" aria-label="Search voters">
       <div class="selrow">
         <select id="grp" aria-label="Group by">${[["none","No grouping"],["house","Group: house no."],["family","Group: family"],["section","Group: section"],["gender","Group: gender"],["age","Group: age band"]].map(([v,l])=>`<option value="${v}" ${listOpts.group===v?"selected":""}>${l}</option>`).join("")}</select>
         <select id="srt" aria-label="Sort by">${[["sl","Sort: serial no."],["name","Sort: name"],["house","Sort: house no."],["age","Sort: age ↑"],["ageD","Sort: age ↓"]].map(([v,l])=>`<option value="${v}" ${listOpts.sort===v?"selected":""}>${l}</option>`).join("")}</select>
       </div>
-    </div><div id="list"></div>`;
+    </div><div id="list" style="padding:0 10px 10px"></div></section></div>`;
+  $("#secBack").onclick=()=>{ window._vSec=null; listOpts.q=""; render(); };
   $("#q").addEventListener("input", e=>{ listOpts.q=e.target.value; listOpts.shown=150; drawList(); });
-  $("#chips").onclick=e=>{ const b=e.target.closest(".chip"); if(!b) return; listOpts.filter=b.dataset.k; listOpts.shown=150; el.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c===b)); drawList(); };
   $("#grp").onchange=e=>{ listOpts.group=e.target.value; drawList(); };
   $("#srt").onchange=e=>{ listOpts.sort=e.target.value; drawList(); };
   drawList();
