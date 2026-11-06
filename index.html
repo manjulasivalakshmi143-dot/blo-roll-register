@@ -74,6 +74,7 @@ nav.tabs button{position:relative;background:none;border:0;padding:10px 2px;bord
 nav.tabs button svg{width:24px;height:24px;flex:none}
 nav.tabs button:hover{background:var(--paper);color:var(--ink)}
 nav.tabs button[aria-current="true"]{color:var(--accent);background:var(--accent-soft)}
+nav.tabs .add-tab{color:var(--accent);border:1.5px dashed color-mix(in srgb,var(--accent) 45%,var(--line))}
 nav.tabs button[aria-current="true"]::before{content:"";position:absolute;left:-6px;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--accent)}
 @media (min-width:900px){
   nav.tabs{padding-inline:12px}
@@ -231,6 +232,7 @@ td,th{background:var(--surface)}
   <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Register</b></div>
   <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button data-tab="voters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.5 5.4"/></svg>Voters</button>
+  <button data-action="add" class="add-tab" aria-label="Add a new voter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Add voter</button>
   <button data-tab="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>Import</button>
   <button data-tab="revisions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M4 12h7M4 17h10"/><path d="M17 10l3 3-3 3M20 13h-6"/></svg>Revisions</button>
   <button data-tab="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg>Account</button>
@@ -447,7 +449,7 @@ function render(){
   ({home:renderHome, voters:renderVoters, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
-document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; tab=b.dataset.tab; render(); window.scrollTo(0,0); });
+document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } tab=b.dataset.tab; render(); window.scrollTo(0,0); });
 
 function meterRow(label, n, total, cls){
   const p= total? Math.round(n*100/total):0;
@@ -483,8 +485,6 @@ function renderHome(el){
     <div class="card panel">
       <div class="eyebrow">Electors in roll</div>
       <div class="bigline"><span class="n">${s.n}</span><span class="muted small mono">M ${s.m} · F ${s.f} · TG ${s.t}</span></div>
-      ${meterRow("Mobile number updated", s.mob, s.n, "ok")}
-      ${meterRow("Aadhaar linked", s.aad, s.n, "ok")}
       ${meterRow("Voter slip given", s.slip, s.n)}
       ${s.photoKnown?meterRow("Photo in roll", s.n-s.nophoto, s.n, "ok"):""}
     </div>
@@ -501,7 +501,6 @@ function renderHome(el){
         <button class="btn" data-f="asd">ASD list</button><button class="btn" data-f="noslip">Slip pending</button>
         <button class="btn" data-f="forms">Open forms</button><button class="btn" data-f="nophoto">Photo missing</button><button class="btn" data-f="young">Age 18–19</button><button class="btn" data-f="senior">Age 80+</button>
       </div>
-      <button class="btn primary" id="addV">+ Add a voter (Form 6 / new)</button>
     </div>
     ${settingsCard()}
     <div class="card panel"><h3>Recent work</h3>
@@ -511,7 +510,6 @@ function renderHome(el){
   </div>`;
   el.insertAdjacentHTML("beforeend", installCard() ? `<div style="margin-top:14px">${installCard()}</div>` : ""); bindInstall();
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.shown=150; tab="voters"; render(); });
-  $("#addV").onclick=()=>openVoter(null);
   $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.shown=150; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
   if($("#bkNow")) $("#bkNow").onclick=exportExcel;
