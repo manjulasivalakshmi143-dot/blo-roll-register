@@ -212,7 +212,23 @@ body.narrow .win-h{font-size:.88rem;padding:9px 12px}
 body.narrow .win-s{font-size:.7rem}
 .fly{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .fly-list{overflow-y:auto;overscroll-behavior:contain}
+.fly-sec{padding:7px 12px 5px;font-size:.72rem;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--fc,var(--accent));background:color-mix(in srgb,var(--fc,var(--accent)) 8%,var(--surface));border-bottom:1px solid var(--line)}
 body.narrow .fly button{font-size:.85rem;padding:10px 10px}
+/* BLO photo card at the top of the rail */
+nav.tabs{padding-top:calc(10px + env(safe-area-inset-top,0px))!important}
+.blo-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.blo-ph{width:52px;height:52px;border-radius:50%;border:2.5px solid var(--accent);background:var(--accent-soft) center/cover no-repeat;display:grid;place-items:center;font-size:1.5rem;color:var(--accent);cursor:pointer;padding:0;flex:none;box-shadow:0 2px 8px rgba(60,30,120,.18)}
+.blo-tx{background:none;border:0;padding:0;font:inherit;text-align:center;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;align-items:center;max-width:100%;min-width:0}
+.blo-tx b{font-size:.66rem;line-height:1.15;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.blo-tx small{font-size:.6rem;color:var(--muted);white-space:nowrap}
+body.view-desktop .blo-card{flex-direction:row;align-items:center;gap:10px;padding:4px 4px 12px}
+body.view-desktop .blo-tx{align-items:flex-start;text-align:left}
+body.view-desktop .blo-tx b{font-size:.9rem} body.view-desktop .blo-tx small{font-size:.75rem}
+nav.tabs button .lb{display:block;text-align:center}
+body.view-app nav.tabs button{white-space:normal!important;line-height:1.1}
+body.view-app nav.tabs button .lb{font-size:.58rem}
+body.view-desktop nav.tabs button .lb{text-align:left} body.view-desktop nav.tabs button .lb br{display:none}
+
 
 /* app / desktop view */
 body.view-app{--rail:80px}
@@ -387,14 +403,12 @@ td,th{background:var(--surface)}
 
 <nav class="tabs" id="tabs" aria-label="Sections" hidden>
   <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Register</b></div>
+  <div class="blo-card" id="bloCard"><div role="button" tabindex="0" class="blo-ph" id="bloPh" title="Add or change your photo"></div><div role="button" tabindex="0" class="blo-tx" id="bloTx"><b id="bloNm"></b><small id="bloPt"></small></div><input type="file" id="bloPhIn" accept="image/*" hidden></div>
   <button data-tab="home" style="--tc:#5A2DA3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
-  <button data-tab="voters" style="--tc:#1E5A9E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.5 5.4"/></svg>Voters</button>
   <button data-tab="apps" style="--tc:#8A2D6B" class="add-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Applications</button>
-  <button data-tab="lists" style="--tc:#0F7C7C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="13" height="16" rx="2"/><path d="M19 7v13a1 1 0 0 1-1 1H8"/><path d="M7 9h5M7 13h5"/></svg>Lists</button>
-  <button data-tab="asd" style="--tc:#B4570A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/><path d="M15.5 15.5l3 3M18.5 15.5l-3 3"/></svg>ASD list</button>
-  <button data-tab="import" style="--tc:#1D7349"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>Import</button>
-  <button data-tab="revisions" style="--tc:#3F51B5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M4 12h7M4 17h10"/><path d="M17 10l3 3-3 3M20 13h-6"/></svg>Revisions</button>
-  <button data-tab="backup" style="--tc:#5B5670"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg>Account</button>
+  <button data-tab="lists" data-label="Rolls & voters" style="--tc:#0F7C7C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="13" height="16" rx="2"/><path d="M19 7v13a1 1 0 0 1-1 1H8"/><path d="M7 9h5M7 13h5"/></svg><span class="lb">Rolls &amp; <br>voters</span></button>
+  <button data-tab="import" data-label="Import electoral roll" style="--tc:#1D7349"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg><span class="lb">Import <br>electoral roll</span></button>
+  <button data-tab="backup" data-label="Account settings" style="--tc:#5B5670"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg><span class="lb">Account <br>settings</span></button>
 </nav>
 <div id="sheetRoot"></div>
 
@@ -618,16 +632,20 @@ function subItems(t){
     ["✅","Approved",()=>{ window._appSec=null; window._appF="approved"; }],
     ["📋","All applications",()=>{ window._appSec=null; window._appF="all"; }],
     ["📘","Guidelines",()=>{ window._appSec="guide"; }]];
-  if(t==="import") return [["📄","Choose a roll file",()=>{ window._impSec="file"; }],["🌐","Download from ECI website",()=>{ window._impSec="eci"; }],["ℹ","How each file is read",()=>{ window._impSec="how"; }]];
-  if(t==="backup") return [["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["✍","My signature",()=>{ window._accSec="sign"; }],["⬇","Excel backup",()=>{ window._accSec="backup"; }],["↺","Restore from a backup",()=>{ window._accSec="restore"; }],["🕘","Recent work & undo",()=>{ window._accSec="recent"; }],["⚠","Start fresh",()=>{ window._accSec="fresh"; }]];
-  if(t==="lists") return [["★","My working roll",()=>{ tab="voters"; window._vSec="f:all"; listOpts.filter="all"; listOpts.group="none"; }],["✕","ASD list",()=>{ tab="asd"; }],...listsMeta().map(m=>["📄",m.name,()=>{ window._openList=m.id; window._listQ=""; window._listShown=150; }])];
+  if(t==="import") return [["📄","Choose a roll file",()=>{ window._impSec="file"; }],["🌐","Download from ECI website",()=>{ window._impSec="eci"; }],["⇄","Compare revisions (what changed)",()=>{ tab="revisions"; }],["ℹ","How each file is read",()=>{ window._impSec="how"; }]];
+  if(t==="backup") return [["🖼","My photo & name",()=>{ window._accSec="part"; setTimeout(()=>{ const i=$("#bloPhIn"); if(i) i.click(); },150); }],["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["✍","My signature",()=>{ window._accSec="sign"; }],["⬇","Excel backup",()=>{ window._accSec="backup"; }],["↺","Restore from a backup",()=>{ window._accSec="restore"; }],["🕘","Recent work & undo",()=>{ window._accSec="recent"; }],["⚠","Start fresh",()=>{ window._accSec="fresh"; }]];
+  if(t==="lists"){
+    const V=state.voters.length? [["","Voters in my working roll",null], ...subItems("voters").map(it=>[it[0],it[1],()=>{ tab="voters"; window._vSec=null; it[2](); }])]
+                              : [["★","My working roll",()=>{ tab="voters"; window._vSec=null; }]];
+    return [...V, ["","Rolls & lists",null], ["✕",`ASD list${(state.meta.asdList||[]).length?" · "+state.meta.asdList.length:""}`,()=>{ tab="asd"; }], ...listsMeta().map(m=>["📄",m.name,()=>{ window._openList=m.id; window._listQ=""; window._listShown=150; }]), ["🗂","All rolls & lists",()=>{ window._openList=null; }]];
+  }
   return null;
 }
 function closeFly(){ const f=document.getElementById("fly"); if(f) f.remove(); document.querySelectorAll("#tabs button.fly-open").forEach(b=>b.classList.remove("fly-open")); }
 function openFly(btn, t){
   closeFly(); const items=subItems(t); if(!items||!items.length) return;
   const f=document.createElement("div"); f.id="fly"; f.className="fly"; f.style.setProperty("--fc", getComputedStyle(btn).getPropertyValue("--tc"));
-  f.innerHTML=`<div class="fly-h">${esc(btn.textContent.trim())}</div><div class="fly-list">`+items.map((it,i)=>`<button type="button" data-i="${i}"><span>${it[0]}</span><span>${esc(it[1])}</span></button>`).join("")+`</div>`;
+  f.innerHTML=`<div class="fly-h">${esc(btn.dataset.label||btn.textContent.trim())}</div><div class="fly-list">`+items.map((it,i)=>it[2]?`<button type="button" data-i="${i}"><span>${it[0]}</span><span>${esc(it[1])}</span></button>`:`<div class="fly-sec">${esc(it[1])}</div>`).join("")+`</div>`;
   document.body.appendChild(f); btn.classList.add("fly-open");
   /* measure how the page zoom scales things, so the list always sits inside the screen */
   f.style.top="0px"; f.style.left="0px"; const k=(f.getBoundingClientRect().width/f.offsetWidth)||1;
@@ -642,6 +660,25 @@ function openFly(btn, t){
 document.addEventListener("pointerdown",e=>{ if(!e.target.closest("#fly") && !e.target.closest("#tabs")) closeFly(); });
 addEventListener("scroll",e=>{ if(!(e.target&&e.target.closest&&e.target.closest("#fly"))) closeFly(); },{passive:true});
 
+/* ================= BLO photo card ================= */
+function bloCard(){
+  const m=state.meta, ph=$("#bloPh"); if(!ph) return;
+  ph.style.backgroundImage=m.bloPhoto?`url("${m.bloPhoto}")`:""; ph.textContent=m.bloPhoto?"":"👤";
+  $("#bloNm").textContent=m.blo||"Add your name"; $("#bloPt").textContent=m.part?"Part "+m.part:"Set your part";
+}
+function setBloPhoto(file){
+  if(!file) return; const img=new Image(), url=URL.createObjectURL(file);
+  img.onload=()=>{ const n=200, c=document.createElement("canvas"); c.width=c.height=n; const g=c.getContext("2d");
+    const sz=Math.min(img.width,img.height), sx=(img.width-sz)/2, sy=(img.height-sz)/2.6; g.drawImage(img,sx,Math.max(0,sy),sz,sz,0,0,n,n);
+    URL.revokeObjectURL(url); state.meta.bloPhoto=c.toDataURL("image/jpeg",.8); commit("photo",-1,"Updated BLO photo"); render(); toast("Photo saved"); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); toast("Could not read that picture"); }; img.src=url;
+}
+$("#bloPh").onclick=()=>{ if(!state.meta.bloPhoto){ $("#bloPhIn").click(); return; }
+  confirmBox("Change your photo?", "Choose new photo", ()=>$("#bloPhIn").click()); };
+document.addEventListener("click",e=>{ if(e.target&&e.target.id==="bloPhDel"){ delete state.meta.bloPhoto; commit("photo",-1,"Removed BLO photo"); render(); } });
+$("#bloPhIn").onchange=e=>{ setBloPhoto(e.target.files[0]); e.target.value=""; };
+$("#bloTx").onclick=()=>{ closeFly(); tab="backup"; window._accSec="part"; render(); window.scrollTo(0,0); };
+
 /* ================= stats ================= */
 function live(){ return state.voters.filter(v=>!v.gone && !v.st.del); }
 function stats(){
@@ -653,7 +690,7 @@ function stats(){
     newRev:c(v=>v.newIn && v.newIn===state.meta.rev && state.meta.rev>1), manual:c(v=>v.src==="manual") };
 }
 function updateHeader(){
-  const m=state.meta, bits=[];
+  const m=state.meta, bits=[]; bloCard();
   if(m.ac||m.acName) bits.push("AC "+[m.ac,m.acName].filter(Boolean).join("-"));
   if(m.part) bits.push("Part "+m.part+(m.partName?" · "+m.partName:""));
   $("#partLine").textContent = bits.length? bits.join(" · ") : (state.voters.length? state.voters.length+" voters" : "No roll loaded yet");
@@ -662,14 +699,14 @@ function vIndex(id){ return state.voters.findIndex(v=>v.id===id); }
 
 /* ================= render ================= */
 function render(){
-  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===tab));
+  const railTab=({voters:"lists",asd:"lists",revisions:"import"})[tab]||tab; document.querySelectorAll("#tabs button[data-tab]").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===railTab));
   ({home:renderHome, voters:renderVoters, apps:renderApps, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
 function resetSec(t){ if(t==="lists") window._openList=null; if(t==="backup") window._accSec=null; if(t==="voters") window._vSec=null; if(t==="apps") window._appSec=null; if(t==="import") window._impSec=null; }
 /* Rail buttons with a sub-list only open the floating list; the page behind stays on the last work.
    Buttons without a sub-list (Home, ASD list, Revisions) open their page directly. */
-document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; }
+document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button[data-tab],button[data-action]"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; }
   const t=b.dataset.tab, wasOpen=b.classList.contains("fly-open");
   closeFly(); if(wasOpen) return;
   const items=subItems(t);
@@ -689,7 +726,7 @@ function renderHome(el){
         <p class="muted small" style="max-width:420px;margin:0">Load the electoral roll for your part once. Then mark mobile, Aadhaar linking, ASD, slips and forms in the field. Everything saves by itself.</p>
         <div class="steps">
           <div><b>1</b><span>Fill your part details below.</span></div>
-          <div><b>2</b><span>Go to <strong>Import</strong> and choose the roll PDF, Excel sheet or photos of the pages.</span></div>
+          <div><b>2</b><span>Go to <strong>Import electoral roll</strong> and choose the roll PDF, Excel sheet or photos of the pages.</span></div>
           <div><b>3</b><span>Check the rows, tap <strong>Save as my roll</strong>.</span></div>
           <div><b>4</b><span>When the next SSR / SIR roll comes, import it again. The app shows new, deleted and corrected voters.</span></div>
         </div>
@@ -1263,7 +1300,7 @@ function renderLists(el){
   const L=listsMeta(), A=state.meta.asdList, asdN=(A&&A.rows&&A.rows.length)||0;
   const card=(attrs,title,sub,pills)=>`<button class="v list-card" ${attrs}><span class="sl">${pills.icon}</span><span style="min-width:0"><div class="nm">${title}</div><div class="meta">${sub}</div><div class="pills">${pills.html}</div></span></button>`;
   el.innerHTML=`<div class="panel">
-    <h2>Lists</h2>
+    <h2>Rolls &amp; voters</h2>
     <p class="muted small" style="margin:0">Every roll you import is kept here by name, so the 2025 roll, 2026 draft, final roll and your ASD list are always one tap away.</p>
     <div class="voters">
       ${card('data-go="voters"', "My working roll", `${live().length} voters · revision ${state.meta.rev||0}`, {icon:"★", html:`<span class="pill acc">Current</span>`})}
@@ -1279,7 +1316,7 @@ function renderLists(el){
   el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ tab=b.dataset.go; render(); });
   el.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{ window._openList=b.dataset.id; window._listQ=""; window._listShown=150; render(); });
   $("#newList").onclick=()=>{ tab="import"; render(); };
-  if($("#snapList")) $("#snapList").onclick=()=>{ const g=guessList(""); saveList({ id:"L"+Date.now().toString(36)+uid8().slice(0,4), name:`My roll (${new Date().toLocaleDateString("en-IN")})`, type:"Other", year:g.year, source:"Snapshot of my working roll" }, cleanListRows(live())); render(); toast("Saved in Lists"); };
+  if($("#snapList")) $("#snapList").onclick=()=>{ const g=guessList(""); saveList({ id:"L"+Date.now().toString(36)+uid8().slice(0,4), name:`My roll (${new Date().toLocaleDateString("en-IN")})`, type:"Other", year:g.year, source:"Snapshot of my working roll" }, cleanListRows(live())); render(); toast("Saved in Rolls & voters"); };
 }
 async function renderOneList(el, id){
   const m=listsMeta().find(x=>x.id===id); if(!m){ window._openList=null; return renderLists(el); }
@@ -1745,14 +1782,15 @@ function renderImport(el){
   const isec=window._impSec;
   if(!isec){
     el.innerHTML=`<div class="panel">
-      <h2>${state.voters.length?"Import a new roll (revision)":"Import your roll"}</h2>
+      <h2>Import electoral roll</h2>
       ${state.voters.length?`<div class="note small">You have ${state.voters.length} voters. A new import is compared with them first, and your marks carry over by EPIC. Nothing changes until you confirm.</div>`:""}
       ${menuList([
         { id:"file", icon:"📄", color:"var(--accent)", title:"Choose a roll file", sub:"PDF, Excel/CSV or photos from this phone" },
         { id:"eci", icon:"🌐", color:"var(--info)", title:"Download from ECI website", sub:"voters.eci.gov.in · your part pre-selected" },
+        { id:"rev", icon:"⇄", color:"#3F51B5", title:"Compare revisions", sub:"What changed between imported rolls" },
         { id:"how", icon:"ℹ", color:"var(--ok)", title:"How each file is read", sub:"Excel, text PDF and scanned PDF" },
       ])}</div>`;
-    el.querySelectorAll(".menu-i").forEach(b=>b.onclick=()=>{ window._impSec=b.dataset.sec; render(); window.scrollTo(0,0); });
+    el.querySelectorAll(".menu-i").forEach(b=>b.onclick=()=>{ if(b.dataset.sec==="rev"){ tab="revisions"; render(); window.scrollTo(0,0); return; } window._impSec=b.dataset.sec; render(); window.scrollTo(0,0); });
     return;
   }
   if(isec==="eci"){ el.innerHTML=`<div class="panel"><button class="btn ghost" id="secBack" style="align-self:flex-start">‹ Import</button>${eciWindow()}<button class="btn" id="toFile">Downloaded? Choose the file ›</button></div>`;
@@ -2168,7 +2206,7 @@ function drawReview(el){
   if($("#retryP")) $("#retryP").onclick=async()=>{ const job=S.job, keep=rows; job.pages=job.pages.filter(p=>S.failed.includes(p.n)); staging=null; await startJob(job); staging.rows=keep.concat(staging.rows).sort((a,b)=>(+a.sl||0)-(+b.sl||0)); render(); };
   $("#discard").onclick=()=>{ staging=null; render(); };
   ["lName","lType","lYear"].forEach(id=>{ const x=$("#"+id); if(x) x.addEventListener("change",()=>{ S.listName=$("#lName").value.trim(); S.listType=$("#lType").value; S.listYear=$("#lYear").value.trim(); }); });
-  if($("#onlyList")) $("#onlyList").onclick=()=>{ keepStagingAsList(); staging=null; tab="lists"; render(); toast("Saved in Lists"); };
+  if($("#onlyList")) $("#onlyList").onclick=()=>{ keepStagingAsList(); staging=null; tab="lists"; render(); toast("Saved in Rolls & voters"); };
   if($("#saveRoll")) $("#saveRoll").onclick=firstSave;
   if($("#toCompare")) $("#toCompare").onclick=()=>{ tab="revisions"; render(); };
 }
@@ -2230,8 +2268,9 @@ function renderRevisions(el){
     return;
   }
   el.innerHTML=`<div class="panel">
-    <h2>Roll revisions</h2>
-    <p class="muted small" style="margin:0">Each time a new draft or final roll is published for SSR or SIR, import it from the Import tab. It's compared here before anything changes.</p>
+    <button class="btn ghost" id="revBack" style="align-self:flex-start" onclick="tab='import';window._impSec=null;render();scrollTo(0,0)">‹ Import electoral roll</button>
+    <h2>Compare revisions</h2>
+    <p class="muted small" style="margin:0">Each time a new draft or final roll is published for SSR or SIR, import it from Import electoral roll. It's compared here before anything changes.</p>
     <button class="btn primary" id="goImp">Import new roll</button>
     ${lastPrevRoll?`<button class="btn" id="undoRev">Undo the last revision</button>`:""}
     <div class="card panel"><h3>History</h3>
@@ -2353,7 +2392,7 @@ function renderBackup(el){
     { id:"fresh", icon:"⚠", color:"var(--bad)", title:"Start fresh", sub:"Clear all voters" },
   ];
   if(!sec){
-    el.innerHTML=`<div class="panel"><h2>Account</h2>${whereText()}${menuList(items)}</div>`;
+    el.innerHTML=`<div class="panel"><h2>Account settings</h2>${whereText()}${menuList(items)}</div>`;
     el.querySelectorAll(".menu-i").forEach(b=>b.onclick=()=>{ window._accSec=b.dataset.sec; render(); window.scrollTo(0,0); });
     return;
   }
@@ -2369,6 +2408,7 @@ function renderBackup(el){
         <label class="f">Part number<input id="sPart" value="${esc(m.part)}" inputmode="numeric"></label>
         <label class="f">Part / polling station name<input id="sPartN" value="${esc(m.partName)}"></label>
       </div>
+      <div class="row" style="align-items:center;gap:12px;margin-bottom:10px"><div class="blo-ph" style="width:64px;height:64px;${m.bloPhoto?`background-image:url('${m.bloPhoto}')`:""}">${m.bloPhoto?"":"👤"}</div><button type="button" class="btn" onclick="document.getElementById('bloPhIn').click()">📷 ${m.bloPhoto?"Change":"Add"} my photo</button>${m.bloPhoto?`<button type="button" class="btn" id="bloPhDel">Remove photo</button>`:""}</div>
       <div class="grid2"><label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label><label class="f">BLO phone<input id="sBloPh" value="${esc(m.bloPhone||"")}" inputmode="tel" maxlength="10"></label></div>
       <button class="btn primary" id="sSave">Save details</button>`;
   if(sec==="sign") body=`<div class="sig-box">${sig?`<img src="${m.signature.png}" alt="My signature">`:`<span class="muted small">No signature yet</span>`}</div>
@@ -2387,7 +2427,7 @@ function renderBackup(el){
   if(sec==="install") body=installCard().replace(/^<div class="card panel" id="installCard">|<\/div>$/g,"");
   if(sec==="fresh") body=`<p class="muted small" style="margin:0">Clears every voter (for example, to remove example data). Your ASD list, saved lists and applications stay. Download a backup first if this is real data.</p>
       <button class="btn danger" id="wipe" ${state.voters.length?"":"disabled"}>Clear all voters</button>`;
-  el.innerHTML=`<div class="panel">${secWin(it.icon+" "+it.title, it.color, body, "Account")}</div>`;
+  el.innerHTML=`<div class="panel">${secWin(it.icon+" "+it.title, it.color, body, "Account settings")}</div>`;
   $("#secBack").onclick=()=>{ window._accSec=null; render(); };
   bindSettings(); bindInstall();
   if($("#xl")) $("#xl").onclick=exportExcel;
@@ -2401,7 +2441,7 @@ function renderBackup(el){
   if($("#chp")) $("#chp").onclick=changePassword;
   if($("#toAuth")) $("#toAuth").onclick=()=>{ lsSet("bloreg:pending-upload", state); session=null; lsSet("bloreg:session",null); showAuth("signup"); };
   if($("#undoBtn")) $("#undoBtn").onclick=()=>{ undo(); };
-  if($("#wipe")) $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists,apps:k.apps,signature:k.signature,eci:k.eci,formDefaults:k.formDefaults}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
+  if($("#wipe")) $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists,apps:k.apps,signature:k.signature,bloPhoto:k.bloPhoto,eci:k.eci,formDefaults:k.formDefaults}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
 }
 /* ---------- BLO signature: clean a photo or drawing into a transparent PNG ---------- */
 function cleanSignature(srcCanvas){
