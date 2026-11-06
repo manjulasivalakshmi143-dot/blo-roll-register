@@ -179,6 +179,7 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .win .checklist{border:0;border-radius:0}
 .win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
 .btn.grow{flex:1}
+.mode-sel{width:100%;font:inherit;font-weight:650;font-size:1rem;padding:11px 12px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--ink)}
 .d4-links{display:flex;flex-direction:column;gap:2px;padding:10px 14px;background:color-mix(in srgb,var(--accent2) 8%,var(--surface));border-bottom:1px solid var(--line)}
 .d4-links a{color:var(--accent2);font-weight:650;text-decoration:underline;text-underline-offset:3px;padding:5px 0;font-size:.92rem}
 .guide-sec{border-top:1px solid var(--line)}
@@ -568,19 +569,17 @@ function renderHome(el){
     </div>
     <div class="card panel">
       <div class="row" style="justify-content:space-between"><h3>Work going on now</h3></div>
-      <div class="seg" id="modeSeg">${MODES.map(([k,l])=>`<button type="button" data-mode="${k}" aria-pressed="${mode()===k}">${l}</button>`).join("")}</div>
+      <select id="modeSel" class="mode-sel" aria-label="Work going on now">${MODES.map(([k,l])=>`<option value="${k}" ${mode()===k?"selected":""}>${l}</option>`).join("")}</select>
       <p class="muted small" style="margin:0">${MODE_HELP[mode()]}</p>
       ${mode()==="election"?`${meterRow("Voter slips given", s.slip, s.n-s.asd)}<div class="tally" style="grid-template-columns:repeat(2,1fr)"><div><b>${s.n-s.asd-s.slip}</b><small>Slips pending</small></div><div><b>${s.asd}</b><small>ASD</small></div></div>`:""}
       ${mode()==="revision"?`<div class="tally"><div><b>${s.asd}</b><small>ASD</small></div><div><b>${s.forms}</b><small>Forms open</small></div><div><b>${s.newRev}</b><small>New this rev.</small></div><div><b>${s.manual}</b><small>Added by me</small></div></div>`:""}
     </div>
     ${appsPending()?`<button class="card panel app-banner" id="goApps" style="text-align:left"><div class="row" style="justify-content:space-between;width:100%"><strong>${appsPending()} application${appsPending()>1?"s":""} pending</strong><span class="pill acc">Open ›</span></div><span class="muted small">${appsList().filter(a=>a.stage==="received").length} to check · ${appsList().filter(a=>a.stage==="verified").length} to send · ${appsList().filter(a=>a.stage==="forwarded").length} with ERO</span></button>`:""}
-    <button class="card panel app-banner" id="goLists" style="text-align:left"><div class="row" style="justify-content:space-between;width:100%"><strong>Open voter lists</strong><span class="pill acc">Voters ›</span></div><span class="muted small">Pending lists for ${esc(MODES.find(x=>x[0]===mode())[1])} work are in the Voters tab.</span></button>
     ${undoStack.length?`<button class="btn" id="undoBtn" style="align-self:flex-start">↶ Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:""}
   </div>`;
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.group="none"; listOpts.q=""; listOpts.shown=150; window._vSec="f:"+b.dataset.f; tab="voters"; render(); });
   if($("#goApps")) $("#goApps").onclick=()=>{ tab="apps"; render(); };
-  if($("#goLists")) $("#goLists").onclick=()=>{ window._vSec=null; tab="voters"; render(); };
-  el.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ if(mode()===b.dataset.mode) return; state.meta.mode=b.dataset.mode; commit("mode",-1,"Switched to "+MODES.find(x=>x[0]===b.dataset.mode)[1]); render(); });
+  $("#modeSel").onchange=e=>{ const v=e.target.value; if(mode()===v) return; state.meta.mode=v; commit("mode",-1,"Switched to "+MODES.find(x=>x[0]===v)[1]); render(); };
   $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.group="none"; listOpts.shown=150; window._vSec="f:all"; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
   if($("#bkNow")) $("#bkNow").onclick=exportExcel;
