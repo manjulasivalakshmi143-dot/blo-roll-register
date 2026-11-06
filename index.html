@@ -171,6 +171,20 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .sheet-bar .grow{flex:1}
 .sheet-bar .nav{min-width:84px}
 .home-search{display:flex;gap:8px}
+.stepper{display:flex;gap:4px;margin-top:6px}
+.stepper i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.stepper i.done{background:var(--accent)}
+.stepper.big{gap:6px}
+.stepper.big span{flex:1;display:flex;flex-direction:column;gap:4px;font-size:.66rem;font-weight:650;color:var(--muted);text-align:center;line-height:1.15}
+.stepper.big span.done{color:var(--accent)}
+.stepper.big span i{height:6px;flex:none}
+.stepper.big span.done i{background:var(--accent)}
+.checklist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.chk{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:start;padding:10px 12px;border-bottom:1px solid var(--line);font-size:.9rem;cursor:pointer}
+.chk:last-child{border-bottom:0}
+.chk input{width:20px;height:20px;accent-color:var(--accent);margin:1px 0 0}
+.chk:has(input:checked){background:var(--ok-soft)}
+.app-banner{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));background:var(--accent-soft);width:100%;font:inherit;color:inherit;cursor:pointer}
 .home-search input{flex:1;min-width:0;font-size:1rem;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
 .field-block{display:flex;flex-direction:column;gap:6px}
 .field-block>span{font-size:.8rem;color:var(--muted);font-weight:500}
@@ -232,7 +246,7 @@ td,th{background:var(--surface)}
   <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Register</b></div>
   <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button data-tab="voters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.5 5.4"/></svg>Voters</button>
-  <button data-action="add" class="add-tab" aria-label="Add a new voter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Add voter</button>
+  <button data-tab="apps" class="add-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Applications</button>
   <button data-tab="lists"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="13" height="16" rx="2"/><path d="M19 7v13a1 1 0 0 1-1 1H8"/><path d="M7 9h5M7 13h5"/></svg>Lists</button>
   <button data-tab="asd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/><path d="M15.5 15.5l3 3M18.5 15.5l-3 3"/></svg>ASD list</button>
   <button data-tab="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>Import</button>
@@ -448,7 +462,7 @@ function vIndex(id){ return state.voters.findIndex(v=>v.id===id); }
 /* ================= render ================= */
 function render(){
   document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===tab));
-  ({home:renderHome, voters:renderVoters, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
+  ({home:renderHome, voters:renderVoters, apps:renderApps, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
 document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } if(b.dataset.tab==="lists") window._openList=null; tab=b.dataset.tab; render(); window.scrollTo(0,0); });
@@ -495,6 +509,7 @@ function renderHome(el){
       ${mode()==="election"?`${meterRow("Voter slips given", s.slip, s.n-s.asd)}<div class="tally" style="grid-template-columns:repeat(2,1fr)"><div><b>${s.n-s.asd-s.slip}</b><small>Slips pending</small></div><div><b>${s.asd}</b><small>ASD</small></div></div>`:""}
       ${mode()==="revision"?`<div class="tally"><div><b>${s.asd}</b><small>ASD</small></div><div><b>${s.forms}</b><small>Forms open</small></div><div><b>${s.newRev}</b><small>New this rev.</small></div><div><b>${s.manual}</b><small>Added by me</small></div></div>`:""}
     </div>
+    ${appsPending()?`<button class="card panel app-banner" id="goApps" style="text-align:left"><div class="row" style="justify-content:space-between;width:100%"><strong>${appsPending()} application${appsPending()>1?"s":""} pending</strong><span class="pill acc">Open ›</span></div><span class="muted small">${appsList().filter(a=>a.stage==="received").length} to check · ${appsList().filter(a=>a.stage==="verified").length} to send · ${appsList().filter(a=>a.stage==="forwarded").length} with ERO</span></button>`:""}
     <div class="card panel">
       <h3>Quick lists</h3>
       <div class="row">${FILTERS.filter(f=>f[3] && f[3].includes(mode())).map(f=>`<button class="btn" data-f="${f[0]}">${f[1]}</button>`).join("")}</div>
@@ -507,6 +522,7 @@ function renderHome(el){
   </div>`;
   el.insertAdjacentHTML("beforeend", installCard() ? `<div style="margin-top:14px">${installCard()}</div>` : ""); bindInstall();
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.shown=150; tab="voters"; render(); });
+  if($("#goApps")) $("#goApps").onclick=()=>{ tab="apps"; render(); };
   el.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ if(mode()===b.dataset.mode) return; state.meta.mode=b.dataset.mode; commit("mode",-1,"Switched to "+MODES.find(x=>x[0]===b.dataset.mode)[1]); render(); });
   $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.shown=150; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
@@ -536,6 +552,139 @@ function bindSettings(){
   b.onclick=()=>{ pushUndo("part details");
     Object.assign(state.meta,{ac:$("#sAc").value.trim(),acName:$("#sAcN").value.trim(),part:$("#sPart").value.trim(),partName:$("#sPartN").value.trim(),blo:$("#sBlo").value.trim()});
     commit("details", -1, "Updated part details"); toast("Details saved"); render(); };
+}
+
+/* ---------- applications: received → documents checked → sent to ERO → approved / rejected ---------- */
+const APP_TYPES={
+  f6:{label:"New voter (Form 6)", short:"Form 6", docs:[["form","Form 6 filled and signed",1],["photo","Passport-size photo",1],["age","Age proof (birth certificate / SSC memo / Aadhaar / PAN / passport)",1],["addr","Address proof (Aadhaar / ration card / bank passbook / power, water or gas bill / rent deed)",1],["family","Family member's EPIC copy",0],["field","Field verification done by BLO",1]]},
+  f8:{label:"Correction / shifting (Form 8)", short:"Form 8", docs:[["form","Form 8 filled and signed",1],["epic","Existing EPIC copy",1],["proof","Proof for the correction or new address",1],["photo","New photo (only if photo change)",0],["field","Field verification done by BLO",1]]},
+  f7:{label:"Deletion (Form 7)", short:"Form 7", docs:[["form","Form 7 filled and signed",1],["proof","Death certificate / proof of shifting",1],["field","Field verification done by BLO",1]]},
+};
+const STAGES=[["received","Received"],["verified","Documents checked"],["forwarded","Sent to ERO"],["approved","Approved"],["rejected","Rejected"]];
+const stageLabel=k=>(STAGES.find(x=>x[0]===k)||["",k])[1];
+function appsList(){ if(!Array.isArray(state.meta.apps)) state.meta.apps=[]; return state.meta.apps; }
+function appDocs(a){ const T=APP_TYPES[a.type]||APP_TYPES.f6; const need=T.docs.filter(d=>d[2]); return { all:T.docs, need, done:need.filter(d=>a.docs&&a.docs[d[0]]).length }; }
+function appsPending(){ return appsList().filter(a=>a.stage!=="approved"&&a.stage!=="rejected").length; }
+function renderApps(el){
+  const L=appsList(), f=window._appF||"open", q=(window._appQ||"").toLowerCase();
+  const cnt=k=>L.filter(a=>a.stage===k).length;
+  const shown=L.filter(a=> (f==="open"?(a.stage!=="approved"&&a.stage!=="rejected"):f==="all"?true:a.stage===f) && (!q || [a.name,a.relName,a.phone,a.house,a.refNo,a.epic].some(x=>String(x||"").toLowerCase().includes(q))) ).sort((a,b)=>(b.updated||0)-(a.updated||0));
+  el.innerHTML=`<div class="panel">
+    <div class="row" style="justify-content:space-between"><h2>Applications</h2><button class="btn primary" id="appNew">+ New application</button></div>
+    <p class="muted small" style="margin:0">Add the applicant's details, tick the documents you checked, send it to the ERO, then mark it approved. Approved new voters are added to your roll.</p>
+    <div class="tally" style="grid-template-columns:repeat(4,1fr)">
+      <div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded")}</b><small>Sent to ERO</small></div><div><b>${cnt("approved")}</b><small>Approved</small></div>
+    </div>
+    <input class="search" id="appQ" type="search" placeholder="Search name, father name, phone, ref no…" value="${esc(window._appQ||"")}">
+    <div class="chips" id="appChips">${[["open","Pending"],...STAGES,["all","All"]].map(([k,l])=>`<button class="chip" data-k="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
+    <div class="voters">${shown.map(a=>{ const d=appDocs(a), T=APP_TYPES[a.type]||APP_TYPES.f6, si=STAGES.findIndex(x=>x[0]===a.stage);
+      return `<button class="v" data-id="${esc(a.id)}"><span class="sl">${esc(T.short.replace("Form ","F"))}</span><span style="min-width:0">
+        <div class="nm">${esc(a.name||"(no name)")}</div>
+        <div class="meta">${a.relName?esc(a.relType||"Father")+": "+esc(a.relName)+" · ":""}${a.house?"H "+esc(a.house)+" · ":""}${a.phone?`<span class="mono">${esc(a.phone)}</span> · `:""}${fmtDate(a.created).split(" ").slice(0,3).join(" ")}</div>
+        <div class="stepper" aria-label="Stage">${STAGES.slice(0,4).map((st,i)=>`<i class="${a.stage==="rejected"?(i<=1?"done":""):i<=si?"done":""}"></i>`).join("")}</div>
+        <div class="pills"><span class="pill ${a.stage==="approved"?"ok":a.stage==="rejected"?"bad":"acc"}">${esc(stageLabel(a.stage))}</span><span class="pill ${d.done===d.need.length?"ok":"warn"}">Docs ${d.done}/${d.need.length}</span>${a.refNo?`<span class="pill">Ref ${esc(a.refNo)}</span>`:""}</div>
+      </span></button>`; }).join("") || `<div class="note small">${L.length?"No applications in this list.":"No applications yet. Tap “New application” when someone applies."}</div>`}</div>
+  </div>`;
+  $("#appNew").onclick=()=>openApp(null);
+  $("#appChips").onclick=e=>{ const b=e.target.closest(".chip"); if(!b) return; window._appF=b.dataset.k; renderApps(el); };
+  $("#appQ").addEventListener("input", e=>{ window._appQ=e.target.value; const pos=e.target.selectionStart; renderApps(el); const n=$("#appQ"); n.focus(); n.setSelectionRange(pos,pos); });
+  el.querySelectorAll(".v[data-id]").forEach(b=>b.onclick=()=>openApp(b.dataset.id));
+}
+function openApp(id, typeHint){
+  const L=appsList(), isNew=!id;
+  const a = isNew ? { id:"A"+Date.now().toString(36)+uid8().slice(0,3), type:typeHint||"f6", name:"", relType:"Father", relName:"", gender:"", age:"", dob:"", house:"", phone:"", familyEpic:"", epic:"", note:"", docs:{}, stage:"received", history:[], created:Date.now() } : JSON.parse(JSON.stringify(L.find(x=>x.id===id)));
+  const T=APP_TYPES[a.type]||APP_TYPES.f6, d=appDocs(a);
+  const kv=(k,v)=>`<div class="k">${k}</div><div class="val">${v}</div>`;
+  const inp=(id,val,extra="")=>`<input id="${id}" value="${esc(val)}" ${extra}>`;
+  const locked=a.stage==="approved"||a.stage==="rejected";
+  $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Application">
+    <div class="sheet-top"><div class="sheet-h"><div style="min-width:0"><div class="eyebrow">${isNew?"New application":esc(T.label)+" · "+esc(stageLabel(a.stage))}</div><h2>${esc(isNew?"Add applicant":(a.name||"Applicant"))}</h2></div><button class="btn" id="apX" aria-label="Close">✕</button></div>
+    ${isNew?"":`<div class="stepper big">${STAGES.slice(0,4).map((st,i)=>{ const si=STAGES.findIndex(x=>x[0]===a.stage); return `<span class="${a.stage==="rejected"&&i>1?"":i<=si?"done":""}"><i></i>${st[1]}</span>`; }).join("")}</div>`}</div>
+    ${isNew?`<div class="field-block"><span>Type of application</span>${seg("atype",Object.entries(APP_TYPES).map(([k,t])=>[k,t.short]),a.type)}</div>`:""}
+    <div class="sec-h"><span>Applicant details</span></div>
+    <div class="kv">
+      ${kv("Name", inp("pName",a.name,locked?"disabled":""))}
+      ${kv("Relation", `<select id="pRelT" ${locked?"disabled":""}>${["Father","Husband","Mother","Other"].map(r=>`<option ${a.relType===r?"selected":""}>${r}</option>`).join("")}</select>`)}
+      ${kv("Father / husband name", inp("pRel",a.relName,locked?"disabled":""))}
+      ${kv("Gender", `<select id="pGen" ${locked?"disabled":""}>${[["","—"],["M","Male"],["F","Female"],["T","Third gender"]].map(([x,y])=>`<option value="${x}" ${a.gender===x?"selected":""}>${y}</option>`).join("")}</select>`)}
+      ${kv("Date of birth", inp("pDob",a.dob,`type="date" ${locked?"disabled":""}`))}
+      ${kv("House no.", inp("pHouse",a.house,locked?"disabled":""))}
+      ${kv("Phone", inp("pPh",a.phone,`inputmode="tel" maxlength="10" placeholder="10 digits" ${locked?"disabled":""}`))}
+      ${a.type==="f6"?kv("Family member EPIC", inp("pFam",a.familyEpic,`class="mono" ${locked?"disabled":""}`)):kv("Voter's EPIC", inp("pVE",a.voterEpic||"",`class="mono" ${locked?"disabled":""}`))}
+      ${kv("Application ref. no.", inp("pRef",a.refNo||"",`class="mono" placeholder="from Voter Helpline / ERONET" ${locked?"disabled":""}`))}
+      ${kv("Note", `<textarea id="pNote" rows="2" ${locked?"disabled":""}>${esc(a.note)}</textarea>`)}
+    </div>
+    <div class="sec-h"><span>Document checklist</span><span class="pill ${d.done===d.need.length?"ok":"warn"}" id="docCount">${d.done}/${d.need.length} required</span></div>
+    <div class="checklist" id="docList">${(isNew?APP_TYPES.f6:T).docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
+    <p class="muted small" style="margin:0">Never write the Aadhaar number here. Tick only that you have seen the document.</p>
+    ${a.history.length?`<div class="sec-h"><span>History</span></div><div class="diff-list">${a.history.slice().reverse().map(h=>`<div><span class="mono muted small">${fmtDate(h.at)}</span><br>${esc(stageLabel(h.stage))}${h.note?" — "+esc(h.note):""}</div>`).join("")}</div>`:""}
+    <div class="sheet-bar">
+      ${isNew?`<button class="btn primary grow" id="apSave">Save application</button>`:
+        a.stage==="received"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Documents checked ✓</button>`:
+        a.stage==="verified"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Send to ERO ›</button>`:
+        a.stage==="forwarded"?`<button class="btn danger" id="apRej">Rejected</button><button class="btn primary grow" id="apNext">Approved ✓</button>`:
+        a.stage==="approved"?`${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary grow" id="apOpenV">Open voter in roll</button>`:`<span class="muted small grow">Approved on ${fmtDate((a.history.find(h=>h.stage==="approved")||{}).at)}</span>`}`:
+        `<button class="btn grow" id="apReopen">Reopen application</button>`}
+    </div>
+    ${!isNew&&!locked?`<button class="btn ghost" id="apDel" style="align-self:flex-start">Delete application</button>`:""}
+  </div></div>`;
+  const sh=$("#sbg");
+  sh.onclick=e=>{ if(e.target.id==="sbg"||e.target.closest("#apX")) closeSheet(); };
+  sh.querySelectorAll(".seg").forEach(sg=>sg.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; sg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+    if(sg.dataset.seg==="atype"){ const t=APP_TYPES[b.dataset.v]; $("#docList").innerHTML=t.docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}"><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join(""); a.type=b.dataset.v; } });
+  $("#docList").addEventListener("change", ()=>{ const t=APP_TYPES[a.type]||APP_TYPES.f6; const need=t.docs.filter(x=>x[2]); const done=need.filter(x=>{ const c=sh.querySelector(`[data-doc="${x[0]}"]`); return c&&c.checked; }).length; const dc=$("#docCount"); dc.textContent=`${done}/${need.length} required`; dc.className="pill "+(done===need.length?"ok":"warn"); });
+  function collect(){
+    const ph=$("#pPh").value.replace(/\D/g,"");
+    if(ph && ph.length!==10){ toast("Phone number must be 10 digits"); return null; }
+    if(/\b\d{4}\s?\d{4}\s?\d{4}\b/.test($("#pNote").value)){ toast("That looks like an Aadhaar number. Please don't store it."); return null; }
+    const name=$("#pName").value.trim(); if(!name){ toast("Enter the applicant's name"); return null; }
+    const docs={}; sh.querySelectorAll("[data-doc]").forEach(c=>{ if(c.checked) docs[c.dataset.doc]=true; });
+    return Object.assign(a,{ name, relType:$("#pRelT").value, relName:$("#pRel").value.trim(), gender:$("#pGen").value, dob:$("#pDob").value, house:$("#pHouse").value.trim(), phone:ph,
+      familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:$("#pRef").value.trim(), note:$("#pNote").value.trim(), docs });
+  }
+  function store(x, activity){
+    x.updated=Date.now();
+    const i=L.findIndex(y=>y.id===x.id); if(i>=0) L[i]=x; else L.unshift(x);
+    commit("app",-1,activity);
+  }
+  function advance(stage, note, x){ x=x||(locked?a:collect()); if(!x) return null; x.stage=stage; x.history.push({stage, at:Date.now(), note:note||""}); return x; }
+  if($("#apSave")) $("#apSave").onclick=()=>{ const x=collect(); if(!x) return; if(isNew) x.history.push({stage:"received",at:Date.now(),note:""}); pushUndo(isNew?"new application":"edit application"); store(x,(isNew?"New application: ":"Updated application: ")+x.name+" ("+(APP_TYPES[x.type]||APP_TYPES.f6).short+")"); closeSheet(); render(); toast("Saved"); };
+  if($("#apNext")) $("#apNext").onclick=()=>{
+    if(a.stage==="received"){ const x=collect(); if(!x) return; const dd=appDocs(x); if(dd.done<dd.need.length){ toast(`Tick all required documents first (${dd.done}/${dd.need.length})`); return; } }
+    if(a.stage==="verified"){ const x0=collect(); if(!x0) return; return askNote("Send to ERO", "Who it was sent to / how (optional)", "Sent", n=>{ const x=advance("forwarded",n,x0); pushUndo("send application"); store(x,"Sent to ERO: "+x.name); closeSheet(); render(); toast("Marked as sent to ERO"); }); }
+    if(a.stage==="forwarded"){ const x0=collect(); if(!x0) return; return approveApp(x0, store); }
+    const x=advance("verified"); if(!x) return; pushUndo("documents checked"); store(x,"Documents checked: "+x.name); openApp(x.id);
+  };
+  if($("#apRej")) $("#apRej").onclick=()=>{ const x0=collect(); if(!x0) return; askNote("Rejected", "Reason for rejection", "Mark rejected", n=>{ const x=advance("rejected",n,x0); pushUndo("reject application"); store(x,"Application rejected: "+x.name); closeSheet(); render(); }); };
+  if($("#apReopen")) $("#apReopen").onclick=()=>{ a.stage="forwarded"; a.history.push({stage:"forwarded",at:Date.now(),note:"Reopened"}); pushUndo("reopen application"); store(a,"Reopened application: "+a.name); openApp(a.id); };
+  if($("#apOpenV")) $("#apOpenV").onclick=()=>openVoter(a.addedVoterId);
+  if($("#apDel")) $("#apDel").onclick=()=>confirmBox(`Delete the application of ${a.name}?`, "Delete", ()=>{ pushUndo("delete application"); const i=L.findIndex(y=>y.id===a.id); if(i>=0) L.splice(i,1); commit("app",-1,"Deleted application: "+a.name); render(); }, true);
+}
+function askNote(title, label, ok, fn){
+  $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="nf"><h2>${esc(title)}</h2><label class="f">${esc(label)}<textarea id="nTxt" rows="2"></textarea></label><div class="row"><button class="btn primary" type="submit">${esc(ok)}</button><button class="btn" type="button" id="nX">Cancel</button></div></form></div>`;
+  $("#nX").onclick=closeSheet; $("#nf").onsubmit=e=>{ e.preventDefault(); const n=$("#nTxt").value.trim(); closeSheet(); fn(n); };
+}
+function approveApp(a, store){
+  const isF6=a.type==="f6";
+  $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="af"><h2>Approved</h2>
+    ${isF6?`<p class="muted small" style="margin:0">${esc(a.name)} will be added to your roll as a new voter. Enter the EPIC number if it has been issued.</p><label class="f">EPIC number (if issued)<input id="aEpic" class="mono"></label>
+    <label class="row small"><input type="checkbox" id="aAdd" checked> Add to my roll now</label>`:`<p class="muted small" style="margin:0">The ${esc((APP_TYPES[a.type]||{}).short||"")} will show in the next roll. You can note the order details below.</p>`}
+    <label class="f">Note (optional)<textarea id="aN" rows="2"></textarea></label>
+    <div class="row"><button class="btn primary" type="submit">Mark approved</button><button class="btn" type="button" id="aX">Cancel</button></div></form></div>`;
+  $("#aX").onclick=()=>openApp(a.id);
+  $("#af").onsubmit=e=>{ e.preventDefault();
+    pushUndo("approve application");
+    a.stage="approved"; a.history.push({stage:"approved",at:Date.now(),note:$("#aN").value.trim()});
+    if(isF6){ a.epic=normEpic($("#aEpic").value);
+      if($("#aAdd").checked){
+        const age = a.dob ? String(Math.floor((Date.now()-new Date(a.dob).getTime())/31557600000)) : "";
+        const v={ id:"M-"+uid8(), sl:"", sec:"", house:a.house, name:a.name, nameEn:/[\u0C00-\u0C7F]/.test(a.name)?translit(a.name):a.name, relType:a.relType, relName:a.relName, relNameEn:/[\u0C00-\u0C7F]/.test(a.relName)?translit(a.relName):"", age, gender:a.gender, epic:a.epic, src:"manual", appId:a.id,
+          st:Object.assign(defSt(),{ ph:a.phone, form:"Form 6", formSt:"Approved", formDt:new Date().toISOString().slice(0,10) }) };
+        state.voters.push(v); a.addedVoterId=v.id; markDirty(state.voters.length-1);
+      } }
+    store(a,"Application approved: "+a.name+(a.addedVoterId?" — added to roll":""));
+    closeSheet(); render(); toast(a.addedVoterId?"Approved and added to your roll":"Marked approved");
+  };
 }
 
 /* ---------- saved lists: every roll kept by name (2025, 2026, draft, final…) ---------- */
@@ -1555,6 +1704,8 @@ function exportExcel(){
   if(typeof XLSX==="undefined"){ toast("Excel writer didn't load"); return; }
   const wb=XLSX.utils.book_new(), m=state.meta;
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows()), "Voters");
+  const AP=(m.apps)||[];
+  if(AP.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(AP.map(a=>{ const dd=appDocs(a); return {"Type":(APP_TYPES[a.type]||{}).short,"Name":a.name,"Relation":a.relType,"Father/Husband":a.relName,"Gender":a.gender,"Date of birth":a.dob,"House no":a.house,"Phone":a.phone,"Family EPIC":a.familyEpic||"","Voter EPIC":a.voterEpic||a.epic||"","Ref no":a.refNo||"","Documents":dd.done+"/"+dd.need.length,"Stage":stageLabel(a.stage),"Received":fmtDate(a.created),"Note":a.note}; })), "Applications");
   const AL=(m.asdList&&m.asdList.rows)||[];
   if(AL.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(AL.map(r=>{ const v=asdMatch(r); return {"Serial":r.sl,"EPIC":r.epic,"Name":r.name,"Relation name":r.relName,"House no":r.house,"ASD category":r.cat,"Remarks":r.remarks,"Linked voter serial":v?v.sl:"Not in roll"}; })), "ASD list");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{AC:m.ac,"AC name":m.acName,Part:m.part,"Part name":m.partName,BLO:m.blo,Revision:m.rev,"Exported":new Date().toLocaleString("en-IN")}]), "Part");
@@ -1616,7 +1767,7 @@ function renderBackup(el){
   if($("#chp")) $("#chp").onclick=changePassword;
   if($("#toAuth")) $("#toAuth").onclick=()=>{ lsSet("bloreg:pending-upload", state); session=null; lsSet("bloreg:session",null); showAuth("signup"); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
-  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
+  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists,apps:k.apps}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
 }
 function changePassword(){
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="cpf"><h2>Change password</h2>
