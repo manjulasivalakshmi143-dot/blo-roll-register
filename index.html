@@ -35,7 +35,10 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:env(safe-area-inset-top,0px) calc(96px + env(safe-area-inset-bottom,0px))}
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:env(safe-area-inset-top,0px) calc(28px + env(safe-area-inset-bottom,0px))}
+:root{--rail:72px}
+body.has-rail{padding-left:calc(var(--rail) + max(12px,env(safe-area-inset-left,0px)))}
+@media (min-width:900px){:root{--rail:212px} .wrap{max-width:980px}}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
 .wrap{max-width:760px;margin:0 auto}
 h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
@@ -61,11 +64,23 @@ button{cursor:pointer}
 .sync[data-s="error"] i{background:var(--bad)} .sync[data-s="local"] i{background:var(--warn)}
 
 /* tabs */
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);
-  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
-nav.tabs button{background:none;border:0;padding:6px 2px;border-radius:8px;font-size:.72rem;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
-nav.tabs button svg{width:22px;height:22px}
+/* navigation rail on the left: icons with labels on phones, a full sidebar on wide screens */
+nav.tabs{position:fixed;left:0;top:0;bottom:0;width:calc(var(--rail) + env(safe-area-inset-left,0px));z-index:6;background:var(--surface);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;gap:6px;padding:calc(70px + env(safe-area-inset-top,0px)) 6px calc(14px + env(safe-area-inset-bottom,0px)) calc(6px + env(safe-area-inset-left,0px));overflow-y:auto}
+nav.tabs .rail-brand{display:none}
+nav.tabs .rail-brand span{width:12px;height:34px;border-radius:6px 6px 9px 9px;background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent))}
+nav.tabs .rail-brand b{display:none}
+nav.tabs button{position:relative;background:none;border:0;padding:10px 2px;border-radius:12px;font-size:.68rem;font-weight:650;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;transition:background .15s ease,color .15s ease}
+nav.tabs button svg{width:24px;height:24px;flex:none}
+nav.tabs button:hover{background:var(--paper);color:var(--ink)}
 nav.tabs button[aria-current="true"]{color:var(--accent);background:var(--accent-soft)}
+nav.tabs button[aria-current="true"]::before{content:"";position:absolute;left:-6px;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--accent)}
+@media (min-width:900px){
+  nav.tabs{padding-inline:12px}
+  nav.tabs button{flex-direction:row;justify-content:flex-start;gap:12px;padding:11px 12px;font-size:.92rem}
+  nav.tabs button[aria-current="true"]::before{left:-12px}
+}
+@media (orientation:landscape) and (max-height:500px){ nav.tabs{gap:2px} nav.tabs button{padding:6px 2px} nav.tabs .rail-brand{display:none} }
 
 /* generic */
 .panel{display:flex;flex-direction:column;gap:14px}
@@ -176,7 +191,7 @@ td,th{background:var(--surface)}
 .tablewrap th:nth-child(1),.tablewrap th:nth-child(2){z-index:2}
 .diff-list{display:flex;flex-direction:column;gap:2px;max-height:40vh;overflow:auto}
 .diff-list div{font-size:.85rem;padding:6px 0;border-bottom:1px solid var(--line)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;font-size:.85rem;z-index:30;max-width:90vw}
+.toast{position:fixed;left:calc(50% + var(--rail)/2);transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;font-size:.85rem;z-index:30;max-width:90vw}
 .empty{text-align:center;padding:30px 10px;display:flex;flex-direction:column;gap:10px;align-items:center}
 .steps{display:flex;flex-direction:column;gap:8px;text-align:left;max-width:420px;margin:0 auto}
 .steps div{display:grid;grid-template-columns:28px 1fr;gap:8px;font-size:.9rem}
@@ -213,6 +228,7 @@ td,th{background:var(--surface)}
 </div>
 
 <nav class="tabs" id="tabs" aria-label="Sections" hidden>
+  <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Register</b></div>
   <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button data-tab="voters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.5 5.4"/></svg>Voters</button>
   <button data-tab="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>Import</button>
@@ -340,7 +356,7 @@ async function connectAccount(){
 /* ================= sign in / sign up ================= */
 function showAuth(mode){
   mode = mode || "login";
-  $("#tabs").hidden=true;
+  $("#tabs").hidden=true; document.body.classList.remove("has-rail");
   setSync("off","Not signed in");
   $("#partLine").textContent="Your part's voter register";
   const v=$("#view");
@@ -400,7 +416,7 @@ function startData(){
   const local=lsGet(dataKey()); if(local && local.meta){ state=Object.assign(blank(),local); state.meta=Object.assign(blank().meta,local.meta); }
   showApp(); setSync("local", "Saved on this phone");
 }
-function showApp(){ $("#tabs").hidden=false; render(); }
+function showApp(){ $("#tabs").hidden=false; document.body.classList.add("has-rail"); render(); }
 async function signOut(){
   if(cloud.ready && (cloud.dirty.size || cloud.busy)){ toast("Still saving — try again in a moment"); return; }
   try{ if(session && session.token) await rpc("blo_logout",{p_token:session.token}); }catch(e){}
