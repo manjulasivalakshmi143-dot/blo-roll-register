@@ -198,8 +198,24 @@ nav.tabs .add-tab{border-style:solid!important}
 .fly button{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:center;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 12px;font:inherit;font-size:.92rem;color:var(--ink);cursor:pointer}
 .fly button:hover{background:color-mix(in srgb,var(--fc,var(--accent)) 10%,var(--surface))}
 @media (prefers-reduced-motion:reduce){.fly{animation:none}}
+/* fit-in-box fixes for phones */
+.tick{max-width:260px;min-width:0}
+.tick b,.tick small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticker.still{mask-image:none}
+.ticker.still .ticker-track{width:auto;padding-right:10px}
+.ticker.still .tick{max-width:100%;flex:1 1 auto}
+.win-h>span{min-width:0;overflow-wrap:anywhere}
+body.view-app nav.tabs button{font-size:.6rem;letter-spacing:-.02em;overflow:hidden;min-width:0;white-space:nowrap;padding-inline:1px}
+body.view-app nav.tabs button svg{width:22px;height:22px}
+body.view-app nav.tabs button.add-tab{font-size:.54rem;letter-spacing:-.03em}
+body.narrow .win-h{font-size:.88rem;padding:9px 12px}
+body.narrow .win-s{font-size:.7rem}
+.fly{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.fly-list{overflow-y:auto;overscroll-behavior:contain}
+body.narrow .fly button{font-size:.85rem;padding:10px 10px}
+
 /* app / desktop view */
-body.view-app{--rail:72px}
+body.view-app{--rail:80px}
 body.view-app .wrap{max-width:none}
 body.view-app nav.tabs{padding-inline:6px}
 body.view-app nav.tabs button{flex-direction:column;justify-content:center;gap:4px;padding:8px 2px;font-size:.68rem}
@@ -610,14 +626,21 @@ function subItems(t){
 function closeFly(){ const f=document.getElementById("fly"); if(f) f.remove(); document.querySelectorAll("#tabs button.fly-open").forEach(b=>b.classList.remove("fly-open")); }
 function openFly(btn, t){
   closeFly(); const items=subItems(t); if(!items||!items.length) return;
-  const r=btn.getBoundingClientRect(), f=document.createElement("div"); f.id="fly"; f.className="fly"; f.style.setProperty("--fc", getComputedStyle(btn).getPropertyValue("--tc"));
-  f.innerHTML=`<div class="fly-h">${esc(btn.textContent.trim())}</div>`+items.map((it,i)=>`<button type="button" data-i="${i}"><span>${it[0]}</span><span>${esc(it[1])}</span></button>`).join("");
+  const f=document.createElement("div"); f.id="fly"; f.className="fly"; f.style.setProperty("--fc", getComputedStyle(btn).getPropertyValue("--tc"));
+  f.innerHTML=`<div class="fly-h">${esc(btn.textContent.trim())}</div><div class="fly-list">`+items.map((it,i)=>`<button type="button" data-i="${i}"><span>${it[0]}</span><span>${esc(it[1])}</span></button>`).join("")+`</div>`;
   document.body.appendChild(f); btn.classList.add("fly-open");
-  const top=Math.max(8, Math.min(r.top, innerHeight-f.offsetHeight-8)); f.style.top=top+"px"; f.style.left=(r.right+8)+"px";
+  /* measure how the page zoom scales things, so the list always sits inside the screen */
+  f.style.top="0px"; f.style.left="0px"; const k=(f.getBoundingClientRect().width/f.offsetWidth)||1;
+  const vh=innerHeight/k, vw=innerWidth/k, rr=btn.getBoundingClientRect(), r={top:rr.top/k, right:rr.right/k};
+  const left=Math.min(r.right+6, vw-Math.min(f.offsetWidth, vw-12)-6);
+  f.style.left=Math.max(6,left)+"px"; f.style.maxWidth=(vw-left-8)+"px";
+  f.style.maxHeight=(vh-16)+"px";
+  const lst=f.querySelector(".fly-list"), hh=f.querySelector(".fly-h").offsetHeight; lst.style.maxHeight=(vh-16-hh-4)+"px"; f.style.overflow="hidden";
+  const top=Math.max(8, Math.min(r.top, vh-f.offsetHeight-8)); f.style.top=top+"px";
   f.addEventListener("click",e=>{ const b=e.target.closest("button[data-i]"); if(!b) return; tab=t; resetSec(t); items[+b.dataset.i][2](); closeFly(); render(); window.scrollTo(0,0); });
 }
 document.addEventListener("pointerdown",e=>{ if(!e.target.closest("#fly") && !e.target.closest("#tabs")) closeFly(); });
-addEventListener("scroll",()=>closeFly(),{passive:true});
+addEventListener("scroll",e=>{ if(!(e.target&&e.target.closest&&e.target.closest("#fly"))) closeFly(); },{passive:true});
 
 /* ================= stats ================= */
 function live(){ return state.voters.filter(v=>!v.gone && !v.st.del); }
