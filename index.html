@@ -575,14 +575,14 @@ function renderApps(el){
     <div class="tally" style="grid-template-columns:repeat(4,1fr)">
       <div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded")}</b><small>Sent to ERO</small></div><div><b>${cnt("approved")}</b><small>Approved</small></div>
     </div>
-    <input class="search" id="appQ" type="search" placeholder="Search name, father name, phone, ref no…" value="${esc(window._appQ||"")}">
+    <input class="search" id="appQ" type="search" placeholder="Search Ref ID, name, father name, phone…" value="${esc(window._appQ||"")}">
     <div class="chips" id="appChips">${[["open","Pending"],...STAGES,["all","All"]].map(([k,l])=>`<button class="chip" data-k="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
     <div class="voters">${shown.map(a=>{ const d=appDocs(a), T=APP_TYPES[a.type]||APP_TYPES.f6, si=STAGES.findIndex(x=>x[0]===a.stage);
       return `<button class="v" data-id="${esc(a.id)}"><span class="sl">${esc(T.short.replace("Form ","F"))}</span><span style="min-width:0">
         <div class="nm">${esc(a.name||"(no name)")}</div>
         <div class="meta">${a.relName?esc(a.relType||"Father")+": "+esc(a.relName)+" · ":""}${a.house?"H "+esc(a.house)+" · ":""}${a.phone?`<span class="mono">${esc(a.phone)}</span> · `:""}${fmtDate(a.created).split(" ").slice(0,3).join(" ")}</div>
         <div class="stepper" aria-label="Stage">${STAGES.slice(0,4).map((st,i)=>`<i class="${a.stage==="rejected"?(i<=1?"done":""):i<=si?"done":""}"></i>`).join("")}</div>
-        <div class="pills"><span class="pill ${a.stage==="approved"?"ok":a.stage==="rejected"?"bad":"acc"}">${esc(stageLabel(a.stage))}</span><span class="pill ${d.done===d.need.length?"ok":"warn"}">Docs ${d.done}/${d.need.length}</span>${a.refNo?`<span class="pill">Ref ${esc(a.refNo)}</span>`:""}</div>
+        <div class="pills"><span class="pill ${a.stage==="approved"?"ok":a.stage==="rejected"?"bad":"acc"}">${esc(stageLabel(a.stage))}</span><span class="pill ${d.done===d.need.length?"ok":"warn"}">Docs ${d.done}/${d.need.length}</span>${a.refNo?`<span class="pill">Ref ID ${esc(a.refNo)}</span>`:`<span class="pill warn">No Ref ID</span>`}</div>
       </span></button>`; }).join("") || `<div class="note small">${L.length?"No applications in this list.":"No applications yet. Tap “New application” when someone applies."}</div>`}</div>
   </div>`;
   $("#appNew").onclick=()=>openApp(null);
@@ -603,6 +603,7 @@ function openApp(id, typeHint){
     ${isNew?`<div class="field-block"><span>Type of application</span>${seg("atype",Object.entries(APP_TYPES).map(([k,t])=>[k,t.short]),a.type)}</div>`:""}
     <div class="sec-h"><span>Applicant details</span></div>
     <div class="kv">
+      ${kv("Ref ID", inp("pRef",a.refNo||"",`class="mono" placeholder="Application reference ID" autocapitalize="characters" ${locked?"disabled":""}`))}
       ${kv("Name", inp("pName",a.name,locked?"disabled":""))}
       ${kv("Relation", `<select id="pRelT" ${locked?"disabled":""}>${["Father","Husband","Mother","Other"].map(r=>`<option ${a.relType===r?"selected":""}>${r}</option>`).join("")}</select>`)}
       ${kv("Father / husband name", inp("pRel",a.relName,locked?"disabled":""))}
@@ -611,7 +612,6 @@ function openApp(id, typeHint){
       ${kv("House no.", inp("pHouse",a.house,locked?"disabled":""))}
       ${kv("Phone", inp("pPh",a.phone,`inputmode="tel" maxlength="10" placeholder="10 digits" ${locked?"disabled":""}`))}
       ${a.type==="f6"?kv("Family member EPIC", inp("pFam",a.familyEpic,`class="mono" ${locked?"disabled":""}`)):kv("Voter's EPIC", inp("pVE",a.voterEpic||"",`class="mono" ${locked?"disabled":""}`))}
-      ${kv("Application ref. no.", inp("pRef",a.refNo||"",`class="mono" placeholder="from Voter Helpline / ERONET" ${locked?"disabled":""}`))}
       ${kv("Note", `<textarea id="pNote" rows="2" ${locked?"disabled":""}>${esc(a.note)}</textarea>`)}
     </div>
     <div class="sec-h"><span>Document checklist</span><span class="pill ${d.done===d.need.length?"ok":"warn"}" id="docCount">${d.done}/${d.need.length} required</span></div>
@@ -638,9 +638,11 @@ function openApp(id, typeHint){
     if(ph && ph.length!==10){ toast("Phone number must be 10 digits"); return null; }
     if(/\b\d{4}\s?\d{4}\s?\d{4}\b/.test($("#pNote").value)){ toast("That looks like an Aadhaar number. Please don't store it."); return null; }
     const name=$("#pName").value.trim(); if(!name){ toast("Enter the applicant's name"); return null; }
+    const ref=$("#pRef").value.trim().toUpperCase();
+    if(ref && L.some(y=>y.id!==a.id && String(y.refNo||"").toUpperCase()===ref)){ toast("Another application already has Ref ID "+ref); return null; }
     const docs={}; sh.querySelectorAll("[data-doc]").forEach(c=>{ if(c.checked) docs[c.dataset.doc]=true; });
     return Object.assign(a,{ name, relType:$("#pRelT").value, relName:$("#pRel").value.trim(), gender:$("#pGen").value, dob:$("#pDob").value, house:$("#pHouse").value.trim(), phone:ph,
-      familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:$("#pRef").value.trim(), note:$("#pNote").value.trim(), docs });
+      familyEpic:$("#pFam")?normEpic($("#pFam").value):a.familyEpic, voterEpic:$("#pVE")?normEpic($("#pVE").value):a.voterEpic, refNo:ref, note:$("#pNote").value.trim(), docs });
   }
   function store(x, activity){
     x.updated=Date.now();
@@ -1705,7 +1707,7 @@ function exportExcel(){
   const wb=XLSX.utils.book_new(), m=state.meta;
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows()), "Voters");
   const AP=(m.apps)||[];
-  if(AP.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(AP.map(a=>{ const dd=appDocs(a); return {"Type":(APP_TYPES[a.type]||{}).short,"Name":a.name,"Relation":a.relType,"Father/Husband":a.relName,"Gender":a.gender,"Date of birth":a.dob,"House no":a.house,"Phone":a.phone,"Family EPIC":a.familyEpic||"","Voter EPIC":a.voterEpic||a.epic||"","Ref no":a.refNo||"","Documents":dd.done+"/"+dd.need.length,"Stage":stageLabel(a.stage),"Received":fmtDate(a.created),"Note":a.note}; })), "Applications");
+  if(AP.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(AP.map(a=>{ const dd=appDocs(a); return {"Type":(APP_TYPES[a.type]||{}).short,"Name":a.name,"Relation":a.relType,"Father/Husband":a.relName,"Gender":a.gender,"Date of birth":a.dob,"House no":a.house,"Phone":a.phone,"Family EPIC":a.familyEpic||"","Voter EPIC":a.voterEpic||a.epic||"","Ref ID":a.refNo||"","Documents":dd.done+"/"+dd.need.length,"Stage":stageLabel(a.stage),"Received":fmtDate(a.created),"Note":a.note}; })), "Applications");
   const AL=(m.asdList&&m.asdList.rows)||[];
   if(AL.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(AL.map(r=>{ const v=asdMatch(r); return {"Serial":r.sl,"EPIC":r.epic,"Name":r.name,"Relation name":r.relName,"House no":r.house,"ASD category":r.cat,"Remarks":r.remarks,"Linked voter serial":v?v.sl:"Not in roll"}; })), "ASD list");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{AC:m.ac,"AC name":m.acName,Part:m.part,"Part name":m.partName,BLO:m.blo,Revision:m.rev,"Exported":new Date().toLocaleString("en-IN")}]), "Part");
