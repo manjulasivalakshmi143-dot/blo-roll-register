@@ -485,22 +485,17 @@ function renderHome(el){
     <div class="card panel">
       <div class="eyebrow">Electors in roll</div>
       <div class="bigline"><span class="n">${s.n}</span><span class="muted small mono">M ${s.m} · F ${s.f} · TG ${s.t}</span></div>
-      ${meterRow("Voter slip given", s.slip, s.n)}
-      ${s.photoKnown?meterRow("Photo in roll", s.n-s.nophoto, s.n, "ok"):""}
     </div>
-    <div class="tally">
-      <div><b>${s.asd}</b><small>ASD</small></div>
-      <div><b>${s.forms}</b><small>Forms open</small></div>
-      <div><b>${s.newRev}</b><small>New this rev.</small></div>
-      <div><b>${s.manual}</b><small>Added by me</small></div>
+    <div class="card panel">
+      <div class="row" style="justify-content:space-between"><h3>Work going on now</h3></div>
+      <div class="seg" id="modeSeg">${MODES.map(([k,l])=>`<button type="button" data-mode="${k}" aria-pressed="${mode()===k}">${l}</button>`).join("")}</div>
+      <p class="muted small" style="margin:0">${MODE_HELP[mode()]}</p>
+      ${mode()==="election"?`${meterRow("Voter slips given", s.slip, s.n-s.asd)}<div class="tally" style="grid-template-columns:repeat(2,1fr)"><div><b>${s.n-s.asd-s.slip}</b><small>Slips pending</small></div><div><b>${s.asd}</b><small>ASD</small></div></div>`:""}
+      ${mode()==="revision"?`<div class="tally"><div><b>${s.asd}</b><small>ASD</small></div><div><b>${s.forms}</b><small>Forms open</small></div><div><b>${s.newRev}</b><small>New this rev.</small></div><div><b>${s.manual}</b><small>Added by me</small></div></div>`:""}
     </div>
     <div class="card panel">
       <h3>Quick lists</h3>
-      <div class="row">
-        <button class="btn" data-f="nomob">Mobile pending</button><button class="btn" data-f="noaad">Aadhaar pending</button>
-        <button class="btn" data-f="asd">ASD list</button><button class="btn" data-f="noslip">Slip pending</button>
-        <button class="btn" data-f="forms">Open forms</button><button class="btn" data-f="nophoto">Photo missing</button><button class="btn" data-f="young">Age 18–19</button><button class="btn" data-f="senior">Age 80+</button>
-      </div>
+      <div class="row">${FILTERS.filter(f=>f[3] && f[3].includes(mode())).map(f=>`<button class="btn" data-f="${f[0]}">${f[1]}</button>`).join("")}</div>
     </div>
     ${settingsCard()}
     <div class="card panel"><h3>Recent work</h3>
@@ -510,6 +505,7 @@ function renderHome(el){
   </div>`;
   el.insertAdjacentHTML("beforeend", installCard() ? `<div style="margin-top:14px">${installCard()}</div>` : ""); bindInstall();
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.shown=150; tab="voters"; render(); });
+  el.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ if(mode()===b.dataset.mode) return; state.meta.mode=b.dataset.mode; commit("mode",-1,"Switched to "+MODES.find(x=>x[0]===b.dataset.mode)[1]); render(); });
   $("#hs").onsubmit=e=>{ e.preventDefault(); listOpts.q=$("#hsq").value; listOpts.filter="all"; listOpts.shown=150; tab="voters"; render(); setTimeout(()=>{ const q=$("#q"); if(q){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } },50); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
   if($("#bkNow")) $("#bkNow").onclick=exportExcel;
@@ -541,21 +537,24 @@ function bindSettings(){
 }
 
 /* ---------- voter list ---------- */
+const MODES=[["normal","Regular"],["election","Election"],["revision","SIR / Revision"]];
+const MODE_HELP={ normal:"Day-to-day: mobile and Aadhaar status, photos, corrections.", election:"Election time: voter slip distribution and the ASD list.", revision:"SIR / summary revision: ASD marking, Form 6/7/8 and new voters." };
+const mode=()=> state.meta.mode || "normal";
 const FILTERS = [
   ["all","All", v=>!v.gone&&!v.st.del],
-  ["nomob","Mobile pending", v=>!v.gone&&!v.st.del&&v.st.mob!=="yes"],
-  ["noaad","Aadhaar pending", v=>!v.gone&&!v.st.del&&v.st.aad!=="yes"],
-  ["asd","ASD", v=>!v.gone&&!v.st.del&&v.st.asd],
-  ["noslip","Slip pending", v=>!v.gone&&!v.st.del&&!v.st.slip&&!v.st.asd],
-  ["forms","Open forms", v=>!v.gone&&!v.st.del&&v.st.form&&v.st.formSt!=="Approved"&&v.st.formSt!=="Rejected"],
-  ["new","New in last revision", v=>!v.gone&&v.newIn&&v.newIn===state.meta.rev&&state.meta.rev>1],
-  ["changed","Corrected in last revision", v=>!v.gone&&v.chgIn&&v.chgIn===state.meta.rev],
-  ["manual","Added by me", v=>!v.gone&&!v.st.del&&v.src==="manual"],
-  ["corrected","Corrected by me", v=>!v.gone&&v.corr&&v.corr.length&&!v.corrDone],
-  ["nophoto","Photo missing", v=>!v.gone&&!v.st.del&&v.photo==="no"],
-  ["photoadded","Photo added in last revision", v=>!v.gone&&v.photoIn&&v.photoIn===state.meta.rev],
-  ["young","Age 18–19", v=>!v.gone&&!v.st.del&&+v.age&&+v.age<=19],
-  ["senior","Age 80+", v=>!v.gone&&!v.st.del&&+v.age>=80],
+  ["nomob","Mobile pending", v=>!v.gone&&!v.st.del&&v.st.mob!=="yes", ["normal","revision"]],
+  ["noaad","Aadhaar pending", v=>!v.gone&&!v.st.del&&v.st.aad!=="yes", ["normal","revision"]],
+  ["asd","ASD", v=>!v.gone&&!v.st.del&&v.st.asd, ["election","revision"]],
+  ["noslip","Slip pending", v=>!v.gone&&!v.st.del&&!v.st.slip&&!v.st.asd, ["election"]],
+  ["forms","Open forms", v=>!v.gone&&!v.st.del&&v.st.form&&v.st.formSt!=="Approved"&&v.st.formSt!=="Rejected", ["revision"]],
+  ["new","New in last revision", v=>!v.gone&&v.newIn&&v.newIn===state.meta.rev&&state.meta.rev>1, ["revision"]],
+  ["changed","Corrected in last revision", v=>!v.gone&&v.chgIn&&v.chgIn===state.meta.rev, ["revision"]],
+  ["manual","Added by me", v=>!v.gone&&!v.st.del&&v.src==="manual", ["revision"]],
+  ["corrected","Corrected by me", v=>!v.gone&&v.corr&&v.corr.length&&!v.corrDone, ["normal"]],
+  ["nophoto","Photo missing", v=>!v.gone&&!v.st.del&&v.photo==="no", ["normal","revision"]],
+  ["photoadded","Photo added in last revision", v=>!v.gone&&v.photoIn&&v.photoIn===state.meta.rev, ["revision"]],
+  ["young","Age 18–19", v=>!v.gone&&!v.st.del&&+v.age&&+v.age<=19, ["normal","revision"]],
+  ["senior","Age 80+", v=>!v.gone&&!v.st.del&&+v.age>=80, ["normal","election"]],
   ["removed","Removed / deleted", v=>v.gone||v.st.del],
 ];
 function houseKey(h){ const s=String(h||"").trim(); const m=s.match(/\d+/); return [m?+m[0]:1e9, s.toLowerCase()]; }
@@ -585,7 +584,7 @@ function renderVoters(el){
   const counts = Object.fromEntries(FILTERS.map(([k,,f])=>[k,state.voters.filter(f).length]));
   el.innerHTML = `<div class="toolbar">
       <input class="search" id="q" type="search" placeholder="Search name, EPIC, house, mobile…" value="${esc(listOpts.q)}" aria-label="Search voters">
-      <div class="chips" id="chips">${FILTERS.map(([k,l])=>`<button class="chip" data-k="${k}" aria-pressed="${listOpts.filter===k}">${l}<span class="c">${counts[k]}</span></button>`).join("")}</div>
+      <div class="chips" id="chips">${FILTERS.filter(f=>!f[3]||f[3].includes(mode())||listOpts.filter===f[0]).map(([k,l])=>`<button class="chip" data-k="${k}" aria-pressed="${listOpts.filter===k}">${l}<span class="c">${counts[k]}</span></button>`).join("")}</div>
       <div class="selrow">
         <select id="grp" aria-label="Group by">${[["none","No grouping"],["house","Group: house no."],["family","Group: family"],["section","Group: section"],["gender","Group: gender"],["age","Group: age band"]].map(([v,l])=>`<option value="${v}" ${listOpts.group===v?"selected":""}>${l}</option>`).join("")}</select>
         <select id="srt" aria-label="Sort by">${[["sl","Sort: serial no."],["name","Sort: name"],["house","Sort: house no."],["age","Sort: age ↑"],["ageD","Sort: age ↓"]].map(([v,l])=>`<option value="${v}" ${listOpts.sort===v?"selected":""}>${l}</option>`).join("")}</select>
@@ -601,14 +600,15 @@ function pillsFor(v){
   const p=[];
   if(v.gone) p.push(`<span class="pill bad">Removed rev ${v.goneRev||""}</span>`);
   if(v.st.del) p.push(`<span class="pill bad">Deleted by me</span>`);
-  p.push(v.st.mob==="yes"?`<span class="pill ok">Mobile ✓</span>`:`<span class="pill">Mobile</span>`);
-  p.push(v.st.aad==="yes"?`<span class="pill ok">Aadhaar ✓</span>`:`<span class="pill">Aadhaar</span>`);
-  if(v.st.asd) p.push(`<span class="pill warn">${esc(v.st.asd)}</span>`);
+  const md=mode();
+  if(md!=="election"){ p.push(v.st.mob==="yes"?`<span class="pill ok">Mobile ✓</span>`:`<span class="pill">Mobile</span>`);
+    p.push(v.st.aad==="yes"?`<span class="pill ok">Aadhaar ✓</span>`:`<span class="pill">Aadhaar</span>`); }
+  if(v.st.asd && md!=="normal") p.push(`<span class="pill warn">${esc(v.st.asd)}</span>`);
   if(v.photo==="no") p.push(`<span class="pill bad">No photo</span>`);
   if(v.corr&&v.corr.length&&!v.corrDone) p.push(`<span class="pill warn">Corrected by me</span>`);
   if(v.photoIn && v.photoIn===state.meta.rev) p.push(`<span class="pill ok">Photo added</span>`);
-  if(v.st.slip) p.push(`<span class="pill acc">Slip</span>`);
-  if(v.st.form) p.push(`<span class="pill acc">${esc(v.st.form)}${v.st.formSt?" · "+esc(v.st.formSt):""}</span>`);
+  if(v.st.slip && md==="election") p.push(`<span class="pill acc">Slip given</span>`);
+  if(v.st.form && md==="revision") p.push(`<span class="pill acc">${esc(v.st.form)}${v.st.formSt?" · "+esc(v.st.formSt):""}</span>`);
   if(v.src==="manual") p.push(`<span class="pill warn">Added by me</span>`);
   if(v.newIn && v.newIn===state.meta.rev && state.meta.rev>1) p.push(`<span class="pill acc">New</span>`);
   if(v.chgIn && v.chgIn===state.meta.rev) p.push(`<span class="pill acc">Corrected</span>`);
@@ -648,7 +648,7 @@ const EDIT_FIELDS=[["name","Name"],["nameEn","Name in English"],["relType","Rela
 function genderLabel(g){ return {M:"Male",F:"Female",T:"Third gender"}[g]||"—"; }
 function openVoter(id, editMode){
   const isNew = id==null;
-  const v = isNew ? { id:"M-"+uid8(), sl:"", sec:"", house:"", name:"", nameEn:"", relType:"Father", relName:"", relNameEn:"", age:"", gender:"", epic:"", src:"manual", st:Object.assign(defSt(),{form:"Form 6",formSt:"Submitted",formDt:new Date().toISOString().slice(0,10)}) } : JSON.parse(JSON.stringify(state.voters[vIndex(id)]));
+  const v = isNew ? { id:"M-"+uid8(), sl:"", sec:"", house:"", name:"", nameEn:"", relType:"Father", relName:"", relNameEn:"", age:"", gender:"", epic:"", src:"manual", st:defSt() } : JSON.parse(JSON.stringify(state.voters[vIndex(id)]));
   const st=v.st, editing = isNew || !!editMode;
   const order=(window._listIds||[]).filter(x=>vIndex(x)>=0), pos=order.indexOf(v.id);
   const prevId=pos>0?order[pos-1]:null, nextId=pos>=0&&pos<order.length-1?order[pos+1]:null;
@@ -682,16 +682,16 @@ function openVoter(id, editMode){
     <div class="sec-h"><span>Voter details</span>${!isNew&&!editing&&!v.gone?`<button class="btn small-btn" id="eEdit">✎ Edit details</button>`:""}${editing&&!isNew?`<span class="pill warn">Editing</span>`:""}</div>
     ${editing&&!isNew&&v.src!=="manual"?`<div class="note small">Change only what is wrong in the roll. Your corrections are saved separately, and the next roll shows whether they were made.</div>`:""}
     <div class="kv">${details}</div>
-    <div class="sec-h"><span>Field work</span></div>
+    ${isNew?"":`<div class="sec-h"><span>Field work</span><span class="muted small" style="text-transform:none;letter-spacing:0;font-weight:500">${MODES.find(x=>x[0]===mode())[1]}</span></div>
     <div class="kv">
-      ${kvRow("Mobile updated", seg("mob",[["yes","Yes"],["no","No"],["","Not checked"]],st.mob))}
+      ${mode()!=="election"?kvRow("Mobile updated", seg("mob",[["yes","Yes"],["no","No"],["","Not checked"]],st.mob)):""}
       ${kvRow("Mobile number", `<input id="ePh" value="${esc(st.ph)}" inputmode="tel" maxlength="10" placeholder="10 digits (optional)">`)}
-      ${kvRow("Aadhaar linked", seg("aad",[["yes","Yes"],["no","No"],["","Not checked"]],st.aad)+`<div class="muted small" style="margin-top:4px">Only Yes / No. Never write the Aadhaar number.</div>`)}
-      ${kvRow("ASD", seg("asd",ASD.map(a=>[a,a||"None"]),st.asd))}
-      ${kvRow("Voter slip", seg("slip",[["true","Given"],["false","Not given"]],st.slip))}
-      ${kvRow("Form filed", seg("form",FORMS.map(a=>[a,a||"None"]),st.form)+`<div class="grid2" style="margin-top:6px"><input id="eFDt" type="date" value="${esc(st.formDt)}" aria-label="Form date"><select id="eFSt" aria-label="Form status">${["","Submitted","Verified","Approved","Rejected"].map(s=>`<option value="${s}" ${st.formSt===s?"selected":""}>${s||"Status —"}</option>`).join("")}</select></div>`)}
+      ${mode()!=="election"?kvRow("Aadhaar linked", seg("aad",[["yes","Yes"],["no","No"],["","Not checked"]],st.aad)+`<div class="muted small" style="margin-top:4px">Only Yes / No. Never write the Aadhaar number.</div>`):""}
+      ${mode()!=="normal"?kvRow("ASD", seg("asd",ASD.map(a=>[a,a||"None"]),st.asd)):""}
+      ${mode()==="election"?kvRow("Voter slip", seg("slip",[["true","Given"],["false","Not given"]],st.slip)):""}
+      ${mode()==="revision"?kvRow("Form filed", seg("form",FORMS.map(a=>[a,a||"None"]),st.form)+`<div class="grid2" style="margin-top:6px"><input id="eFDt" type="date" value="${esc(st.formDt)}" aria-label="Form date"><select id="eFSt" aria-label="Form status">${["","Submitted","Verified","Approved","Rejected"].map(s=>`<option value="${s}" ${st.formSt===s?"selected":""}>${s||"Status —"}</option>`).join("")}</select></div>`):""}
       ${kvRow("Field note", `<textarea id="eNote" rows="2">${esc(st.note)}</textarea>`)}
-    </div>
+    </div>`}
     ${isNew?"":`<div class="row" style="justify-content:space-between">${v.gone||st.del?`<button class="btn" id="eRestore">↺ Restore voter</button>`:`<button class="btn danger" id="eDel">Mark as deleted</button>`}<span class="muted small">Deleted voters can be restored.</span></div>`}
     <div class="sheet-bar">
       ${isNew?"":`<button class="btn nav" id="ePrev" ${prevId?"":"disabled"} aria-label="Previous voter">‹ Prev</button>`}
@@ -702,7 +702,8 @@ function openVoter(id, editMode){
   const sheet=$("#sbg");
   sheet.onclick=e=>{ if(e.target.id==="sbg"||e.target.closest("#xClose")) closeSheet(); };
   sheet.querySelectorAll(".seg").forEach(sg=>sg.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; sg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
-  const segVal = n => { const b=sheet.querySelector(`[data-seg="${n}"] [aria-pressed="true"]`); return b?b.dataset.v:""; };
+  const segVal = (n, keep) => { const g=sheet.querySelector(`[data-seg="${n}"]`); if(!g) return keep; const b=g.querySelector('[aria-pressed="true"]'); return b?b.dataset.v:""; };
+  const valOf = (id, keep) => { const el=$("#"+id); return el? el.value : keep; };
   // find another voter without leaving
   const sq=$("#sq");
   if(sq){ sq.addEventListener("input", ()=>{
@@ -714,10 +715,10 @@ function openVoter(id, editMode){
   });
   $("#sqRes").onclick=e=>{ const b=e.target.closest("button[data-id]"); if(!b) return; if(saveVoter(true)) openVoter(b.dataset.id); }; }
   function saveVoter(quiet){
-    const ph=$("#ePh").value.replace(/\D/g,"");
-    if(/\b\d{4}\s?\d{4}\s?\d{4}\b/.test($("#eNote").value) || ph.length>10){ toast("That looks like an Aadhaar number. Please don't store it."); return false; }
+    const ph=String(valOf("ePh", st.ph)||"").replace(/\D/g,"");
+    if(/\b\d{4}\s?\d{4}\s?\d{4}\b/.test(valOf("eNote","")) || ph.length>10){ toast("That looks like an Aadhaar number. Please don't store it."); return false; }
     if(ph && ph.length!==10){ toast("Mobile number must be 10 digits"); return false; }
-    const nst={ mob:segVal("mob"), ph, aad:segVal("aad"), asd:segVal("asd"), slip:segVal("slip")==="true", form:segVal("form"), formDt:$("#eFDt").value, formSt:$("#eFSt").value, note:$("#eNote").value.trim(), del:st.del||false };
+    const nst={ mob:segVal("mob",st.mob), ph, aad:segVal("aad",st.aad), asd:segVal("asd",st.asd), slip:String(segVal("slip",String(!!st.slip)))==="true", form:segVal("form",st.form), formDt:valOf("eFDt",st.formDt), formSt:valOf("eFSt",st.formSt), note:String(valOf("eNote",st.note)||"").trim(), del:st.del||false };
     const before=isNew?null:state.voters[vIndex(v.id)];
     let corrections=[];
     if(editing){
