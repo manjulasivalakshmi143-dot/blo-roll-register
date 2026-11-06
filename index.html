@@ -625,7 +625,23 @@ function startData(){
   const local=lsGet(dataKey()); if(local && local.meta){ state=Object.assign(blank(),local); state.meta=Object.assign(blank().meta,local.meta); }
   showApp(); setSync("local", "Saved on this phone");
 }
-function showApp(){ $("#tabs").hidden=false; document.body.classList.add("has-rail"); applyView(); render(); }
+function showApp(){ $("#tabs").hidden=false; document.body.classList.add("has-rail"); applyView(); render(); takeShared(); }
+/* A roll file shared to the app from the phone (Downloads → Share → BLO Register) opens straight into Import */
+let sharedBusy=false;
+async function takeShared(){
+  if(sharedBusy || !/[?&]shared=1/.test(location.search) || !("caches" in window)) return; sharedBusy=true;
+  try{
+    const c=await caches.open("blo-share"), keys=await c.keys(), files=[];
+    for(const k of keys){ const r=await c.match(k); const b=await r.blob(); files.push(new File([b], decodeURIComponent(r.headers.get("X-Name")||"roll.pdf"), {type:b.type})); await c.delete(k); }
+    history.replaceState(null,"",location.pathname);
+    if(!files.length){ toast("No file came with the share. Try again or use Choose a roll file."); return; }
+    if(viewing) exitView();
+    tab="import"; window._impSec="file"; render(); window.scrollTo(0,0);
+    toast("Received "+files[0].name+" — reading it now");
+    setTimeout(()=>handleFiles(files), 300);
+  }catch(e){ toast("Couldn't open the shared file. Use Choose a roll file."); }
+  finally{ sharedBusy=false; }
+}
 async function signOut(){
   if(cloud.ready && (cloud.dirty.size || cloud.busy)){ toast("Still saving — try again in a moment"); return; }
   try{ if(session && session.token) await rpc("blo_logout",{p_token:session.token}); }catch(e){}
@@ -1887,10 +1903,11 @@ function eciWindow(){
         <li>Tap <strong>Open ECI download page</strong>.</li>
         <li>Choose the same State, District, Assembly, Roll type and Language shown above.</li>
         <li>Tick part <strong id="ePartShow">${val("part",m.part||"—")}</strong>, type the captcha and download.</li>
-        <li>Come back here and tap <strong>Select file</strong> below. The PDF is in your phone's Downloads.</li>
+        <li><strong>Fastest:</strong> when the download finishes, open it from the notification (or Files → Downloads), tap <strong>Share</strong> and choose <strong>BLO Register</strong>. The app opens and starts reading it.</li>
+        <li>Or come back here and tap <strong>Choose the file</strong>. The PDF is in your phone's Downloads.</li>
       </ol>
       <a class="btn primary" id="eciGo" href="${ECI_URL}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">↗ Open ECI download page</a>
-      <p class="muted small" style="margin:0">The ECI site asks for a captcha, so the download has to be done by you. The app reads the file once you choose it.</p>
+      <p class="muted small" style="margin:0">The ECI site asks for a captcha, so the download has to be done by you. <b>Share → BLO Register</b> works only after the app is installed on the home screen.</p>
     </div></section>`;
 }
 function bindEci(){
