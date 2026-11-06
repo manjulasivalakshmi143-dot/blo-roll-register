@@ -18,7 +18,7 @@
 :root{
   --paper:#F5F4F8; --surface:#FFFFFF; --ink:#1E1A2B; --muted:#686279; --line:#E1DEE9;
   --accent:#5A2DA3; --accent-ink:#FFFFFF; --accent-soft:#EEE7FA;
-  --ok:#1D7349; --ok-soft:#E3F3EA; --info:#1E5A9E; --band-ink:#FFFFFF; --warn:#9A5B00; --warn-soft:#FBF0DD; --bad:#B3261E; --bad-soft:#FBE6E4;
+  --ok:#1D7349; --ok-soft:#E3F3EA; --info:#1E5A9E; --accent2:#8A2D6B; --band-ink:#FFFFFF; --warn:#9A5B00; --warn-soft:#FBF0DD; --bad:#B3261E; --bad-soft:#FBE6E4;
   --f-display:"Archivo","Noto Sans",system-ui,sans-serif;
   --f-body:"Noto Sans","Noto Sans Telugu",system-ui,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -27,11 +27,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --paper:#121019; --surface:#1B1824; --ink:#ECE9F3; --muted:#A49EB6; --line:#2F2A3C;
   --accent:#B896F3; --accent-ink:#1A1030; --accent-soft:#2A2141;
-  --ok:#62C893; --ok-soft:#173326; --info:#7DB4F0; --band-ink:#0F1420; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}}
+  --ok:#62C893; --ok-soft:#173326; --info:#7DB4F0; --accent2:#E79BCB; --band-ink:#0F1420; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#121019; --surface:#1B1824; --ink:#ECE9F3; --muted:#A49EB6; --line:#2F2A3C;
   --accent:#B896F3; --accent-ink:#1A1030; --accent-soft:#2A2141;
-  --ok:#62C893; --ok-soft:#173326; --info:#7DB4F0; --band-ink:#0F1420; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}
+  --ok:#62C893; --ok-soft:#173326; --info:#7DB4F0; --accent2:#E79BCB; --band-ink:#0F1420; --warn:#E9AC4E; --warn-soft:#352813; --bad:#F28B82; --bad-soft:#3A1C1A; color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
@@ -179,6 +179,18 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .win .checklist{border:0;border-radius:0}
 .win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
 .btn.grow{flex:1}
+.d4-t{font-family:var(--f-display);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 12px 6px;border-top:1px solid var(--line)}
+.d4-blk .kv,#d4Fields>.kv{border-left:0;border-right:0;border-radius:0}
+.pv-act{flex-wrap:nowrap;gap:6px}
+.pv-act .btn{padding:8px 10px;font-size:.82rem}
+#printArea{display:none}
+@media print{
+  @page{margin:0}
+  body{padding:0!important;background:#fff!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  #printArea img{display:block;width:100%;page-break-after:always;break-after:page}
+}
 .guide{display:block}
 .guide>summary{list-style:none;cursor:pointer}
 .guide>summary::-webkit-details-marker{display:none}
@@ -580,7 +592,7 @@ function settingsCard(){
         <label class="f">Part number<input id="sPart" value="${esc(m.part)}" inputmode="numeric"></label>
         <label class="f">Part / polling station name<input id="sPartN" value="${esc(m.partName)}"></label>
       </div>
-      <label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label>
+      <div class="grid2"><label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label><label class="f">BLO phone<input id="sBloPh" value="${esc(m.bloPhone||"")}" inputmode="tel" maxlength="10"></label></div>
       <button class="btn primary" id="sSave">Save details</button>
     </div></details>`;
 }
@@ -591,7 +603,7 @@ function whereText(){
 function bindSettings(){
   const b=$("#sSave"); if(!b) return;
   b.onclick=()=>{ pushUndo("part details");
-    Object.assign(state.meta,{ac:$("#sAc").value.trim(),acName:$("#sAcN").value.trim(),part:$("#sPart").value.trim(),partName:$("#sPartN").value.trim(),blo:$("#sBlo").value.trim()});
+    Object.assign(state.meta,{ac:$("#sAc").value.trim(),acName:$("#sAcN").value.trim(),part:$("#sPart").value.trim(),partName:$("#sPartN").value.trim(),blo:$("#sBlo").value.trim(), bloPhone:($("#sBloPh")?$("#sBloPh").value.replace(/\D/g,""):state.meta.bloPhone)||""});
     commit("details", -1, "Updated part details"); toast("Details saved"); render(); };
 }
 
@@ -673,6 +685,100 @@ function renderApps(el){
   $("#appQ").addEventListener("input", e=>{ window._appQ=e.target.value; const pos=e.target.selectionStart; renderApps(el); const n=$("#appQ"); n.focus(); n.setSelectionRange(pos,pos); });
   el.querySelectorAll(".v[data-id]").forEach(b=>b.onclick=()=>openApp(b.dataset.id));
 }
+/* ---------- Annexure IV declaration (Form 6 / Form 8) ---------- */
+const DECL4={"file": "forms/declaration-annex4.pdf", "fields": [["name", 190, 139, 0, 340], ["phone", 180, 154.5, 0, 200], ["address", 146, 170, 0, 385], ["eName", 155, 217.5, 0, 136], ["eEpic", 190, 235.5, 0, 100], ["eRel", 166, 253.5, 0, 125], ["eRelType", 151, 271.5, 0, 140], ["eDist", 125, 289.5, 0, 155], ["eState", 118, 307.5, 0, 165], ["eAcName", 136, 325.5, 0, 155], ["eAcNo", 112, 365, 0, 45], ["ePart", 182, 365, 0, 40], ["eSr", 250, 365, 0, 38], ["rName", 330, 217.5, 0, 200], ["rEpic", 398, 235.5, 0, 132], ["rRel", 376, 253.5, 0, 154], ["rRelType", 358, 271.5, 0, 169], ["rDist", 334, 289.5, 0, 184], ["rState", 327, 307.5, 0, 194], ["rAcName", 346, 325.5, 0, 184], ["rAcNo", 320, 365, 0, 52], ["rPart", 402, 365, 0, 46], ["rSr", 482, 365, 0, 46], ["fName", 300, 398.5, 0, 230], ["fEpic", 300, 418.5, 0, 230], ["mName", 300, 438.5, 0, 230], ["mEpic", 300, 458.5, 0, 230], ["sName", 300, 478.5, 0, 230], ["sEpic", 300, 498.5, 0, 230], ["blo", 330, 782, 0, 215]], "ticks": {"f6": [345, 549, 352, 556], "f8": [415.5, 575.5, 422.5, 582.5]}, "sig": {"page": 0, "x": 462, "y": 706, "w": 84, "h": 24}};
+const D4_KEYS={e:["Name","Epic","Rel","RelType","Dist","State","AcName","AcNo","Part","Sr"]};
+function declDefaults(a){
+  const m=state.meta, e=m.eci||{};
+  const base={ Dist:e.district||"", State:e.state||"Andhra Pradesh", AcName:m.acName||"", AcNo:m.ac||"" };
+  return { use: a.type==="f6", sir:"self",
+    e:Object.assign({ Name:a.name||"", Epic:"", Rel:a.relName||"", RelType:a.relType||"Father", Part:"", Sr:"" }, base),
+    r:Object.assign({ Name:a.relName||"", Epic:"", Rel:"", RelType:"Father", Part:"", Sr:"" }, base),
+    f:{ fName:a.relType==="Father"?a.relName||"":"", fEpic:"", mName:"", mEpic:"", sName:a.relType==="Husband"?a.relName||"":"", sEpic:"" } };
+}
+function docRule(a){
+  const d=a.dob?new Date(a.dob):null; if(!d||isNaN(d)) return "Born before 01-07-1987: own document. 1987–2004: own + one parent's. After 02-12-2004: own + father's + mother's.";
+  if(d<new Date("1987-07-01")) return "Born before 01-07-1987: one document for self (date / place of birth).";
+  if(d<=new Date("2004-12-02")) return "Born 01-07-1987 to 02-12-2004: one document for self and one for father or mother.";
+  return "Born after 02-12-2004: one document each for self, father and mother.";
+}
+function declWindow(a, locked){
+  const d=Object.assign(declDefaults(a), a.d4||{}); d.e=Object.assign(declDefaults(a).e, (a.d4||{}).e); d.r=Object.assign(declDefaults(a).r, (a.d4||{}).r); d.f=Object.assign(declDefaults(a).f, (a.d4||{}).f);
+  const dis=locked?"disabled":"";
+  const kv=(k,v)=>`<div class="k">${k}</div><div class="val">${v}</div>`;
+  const inp=(id,val,extra="")=>`<input id="${id}" value="${esc(val)}" ${extra} ${dis}>`;
+  const block=(p,o,title)=>`<div class="d4-blk" data-blk="${p}" ${d.sir===({e:"self",r:"rel"})[p]?"":"hidden"}><div class="d4-t">${title}</div><div class="kv">
+      ${kv("Name", inp(`d4${p}Name`,o.Name,`placeholder="${p==="e"?"Same as applicant":"Same as father / husband"}"`))}
+      ${kv("EPIC no.", inp(`d4${p}Epic`,o.Epic,'class="mono"'))}
+      ${kv("Relative's name", inp(`d4${p}Rel`,o.Rel))}
+      ${kv("Relationship", `<select id="d4${p}RelType" ${dis}>${["Father","Mother","Husband","Wife","Guardian","Other"].map(r=>`<option ${o.RelType===r?"selected":""}>${r}</option>`).join("")}</select>`)}
+      ${kv("District", inp(`d4${p}Dist`,o.Dist))}
+      ${kv("State", inp(`d4${p}State`,o.State))}
+      ${kv("AC name", inp(`d4${p}AcName`,o.AcName))}
+      ${kv("AC no. / Part / Sr", `<div class="grid3">${inp(`d4${p}AcNo`,o.AcNo,'inputmode="numeric" placeholder="AC"')}${inp(`d4${p}Part`,o.Part,'inputmode="numeric" placeholder="Part"')}${inp(`d4${p}Sr`,o.Sr,'inputmode="numeric" placeholder="Sr"')}</div>`)}
+    </div></div>`;
+  return `<section class="win" id="d4Win" style="--wc:var(--accent2)"><div class="win-h"><span>④ Declaration form</span><span class="win-s">Annexure IV · last SIR (2002)</span></div>
+    <div class="panel" style="padding:12px;gap:10px">
+      <label class="row small"><input type="checkbox" id="d4Use" ${d.use?"checked":""} ${dis}> Add the declaration form to the PDF${a.type==="f8"?" (Form 8 shifting from outside the state)":""}</label>
+      <div class="field-block" id="d4Body" ${d.use?"":"hidden"}><span>Is the applicant's name in the last SIR (2002) roll?</span>
+        ${seg("d4sir",[["self","Yes, applicant is"],["rel","No, parent / relative is"],["none","Not in the list"]],d.sir)}
+      </div>
+    </div>
+    <div id="d4Fields" ${d.use?"":"hidden"}>
+      ${block("e",d.e,"Applicant in the 2002 roll (left column)")}
+      ${block("r",d.r,"Parent / relative in the 2002 roll (right column)")}
+      <div class="note warn small" data-blk="n" style="margin:0 12px" ${d.sir==="none"?"":"hidden"}>Only the family table below is filled. The ERO may send a notice; then the applicant gives documents. ${esc(docRule(a))}</div>
+      <div class="d4-t">Family details (bottom table)</div>
+      <div class="kv">
+        ${kv("Father / guardian", inp("d4fName",d.f.fName))}
+        ${kv("Father's EPIC", inp("d4fEpic",d.f.fEpic,'class="mono"'))}
+        ${kv("Mother", inp("d4mName",d.f.mName))}
+        ${kv("Mother's EPIC", inp("d4mEpic",d.f.mEpic,'class="mono"'))}
+        ${kv("Spouse", inp("d4sName",d.f.sName))}
+        ${kv("Spouse's EPIC", inp("d4sEpic",d.f.sEpic,'class="mono"'))}
+      </div>
+      <p class="muted small" style="margin:8px 12px 12px">BLO name and phone are printed from Account → My part details. Check names in the 2002 roll at voters.eci.gov.in.</p>
+    </div></section>`;
+}
+function bindDecl(sh){
+  const use=$("#d4Use"); if(!use) return;
+  use.addEventListener("change",()=>{ $("#d4Body").hidden=!use.checked; $("#d4Fields").hidden=!use.checked; });
+  const g=sh.querySelector('[data-seg="d4sir"]');
+  if(g) g.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const v=b.dataset.v;
+    sh.querySelector('[data-blk="e"]').hidden=v!=="self"; sh.querySelector('[data-blk="r"]').hidden=v!=="rel"; sh.querySelector('[data-blk="n"]').hidden=v!=="none"; });
+}
+function collectDecl(sh){
+  const use=$("#d4Use"); if(!use) return undefined;
+  const v=id=>{ const e=$("#"+id); return e?e.value.trim():""; };
+  const b=sh.querySelector('[data-seg="d4sir"] [aria-pressed="true"]');
+  const pick=p=>Object.fromEntries(D4_KEYS.e.map(k=>[k, /Epic/.test(k)?normEpic(v(`d4${p}${k}`)):v(`d4${p}${k}`)]));
+  return { use:use.checked, sir:b?b.dataset.v:"self", e:pick("e"), r:pick("r"),
+    f:{ fName:v("d4fName"), fEpic:normEpic(v("d4fEpic")), mName:v("d4mName"), mEpic:normEpic(v("d4mEpic")), sName:v("d4sName"), sEpic:normEpic(v("d4sEpic")) } };
+}
+async function appendDecl(doc, a, font){
+  const d=a.d4; if(!d||!d.use) return;
+  const bytes=await (await fetch(DECL4.file)).arrayBuffer();
+  const src=await PDFLib.PDFDocument.load(bytes);
+  font=await src.embedFont(PDFLib.StandardFonts.HelveticaBold);
+  const pg=src.getPages()[0], H=pg.getHeight(), ink=PDFLib.rgb(0.05,0.1,0.45);
+  const up=x=>latin(x).toUpperCase(), m=state.meta;
+  const V={ name:up(a.name), phone:a.phone||"", address:[a.house,latin(a.area),latin(a.town||m.acName)].filter(Boolean).join(", "),
+    blo:[up(m.blo||""), m.bloPhone||""].filter(Boolean).join(" · ") };
+  d.e=Object.assign({},d.e); d.r=Object.assign({},d.r); d.f=Object.assign({},d.f);
+  if(!d.e.Name) d.e.Name=a.name; if(!d.e.Rel) d.e.Rel=a.relName; if(!d.r.Name) d.r.Name=a.relName;
+  if(!d.f.fName && a.relType==="Father") d.f.fName=a.relName; if(!d.f.sName && a.relType==="Husband") d.f.sName=a.relName;
+  if(d.sir==="self") for(const k of D4_KEYS.e) V["e"+k]= /Name|Rel$/.test(k)?up(d.e[k]):latin(d.e[k]);
+  if(d.sir==="rel") for(const k of D4_KEYS.e) V["r"+k]= /Name|Rel$/.test(k)?up(d.r[k]):latin(d.r[k]);
+  for(const k of ["fName","mName","sName"]) V[k]=up(d.f[k]); for(const k of ["fEpic","mEpic","sEpic"]) V[k]=d.f[k]||"";
+  for(const [k,x,y,,mw] of DECL4.fields){ const t=V[k]; if(!t) continue; let size=9.5; while(font.widthOfTextAtSize(t,size)>mw && size>6) size-=0.25;
+    pg.drawText(t,{x,y:H-(y-1.2),size,font,color:ink}); }
+  const tb=DECL4.ticks[a.type]; if(tb){ const [x0,y0,x1,y1]=tb; pg.drawLine({start:{x:x0,y:H-y0},end:{x:x1,y:H-y1},thickness:1.4,color:ink}); pg.drawLine({start:{x:x0,y:H-y1},end:{x:x1,y:H-y0},thickness:1.4,color:ink}); }
+  const sig=m.signature;
+  if(sig&&sig.png&&a.useSig===true){ try{ const img=await src.embedPng(sig.png), b=DECL4.sig; const k=Math.min(b.w/img.width,b.h/img.height), w=img.width*k, h=img.height*k;
+    pg.drawImage(img,{x:b.x+(b.w-w)/2,y:H-(b.y+b.h)+(b.h-h)/2,width:w,height:h}); }catch(e){} }
+  const copied=await doc.copyPages(await PDFLib.PDFDocument.load(await src.save()), src.getPageIndices());
+  copied.forEach(p=>doc.addPage(p));
+}
 function appAge(a){ if(!a.dob) return null; const t=new Date(a.dob); if(isNaN(t)) return null; return Math.floor((Date.now()-t.getTime())/31557600000); }
 function openApp(id, typeHint){
   const L=appsList(), isNew=!id;
@@ -720,6 +826,7 @@ function openApp(id, typeHint){
       <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
       <p class="muted small" style="margin:0">Names print in English capitals. Preview and check before submitting.</p>
     </div></section>`:""}
+    ${(a.type==="f6"||a.type==="f8")?declWindow(a, locked):""}
     <section class="win" style="--wc:var(--ok)"><div class="win-h"><span>③ Document checklist</span><span class="win-s" id="docCount">${d.done}/${d.need.length} required</span></div>
     <div class="checklist" id="docList">${T.docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
     <p class="muted small" style="margin:0;padding:8px 12px">Never write the Aadhaar number here. Tick only that you have seen the document.</p></section>
@@ -738,6 +845,7 @@ function openApp(id, typeHint){
   sh.onclick=e=>{ if(e.target.id==="sbg"||e.target.closest("#apX")) closeSheet(); };
   sh.querySelectorAll(".seg").forEach(sg=>sg.onclick=e=>{ const b=e.target.closest("button"); if(!b) return; sg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
     if(sg.dataset.seg==="atype" && b.dataset.v!==a.type){ openApp(null, b.dataset.v); } });
+  bindDecl(sh);
   if($("#pDob")&&$("#oDecl")) $("#pDob").addEventListener("change", ()=>{ const ag=appAge({dob:$("#pDob").value}); if(ag!=null) $("#oDecl").checked = ag>=21; });
   if($("#pVE")) $("#pVE").addEventListener("change", ()=>{ const e=normEpic($("#pVE").value); const v=e&&state.voters.find(x=>x.epic===e&&!x.gone); if(!v){ if(e) toast("This EPIC is not in your roll — enter details by hand"); return; }
     const set=(id,val)=>{ const el=$("#"+id); if(el && !el.value && val) el.value=val; };
@@ -753,6 +861,7 @@ function openApp(id, typeHint){
     const ref=$("#pRef").value.trim().toUpperCase();
     if(ref && L.some(y=>y.id!==a.id && String(y.refNo||"").toUpperCase()===ref)){ toast("Another application already has Ref ID "+ref); return null; }
     const docs={}; sh.querySelectorAll("[data-doc]").forEach(c=>{ if(c.checked) docs[c.dataset.doc]=true; });
+    const d4=collectDecl(sh); if(d4!==undefined) a.d4=d4;
     const od=id=>{ const e=$("#"+id); return e?e.value.trim():undefined; };
     if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), serialNo:od("oSl")??a.serialNo, decl:$("#oDecl")?$("#oDecl").checked:a.decl, noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
       state.meta.formDefaults=Object.assign({}, state.meta.formDefaults, { area:a.area, town:a.town, hearTime:a.hearTime, hearPlace:a.hearPlace }); }
@@ -815,6 +924,7 @@ async function buildFormPdf(a){
       pg.drawImage(img,{ x:b.x+(b.w-w)/2, y:H-(b.y+b.h)+(b.h-h)/2, width:w, height:h }); }catch(e){}
   }
   if(T.declPage!=null && a.decl===false && pages.length>T.declPage) doc.removePage(T.declPage);
+  await appendDecl(doc, a, font);
   const out=await doc.save();
   const name=`${(APP_TYPES[a.type]||{short:"Form"}).short.replace(/\s+/g,"")}_${(vals.refId||vals.applicant||"application").replace(/[^\w\-]+/g,"_")}.pdf`;
   return { bytes:out, name };
@@ -824,15 +934,22 @@ async function downloadFormPdf(a){
     if(saveFile(name, new Blob([bytes],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); } }
   catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
 }
+function printPages(ov){
+  const cs=[...ov.querySelectorAll(".pv-page canvas")]; if(!cs.length){ toast("Pages are still loading"); return; }
+  let pa=document.getElementById("printArea"); if(!pa){ pa=document.createElement("div"); pa.id="printArea"; document.body.appendChild(pa); }
+  pa.innerHTML=cs.map(c=>`<img src="${c.toDataURL("image/png")}" alt="">`).join("");
+  setTimeout(()=>{ try{ window.print(); }catch(e){ toast("Printing isn't available here. Download the PDF and print it."); } }, 150);
+}
 async function previewFormPdf(a){
   let built; try{ toast("Preparing preview…"); built=await buildFormPdf(a); }catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); return; }
   const ov=document.createElement("div"); ov.className="pv-bg"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-label","PDF preview");
   ov.innerHTML=`<div class="pv-band"><div style="min-width:0"><div class="pv-k">Preview</div><div class="pv-n">${esc(built.name)}</div></div>
-    <div class="row" style="flex-wrap:nowrap"><button class="btn primary" id="pvDl">⬇ Download</button><button class="btn" id="pvX" aria-label="Close preview">✕</button></div></div>
+    <div class="row pv-act"><button class="btn" id="pvEd">✎ Edit</button><button class="btn" id="pvPr">🖨 Print</button><button class="btn primary" id="pvDl">⬇ Download</button></div></div>
     <div class="pv-pages" id="pvPages"><div class="muted small" style="padding:20px;text-align:center">Loading pages…</div></div>`;
   document.body.appendChild(ov);
   const close=()=>ov.remove();
-  ov.querySelector("#pvX").onclick=close;
+  ov.querySelector("#pvEd").onclick=()=>{ close(); const w=document.getElementById("ordBox")||document.querySelector(".sheet"); if(w) w.scrollIntoView({block:"start",behavior:"smooth"}); };
+  ov.querySelector("#pvPr").onclick=()=>printPages(ov);
   ov.querySelector("#pvDl").onclick=()=>{ if(saveFile(built.name, new Blob([built.bytes],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); } };
   try{
     if(typeof pdfjsLib==="undefined") throw new Error("viewer not loaded");
@@ -841,7 +958,7 @@ async function previewFormPdf(a){
     const box=ov.querySelector("#pvPages"); box.innerHTML="";
     const w=Math.min(box.clientWidth-16, 900);
     for(let i=1;i<=pdf.numPages;i++){
-      const page=await pdf.getPage(i), vp0=page.getViewport({scale:1}), scale=w/vp0.width*(window.devicePixelRatio||1);
+      const page=await pdf.getPage(i), vp0=page.getViewport({scale:1}), scale=Math.max(w/vp0.width*(window.devicePixelRatio||1), 2);
       const vp=page.getViewport({scale}), c=document.createElement("canvas"); c.width=vp.width; c.height=vp.height; c.style.width=w+"px";
       const wrap=document.createElement("div"); wrap.className="pv-page"; wrap.innerHTML=`<div class="pv-pn">Page ${i} of ${pdf.numPages}</div>`; wrap.appendChild(c); box.appendChild(wrap);
       await page.render({canvasContext:c.getContext("2d"), viewport:vp}).promise;
@@ -851,13 +968,13 @@ async function previewFormPdf(a){
 
 /* ask every time whether the BLO signs the receipt (జారీచేసిన అధికారి) */
 function askSign(a, go){
-  const T=FORM_TEMPLATES[a.type]; if(!T||!T.sig){ a.useSig=false; return go(); }
+  const T=FORM_TEMPLATES[a.type]; if(!T||(!T.sig&&!(a.d4&&a.d4.use))){ a.useSig=false; return go(); }
   const sig=state.meta.signature, has=sig&&sig.png;
   const ov=document.createElement("div"); ov.className="ask-bg";
   ov.innerHTML=`<div class="ask" role="dialog" aria-modal="true" aria-label="BLO signature">
     <section class="win" style="--wc:var(--accent)"><div class="win-h"><span>✍ Sign as BLO?</span></div>
     <div class="panel" style="padding:14px">
-      <p style="margin:0">Add your signature where the BLO signs, on the receipt (<strong>జారీచేసిన అధికారి</strong>)?</p>
+      <p style="margin:0">Add your signature where the BLO signs: the receipt (<strong>జారీచేసిన అధికారి</strong>)${a.d4&&a.d4.use?" and <strong>BLO's Signature</strong> on the declaration form":""}?</p>
       ${has?`<div class="sig-box"><img src="${sig.png}" alt="My signature"></div>`:`<div class="note warn small">You haven't saved a signature yet. Add one in Account → My signature.</div>`}
     </div>
     <div class="win-f"><div class="row" style="flex-wrap:nowrap">
@@ -2055,7 +2172,7 @@ function renderBackup(el){
         <label class="f">Part number<input id="sPart" value="${esc(m.part)}" inputmode="numeric"></label>
         <label class="f">Part / polling station name<input id="sPartN" value="${esc(m.partName)}"></label>
       </div>
-      <label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label>
+      <div class="grid2"><label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label><label class="f">BLO phone<input id="sBloPh" value="${esc(m.bloPhone||"")}" inputmode="tel" maxlength="10"></label></div>
       <button class="btn primary" id="sSave">Save details</button>`;
   if(sec==="sign") body=`<div class="sig-box">${sig?`<img src="${m.signature.png}" alt="My signature">`:`<span class="muted small">No signature yet</span>`}</div>
         <label class="f">Name to show as BLO<input id="sigName" value="${esc((m.signature&&m.signature.name)||m.blo||"")}" placeholder="Your name"></label>
