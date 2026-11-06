@@ -1085,7 +1085,7 @@ function declWindow(a, locked){
         ${kv("Spouse", inp("d4sName",d.f.sName))}
         ${kv("Spouse's EPIC", inp("d4sEpic",d.f.sEpic,'class="mono"'))}
       </div>
-      <p class="muted small" style="margin:8px 12px 12px">BLO name and phone are printed from Account → My part details. Use the search links at the top of this window to find the 2002 details.</p>
+      <p class="muted small" style="margin:8px 12px 12px">BLO name and phone are printed from Account settings → My part details. Use the search links at the top of this window to find the 2002 details.</p>
     </div></section>`;
 }
 function bindDecl(sh){
@@ -1346,7 +1346,7 @@ function askSign(a, go){
     <section class="win" style="--wc:var(--accent)"><div class="win-h"><span>✍ Sign as BLO?</span></div>
     <div class="panel" style="padding:14px">
       <p style="margin:0">Add your signature where the BLO signs: the receipt (<strong>జారీచేసిన అధికారి</strong>)${a.d4&&a.d4.use?" and <strong>BLO's Signature</strong> on the declaration form":""}?</p>
-      ${has?`<div class="sig-box"><img src="${sig.png}" alt="My signature"></div>`:`<div class="note warn small">You haven't saved a signature yet. Add one in Account → My signature.</div>`}
+      ${has?`<div class="sig-box"><img src="${sig.png}" alt="My signature"></div>`:`<div class="note warn small">You haven't saved a signature yet. Add one in Account settings → My signature.</div>`}
     </div>
     <div class="win-f"><div class="row" style="flex-wrap:nowrap">
       <button class="btn grow" id="sgN">No, leave blank</button>
