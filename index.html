@@ -66,11 +66,11 @@ button{cursor:pointer}
 /* tabs */
 /* navigation rail on the left: icons with labels on phones, a full sidebar on wide screens */
 nav.tabs{position:fixed;left:0;top:0;bottom:0;width:calc(var(--rail) + env(safe-area-inset-left,0px));z-index:6;background:var(--surface);border-right:1px solid var(--line);
-  display:flex;flex-direction:column;gap:6px;padding:calc(70px + env(safe-area-inset-top,0px)) 6px calc(14px + env(safe-area-inset-bottom,0px)) calc(6px + env(safe-area-inset-left,0px));overflow-y:auto}
+  display:flex;flex-direction:column;gap:3px;padding:calc(64px + env(safe-area-inset-top,0px)) 6px calc(14px + env(safe-area-inset-bottom,0px)) calc(6px + env(safe-area-inset-left,0px));overflow-y:auto}
 nav.tabs .rail-brand{display:none}
 nav.tabs .rail-brand span{width:12px;height:34px;border-radius:6px 6px 9px 9px;background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent))}
 nav.tabs .rail-brand b{display:none}
-nav.tabs button{position:relative;background:none;border:0;padding:10px 2px;border-radius:12px;font-size:.68rem;font-weight:650;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;transition:background .15s ease,color .15s ease}
+nav.tabs button{position:relative;background:none;border:0;padding:8px 2px;border-radius:12px;font-size:.68rem;font-weight:650;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;transition:background .15s ease,color .15s ease}
 nav.tabs button svg{width:24px;height:24px;flex:none}
 nav.tabs button:hover{background:var(--paper);color:var(--ink)}
 nav.tabs button[aria-current="true"]{color:var(--accent);background:var(--accent-soft)}
@@ -233,6 +233,7 @@ td,th{background:var(--surface)}
   <button data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button data-tab="voters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.5 5.4"/></svg>Voters</button>
   <button data-action="add" class="add-tab" aria-label="Add a new voter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Add voter</button>
+  <button data-tab="lists"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="13" height="16" rx="2"/><path d="M19 7v13a1 1 0 0 1-1 1H8"/><path d="M7 9h5M7 13h5"/></svg>Lists</button>
   <button data-tab="asd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/><path d="M15.5 15.5l3 3M18.5 15.5l-3 3"/></svg>ASD list</button>
   <button data-tab="import"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>Import</button>
   <button data-tab="revisions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M4 12h7M4 17h10"/><path d="M17 10l3 3-3 3M20 13h-6"/></svg>Revisions</button>
@@ -344,9 +345,9 @@ async function connectAccount(){
       if(state.savedAt > (state.cloudSavedAt||0)) lsSet("bloreg:older-phone-copy:"+session.email, state);
       const voters=[]; for(const c of r.chunks) voters.push(...((c&&c.v)||[]));
       state = { meta:Object.assign(blank().meta, r.meta||{}), voters, savedAt:r.saved_at||0, cloudSavedAt:r.saved_at||0 };
-      saveLocal(); cloud.ready=true; setSync("saved","Saved to account"); render();
+      saveLocal(); cloud.ready=true; setSync("saved","Saved to account"); render(); syncLists();
     } else {
-      cloud.ready=true;
+      cloud.ready=true; syncLists();
       if(state.voters.length || state.meta.part){ markDirty(null); scheduleCloud(); } else setSync("saved","Account ready");
     }
   }catch(e){
@@ -447,10 +448,10 @@ function vIndex(id){ return state.voters.findIndex(v=>v.id===id); }
 /* ================= render ================= */
 function render(){
   document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===tab));
-  ({home:renderHome, voters:renderVoters, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
+  ({home:renderHome, voters:renderVoters, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
-document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } tab=b.dataset.tab; render(); window.scrollTo(0,0); });
+document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } if(b.dataset.tab==="lists") window._openList=null; tab=b.dataset.tab; render(); window.scrollTo(0,0); });
 
 function meterRow(label, n, total, cls){
   const p= total? Math.round(n*100/total):0;
@@ -535,6 +536,117 @@ function bindSettings(){
   b.onclick=()=>{ pushUndo("part details");
     Object.assign(state.meta,{ac:$("#sAc").value.trim(),acName:$("#sAcN").value.trim(),part:$("#sPart").value.trim(),partName:$("#sPartN").value.trim(),blo:$("#sBlo").value.trim()});
     commit("details", -1, "Updated part details"); toast("Details saved"); render(); };
+}
+
+/* ---------- saved lists: every roll kept by name (2025, 2026, draft, final…) ---------- */
+const LIST_TYPES=["Draft roll","Final roll","Supplementary","Other"];
+function listsMeta(){ if(!Array.isArray(state.meta.lists)) state.meta.lists=[]; return state.meta.lists; }
+function listKey(id){ return "bloreg:list:"+((session&&session.email)||"device")+":"+id; }
+function guessList(src){
+  src=String(src||""); const y=(src.match(/20\d\d/)||[String(new Date().getFullYear())])[0];
+  const type=/draft/i.test(src)?"Draft roll":/final/i.test(src)?"Final roll":/supp/i.test(src)?"Supplementary":"Other";
+  const kind=/\bSIR\b|-SIR-/i.test(src)?"SIR ":/SSR|summary/i.test(src)?"SSR ":"";
+  return { name:`${y} ${kind}${type==="Other"?"roll":type.toLowerCase()}`.replace(/\s+/g," ").trim(), type, year:y };
+}
+function cleanListRows(rows){ return rows.map(r=>{ const o={}; for(const k of ["sl","epic","name","nameEn","relType","relName","relNameEn","house","age","gender","sec","photo"]) if(r[k]) o[k]=r[k]; return o; }); }
+function keepStagingAsList(){
+  const S=staging; if(!S||!S.rows||!S.rows.length||S.fromList) return;
+  const n=$("#lName"), t=$("#lType"), y=$("#lYear");
+  if(n){ S.listName=n.value.trim(); S.listType=t.value; S.listYear=y.value.trim(); }
+  if(S.listName==null){ const g=guessList(S.source); S.listName=g.name; S.listType=g.type; S.listYear=g.year; }
+  saveList({ id:"L"+Date.now().toString(36)+uid8().slice(0,4), name:S.listName||S.source||"Roll", type:S.listType||"Other", year:S.listYear||"", source:S.source }, cleanListRows(S.rows));
+}
+function saveList(meta, rows){
+  meta.count=rows.length; meta.at=Date.now(); meta.synced=false;
+  if(!lsSet(listKey(meta.id), rows)) toast("Phone storage is full — the list is kept in your account only");
+  const L=listsMeta(); const i=L.findIndex(x=>x.id===meta.id); if(i>=0) L[i]=meta; else L.unshift(meta);
+  commit("list",-1,"Saved list: "+meta.name+" ("+rows.length+" voters)");
+  uploadList(meta.id, rows);
+}
+async function uploadList(id, rows){
+  if(!(session&&session.token)) return;
+  const m=listsMeta().find(x=>x.id===id); rows=rows||lsGet(listKey(id)); if(!m||!rows) return;
+  try{
+    const n=Math.max(1,Math.ceil(rows.length/CH));
+    for(let i=0;i<n;i++) await rpc("blo_save_list_chunk",{p_token:session.token,p_list:id,p_idx:i,p_v:{v:rows.slice(i*CH,(i+1)*CH)}});
+    await rpc("blo_trim_list",{p_token:session.token,p_list:id,p_chunks:n});
+    m.synced=true; commit("list-sync",-1);
+  }catch(e){ /* stays on the phone; tried again on next sign-in */ }
+}
+function syncLists(){ for(const m of listsMeta()) if(!m.synced) uploadList(m.id); }
+async function getListRows(id){
+  let rows=lsGet(listKey(id)); if(rows) return rows;
+  if(session&&session.token){ const r=await rpc("blo_load_list",{p_token:session.token,p_list:id}); rows=[]; for(const c of (r||[])) rows.push(...((c&&c.v)||[])); if(rows.length){ lsSet(listKey(id),rows); return rows; } }
+  return null;
+}
+async function deleteList(id){
+  const L=listsMeta(), i=L.findIndex(x=>x.id===id); if(i<0) return;
+  const m=L[i]; L.splice(i,1); try{ localStorage.removeItem(listKey(id)); }catch(e){}
+  commit("list",-1,"Deleted list: "+m.name);
+  if(session&&session.token){ try{ await rpc("blo_trim_list",{p_token:session.token,p_list:id,p_chunks:0}); }catch(e){} }
+}
+function renderLists(el){
+  if(window._openList) return renderOneList(el, window._openList);
+  const L=listsMeta(), A=state.meta.asdList, asdN=(A&&A.rows&&A.rows.length)||0;
+  const card=(attrs,title,sub,pills)=>`<button class="v list-card" ${attrs}><span class="sl">${pills.icon}</span><span style="min-width:0"><div class="nm">${title}</div><div class="meta">${sub}</div><div class="pills">${pills.html}</div></span></button>`;
+  el.innerHTML=`<div class="panel">
+    <h2>Lists</h2>
+    <p class="muted small" style="margin:0">Every roll you import is kept here by name, so the 2025 roll, 2026 draft, final roll and your ASD list are always one tap away.</p>
+    <div class="voters">
+      ${card('data-go="voters"', "My working roll", `${live().length} voters · revision ${state.meta.rev||0}`, {icon:"★", html:`<span class="pill acc">Current</span>`})}
+      ${card('data-go="asd"', "ASD list", asdN?`${asdN} entries · ${fmtDate(A.at)}`:"Not uploaded yet", {icon:"✕", html:`<span class="pill warn">ASD</span>`})}
+      ${L.map(m=>card(`data-id="${esc(m.id)}"`, esc(m.name), `${m.count} voters · added ${fmtDate(m.at)}`, {icon:esc(String(m.year||"").slice(-2)||"—"), html:`<span class="pill acc">${esc(m.type||"Roll")}</span>${m.year?`<span class="pill">${esc(m.year)}</span>`:""}${session&&session.token&&!m.synced?`<span class="pill warn">Saving…</span>`:""}`})).join("")}
+    </div>
+    ${L.length?"":`<div class="note small">No saved rolls yet. Rolls you import from now on appear here automatically.</div>`}
+    <div class="row">
+      <button class="btn primary" id="newList">⬆ Import a roll</button>
+      ${state.voters.length?`<button class="btn" id="snapList">Save my current roll as a list</button>`:""}
+    </div>
+  </div>`;
+  el.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ tab=b.dataset.go; render(); });
+  el.querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{ window._openList=b.dataset.id; window._listQ=""; window._listShown=150; render(); });
+  $("#newList").onclick=()=>{ tab="import"; render(); };
+  if($("#snapList")) $("#snapList").onclick=()=>{ const g=guessList(""); saveList({ id:"L"+Date.now().toString(36)+uid8().slice(0,4), name:`My roll (${new Date().toLocaleDateString("en-IN")})`, type:"Other", year:g.year, source:"Snapshot of my working roll" }, cleanListRows(live())); render(); toast("Saved in Lists"); };
+}
+async function renderOneList(el, id){
+  const m=listsMeta().find(x=>x.id===id); if(!m){ window._openList=null; return renderLists(el); }
+  el.innerHTML=`<div class="panel"><button class="btn ghost" id="lBack">‹ All lists</button><h2>${esc(m.name)}</h2><div class="muted small">Loading…</div></div>`;
+  $("#lBack").onclick=()=>{ window._openList=null; render(); };
+  let rows; try{ rows=await getListRows(id); }catch(e){ rows=null; }
+  if(tab!=="lists"||window._openList!==id) return;
+  if(!rows){ el.querySelector(".muted.small").textContent="This list isn't on this phone and couldn't be loaded from your account. Check internet and try again."; return; }
+  const q=(window._listQ||"").toLowerCase();
+  const hit=rows.filter(r=>!q||[r.name,r.nameEn,r.relName,r.house,r.epic,r.sl].some(x=>String(x||"").toLowerCase().includes(q)));
+  const mine=new Map(state.voters.filter(v=>v.epic).map(v=>[v.epic,v]));
+  el.innerHTML=`<div class="panel">
+    <button class="btn ghost" id="lBack" style="align-self:flex-start">‹ All lists</button>
+    <div><h2>${esc(m.name)}</h2><div class="muted small">${esc(m.type)}${m.year?" · "+esc(m.year):""} · ${rows.length} voters · ${esc(m.source||"")}</div></div>
+    <div class="row">
+      <button class="btn primary" id="lCmp">Compare with my roll</button>
+      <button class="btn" id="lXl">Download Excel</button>
+      <button class="btn" id="lRen">Rename</button>
+      <button class="btn danger" id="lDel">Delete</button>
+    </div>
+    <input class="search" id="lq" type="search" placeholder="Search this list…" value="${esc(window._listQ||"")}">
+    <div class="muted small">${hit.length} voter${hit.length===1?"":"s"}</div>
+    <div class="voters" id="lRows">${hit.slice(0,window._listShown||150).map(r=>{ const v=r.epic&&mine.get(r.epic); return `<div class="v" style="cursor:default"><span class="sl">${esc(r.sl||"—")}</span><span style="min-width:0"><div class="nm">${esc(r.name||r.nameEn)}${r.nameEn&&r.nameEn!==r.name?`<small>${esc(r.nameEn)}</small>`:""}</div><div class="meta">${r.relName?esc(r.relType||"Rel")+": "+esc(r.relName)+" · ":""}H <span class="mono">${esc(r.house||"—")}</span> · ${esc(r.age||"?")}${esc(r.gender||"")} · <span class="mono">${esc(r.epic||"no EPIC")}</span></div><div class="pills">${v?`<button class="pill ok" data-open="${esc(v.id)}" style="border:0">In my roll · Sl ${esc(v.sl)} ›</button>`:`<span class="pill">Not in my roll</span>`}</div></span></div>`; }).join("")}</div>
+    ${hit.length>(window._listShown||150)?`<button class="btn block more" id="lMore">Show more (${hit.length-(window._listShown||150)} left)</button>`:""}
+  </div>`;
+  $("#lBack").onclick=()=>{ window._openList=null; render(); };
+  $("#lq").addEventListener("input", e=>{ window._listQ=e.target.value; window._listShown=150; const pos=e.target.selectionStart; renderOneList(el,id).then(()=>{ const n=$("#lq"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } }); });
+  if($("#lMore")) $("#lMore").onclick=()=>{ window._listShown=(window._listShown||150)+300; renderOneList(el,id); };
+  $("#lRows").onclick=e=>{ const b=e.target.closest("[data-open]"); if(b) openVoter(b.dataset.open); };
+  $("#lCmp").onclick=()=>{ if(!state.voters.length){ staging={ rows:rows.map(r=>Object.assign({},r)), source:m.name, header:{}, skipped:0, failed:[], fromList:true, listName:m.name, listType:m.type, listYear:m.year }; tab="import"; render(); return; }
+    staging={ rows:rows.map(r=>Object.assign({},r)), source:m.name, header:{}, skipped:0, failed:[], fromList:true }; tab="revisions"; render(); };
+  $("#lXl").onclick=()=>{ if(typeof XLSX==="undefined"){ toast("Excel writer didn't load"); return; }
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.map(r=>({Serial:r.sl,EPIC:r.epic,Name:r.name,"Name (English)":r.nameEn,Relation:r.relType,"Relation name":r.relName,"House no":r.house,Age:r.age,Gender:r.gender,Section:r.sec,"Photo in roll":r.photo==="yes"?"Available":r.photo==="no"?"Not available":""}))), "Voters");
+    saveFile(m.name.replace(/[^\w\-]+/g,"_")+".xlsx", new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})); };
+  $("#lRen").onclick=()=>{
+    $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="rf2"><h2>Rename list</h2><div class="grid3"><label class="f">Name<input id="rN" value="${esc(m.name)}"></label><label class="f">Type<select id="rT">${LIST_TYPES.map(t=>`<option ${m.type===t?"selected":""}>${t}</option>`).join("")}</select></label><label class="f">Year<input id="rY" value="${esc(m.year||"")}" maxlength="4" inputmode="numeric"></label></div><div class="row"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="rX">Cancel</button></div></form></div>`;
+    $("#rX").onclick=closeSheet;
+    $("#rf2").onsubmit=e=>{ e.preventDefault(); m.name=$("#rN").value.trim()||m.name; m.type=$("#rT").value; m.year=$("#rY").value.trim(); commit("list",-1,"Renamed list: "+m.name); closeSheet(); render(); };
+  };
+  $("#lDel").onclick=()=>confirmBox(`Delete the list “${m.name}” (${rows.length} voters)? Your working roll is not affected.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete “${m.name}” permanently?`, "Delete list", async()=>{ await deleteList(id); window._openList=null; render(); toast("List deleted"); }, true),50), true);
 }
 
 /* ---------- uploaded ASD list (kept separately from the roll) ---------- */
@@ -1270,6 +1382,7 @@ function drawJob(el){
 /* --- review staged rows --- */
 function drawReview(el){
   const S=staging, rows=S.rows;
+  if(S.listName==null){ const g=guessList(S.source); S.listName=g.name; S.listType=g.type; S.listYear=g.year; }
   const seen=new Map(); rows.forEach(r=>{ if(r.epic) seen.set(r.epic,(seen.get(r.epic)||0)+1); });
   const flagged=rows.map(r=>!r.epic||seen.get(r.epic)>1||!r.house||!r.age||!r.gender||!/^[A-Z]{3}\d{7}$|\//.test(r.epic));
   const nFlag=flagged.filter(Boolean).length;
@@ -1286,8 +1399,15 @@ function drawReview(el){
       ${rows.map((r,i)=> (S.onlyFlag&&!flagged[i])?"":`<tr class="${flagged[i]?"flag":""}" data-i="${i}">${cols.map(([k,,w])=>`<td><input data-k="${k}" value="${esc(r[k])}" size="${w}" style="width:${w+1}ch" ${k==="epic"||k==="sl"?'class="mono"':""} aria-label="${k} row ${i+1}"></td>`).join("")}<td class="mono muted">${esc(r.page||"")}</td><td><button class="btn ghost" data-del="${i}" aria-label="Remove row">✕</button></td></tr>`).join("")}
     </tbody></table></div>`:""}
     ${!state.voters.length && (S.header.ac||S.header.part)?`<div class="note">Roll header found: AC ${esc(S.header.ac||"")} ${esc(S.header.ac_name||"")} · Part ${esc(S.header.part||"")}. It will fill your part details.</div>`:""}
+    ${rows.length?`<div class="card panel"><h3>Keep this list as</h3>
+      <div class="grid3">
+        <label class="f">Name<input id="lName" value="${esc(S.listName)}"></label>
+        <label class="f">Type<select id="lType">${LIST_TYPES.map(t=>`<option ${S.listType===t?"selected":""}>${t}</option>`).join("")}</select></label>
+        <label class="f">Year<input id="lYear" value="${esc(S.listYear)}" inputmode="numeric" maxlength="4"></label>
+      </div><p class="muted small" style="margin:0">It is saved in Lists so you can open it any time, even after newer rolls.</p></div>`:""}
     <div class="row">
       ${rows.length?(state.voters.length?`<button class="btn primary" id="toCompare">Compare with my roll</button>`:`<button class="btn primary" id="saveRoll">Save as my roll</button>`):""}
+      ${rows.length&&state.voters.length?`<button class="btn" id="onlyList">Only save in Lists</button>`:""}
       <button class="btn" id="discard">Discard import</button>
     </div>
   </div>`;
@@ -1302,6 +1422,8 @@ function drawReview(el){
   if($("#onlyFlag")) $("#onlyFlag").onclick=()=>{ S.onlyFlag=!S.onlyFlag; drawReview(el); };
   if($("#retryP")) $("#retryP").onclick=async()=>{ const job=S.job, keep=rows; job.pages=job.pages.filter(p=>S.failed.includes(p.n)); staging=null; await startJob(job); staging.rows=keep.concat(staging.rows).sort((a,b)=>(+a.sl||0)-(+b.sl||0)); render(); };
   $("#discard").onclick=()=>{ staging=null; render(); };
+  ["lName","lType","lYear"].forEach(id=>{ const x=$("#"+id); if(x) x.addEventListener("change",()=>{ S.listName=$("#lName").value.trim(); S.listType=$("#lType").value; S.listYear=$("#lYear").value.trim(); }); });
+  if($("#onlyList")) $("#onlyList").onclick=()=>{ keepStagingAsList(); staging=null; tab="lists"; render(); toast("Saved in Lists"); };
   if($("#saveRoll")) $("#saveRoll").onclick=firstSave;
   if($("#toCompare")) $("#toCompare").onclick=()=>{ tab="revisions"; render(); };
 }
@@ -1311,7 +1433,7 @@ function rowToVoter(r, rev){
 }
 function fixIds(list){ const used=new Set(); for(const v of list){ if(used.has(v.id)) v.id=v.id+"-"+uid8(); used.add(v.id); } return list; }
 function firstSave(){
-  const S=staging; pushUndo("first roll import");
+  const S=staging; keepStagingAsList(); pushUndo("first roll import");
   state.meta.demo=false; const h=S.header||{};
   if(!state.meta.ac&&h.ac) state.meta.ac=h.ac; if(!state.meta.acName&&h.ac_name) state.meta.acName=h.ac_name;
   if(!state.meta.part&&h.part) state.meta.part=h.part;
@@ -1375,6 +1497,7 @@ function renderRevisions(el){
 }
 function applyRevision(){
   const d=staging.diff, rev=state.meta.rev+1;
+  if(!staging.fromList) keepStagingAsList();
   lastPrevRoll=JSON.stringify({meta:state.meta,voters:state.voters});
   pushUndo("revision "+rev);
   const byEpic=new Map(state.voters.filter(v=>v.epic&&!v.gone).map(v=>[v.epic,v]));
@@ -1493,7 +1616,7 @@ function renderBackup(el){
   if($("#chp")) $("#chp").onclick=changePassword;
   if($("#toAuth")) $("#toAuth").onclick=()=>{ lsSet("bloreg:pending-upload", state); session=null; lsSet("bloreg:session",null); showAuth("signup"); };
   if($("#undoBtn")) $("#undoBtn").onclick=undo;
-  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
+  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
 }
 function changePassword(){
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><form class="sheet" id="cpf"><h2>Change password</h2>
