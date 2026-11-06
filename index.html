@@ -576,15 +576,16 @@ function fitPhone(){
   document.documentElement.style.zoom = (phone && iw>sw*1.3) ? String(Math.round(iw/sw*100)/100) : "";
 }
 function applyView(){
-  fitPhone();
   let v="auto"; try{ v=localStorage.getItem("bloreg:view")||"auto"; }catch(e){}
+  // Mobile app view: fill the whole phone screen, even when the browser shows a desktop-size page
+  if(v==="desktop") document.documentElement.style.zoom=""; else fitPhone();
   const z=parseFloat(document.documentElement.style.zoom)||1;
-  if(v==="auto" || (z>1 && v==="desktop")) v = innerWidth/z>=900 ? "desktop" : "app";
+  if(v==="auto") v = innerWidth/z>=900 ? "desktop" : "app";
   document.body.classList.toggle("narrow", innerWidth/z<500);
   document.body.classList.toggle("view-desktop", v==="desktop"); document.body.classList.toggle("view-app", v==="app");
-  const ic=$("#viewIc"), tx=$("#viewTx"); if(ic){ ic.textContent=v==="desktop"?"🖥":"📱"; tx.textContent=v==="desktop"?"Desktop view":"App view"; }
+  const ic=$("#viewIc"), tx=$("#viewTx"); if(ic){ ic.textContent=v==="desktop"?"🖥":"📱"; tx.textContent=v==="desktop"?"Desktop view":"Mobile app view"; }
 }
-document.getElementById("viewTg").addEventListener("click",()=>{ const now=document.body.classList.contains("view-desktop")?"app":"desktop"; try{ localStorage.setItem("bloreg:view",now); }catch(e){} applyView(); toast(now==="desktop"?"Desktop view":"App view"); });
+document.getElementById("viewTg").addEventListener("click",()=>{ const now=document.body.classList.contains("view-desktop")?"app":"desktop"; try{ localStorage.setItem("bloreg:view",now); }catch(e){} applyView(); toast(now==="desktop"?"Desktop view":"Mobile app view"); });
 addEventListener("resize",()=>{ let v="auto"; try{ v=localStorage.getItem("bloreg:view")||"auto"; }catch(e){} if(v==="auto") applyView(); });
 
 /* ================= floating sub-menu from the left rail ================= */
