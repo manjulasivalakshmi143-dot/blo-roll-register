@@ -179,6 +179,14 @@ label.f input,label.f select,label.f textarea{font-size:.95rem;color:var(--ink);
 .win .checklist{border:0;border-radius:0}
 .win-f{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--wc) 7%,var(--surface))}
 .btn.grow{flex:1}
+.menu{display:flex;flex-direction:column;gap:8px}
+.menu-i{display:grid;grid-template-columns:42px 1fr 16px;gap:12px;align-items:center;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--mc);border-radius:12px;padding:12px;font:inherit;color:inherit;cursor:pointer;transition:box-shadow .15s ease}
+.menu-i:hover{box-shadow:0 2px 10px color-mix(in srgb,var(--mc) 20%,transparent)}
+.menu-ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:1.2rem;background:color-mix(in srgb,var(--mc) 15%,var(--surface))}
+.menu-t{display:flex;flex-direction:column;min-width:0}
+.menu-t b{font-family:var(--f-display);font-size:.98rem}
+.menu-t small{color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu-ch{color:var(--muted);font-size:1.4rem}
 .eci-steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.88rem}
 .ask-bg{position:fixed;inset:0;z-index:45;background:rgba(15,10,30,.5);display:grid;place-items:center;padding:16px}
 .ask{width:100%;max-width:420px}
@@ -494,7 +502,7 @@ function render(){
   ({home:renderHome, voters:renderVoters, apps:renderApps, lists:renderLists, asd:renderAsd, import:renderImport, revisions:renderRevisions, backup:renderBackup})[tab]($("#view"));
   updateHeader();
 }
-document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } if(b.dataset.tab==="lists") window._openList=null; tab=b.dataset.tab; render(); window.scrollTo(0,0); });
+document.getElementById("tabs").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; if(b.dataset.action==="add"){ openVoter(null); return; } if(b.dataset.tab==="lists") window._openList=null; if(b.dataset.tab==="backup") window._accSec=null; if(b.dataset.tab==="import") window._impSec=null; tab=b.dataset.tab; render(); window.scrollTo(0,0); });
 
 function meterRow(label, n, total, cls){
   const p= total? Math.round(n*100/total):0;
@@ -543,13 +551,8 @@ function renderHome(el){
       <h3>Quick lists</h3>
       <div class="row">${FILTERS.filter(f=>f[3] && f[3].includes(mode())).map(f=>`<button class="btn" data-f="${f[0]}">${f[1]}</button>`).join("")}</div>
     </div>
-    ${settingsCard()}
-    <div class="card panel"><h3>Recent work</h3>
-      <div class="diff-list">${m.activity.slice(0,12).map(a=>`<div><span class="mono muted small">${fmtDate(a.t)}</span><br>${esc(a.a)}</div>`).join("")||'<span class="muted small">Nothing yet.</span>'}</div>
-      ${undoStack.length?`<button class="btn" id="undoBtn">Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:""}
-    </div>
+    ${undoStack.length?`<button class="btn" id="undoBtn" style="align-self:flex-start">↶ Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:""}
   </div>`;
-  el.insertAdjacentHTML("beforeend", installCard() ? `<div style="margin-top:14px">${installCard()}</div>` : ""); bindInstall();
   el.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{ listOpts.filter=b.dataset.f; listOpts.shown=150; tab="voters"; render(); });
   if($("#goApps")) $("#goApps").onclick=()=>{ tab="apps"; render(); };
   el.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ if(mode()===b.dataset.mode) return; state.meta.mode=b.dataset.mode; commit("mode",-1,"Switched to "+MODES.find(x=>x[0]===b.dataset.mode)[1]); render(); });
@@ -811,7 +814,7 @@ function askSign(a, go){
   ov.addEventListener("click",e=>{ if(e.target===ov) done(); });
   ov.querySelector("#sgN").onclick=()=>{ done(); a.useSig=false; go(); };
   if(has) ov.querySelector("#sgY").onclick=()=>{ done(); a.useSig=true; go(); };
-  else ov.querySelector("#sgAdd").onclick=()=>{ done(); closeSheet(); tab="backup"; render(); setTimeout(()=>{ const w=document.querySelector(".sig-box"); if(w) w.scrollIntoView({block:"center"}); },100); };
+  else ov.querySelector("#sgAdd").onclick=()=>{ done(); closeSheet(); tab="backup"; window._accSec="sign"; render(); setTimeout(()=>{ const w=document.querySelector(".sig-box"); if(w) w.scrollIntoView({block:"center"}); },100); };
 }
 
 function askNote(title, label, ok, fn){
@@ -1347,18 +1350,31 @@ function bindEci(){
 function renderImport(el){
   if(importJob && importJob.running){ drawJob(el); return; }
   if(staging){ drawReview(el); return; }
+  const isec=window._impSec;
+  if(!isec){
+    el.innerHTML=`<div class="panel">
+      <h2>${state.voters.length?"Import a new roll (revision)":"Import your roll"}</h2>
+      ${state.voters.length?`<div class="note small">You have ${state.voters.length} voters. A new import is compared with them first, and your marks carry over by EPIC. Nothing changes until you confirm.</div>`:""}
+      ${menuList([
+        { id:"file", icon:"📄", color:"var(--accent)", title:"Choose a roll file", sub:"PDF, Excel/CSV or photos from this phone" },
+        { id:"eci", icon:"🌐", color:"var(--info)", title:"Download from ECI website", sub:"voters.eci.gov.in · your part pre-selected" },
+        { id:"how", icon:"ℹ", color:"var(--ok)", title:"How each file is read", sub:"Excel, text PDF and scanned PDF" },
+      ])}</div>`;
+    el.querySelectorAll(".menu-i").forEach(b=>b.onclick=()=>{ window._impSec=b.dataset.sec; render(); window.scrollTo(0,0); });
+    return;
+  }
+  if(isec==="eci"){ el.innerHTML=`<div class="panel"><button class="btn ghost" id="secBack" style="align-self:flex-start">‹ Import</button>${eciWindow()}<button class="btn" id="toFile">Downloaded? Choose the file ›</button></div>`;
+    $("#secBack").onclick=()=>{ window._impSec=null; render(); }; $("#toFile").onclick=()=>{ window._impSec="file"; render(); }; bindEci(); return; }
   el.innerHTML = `<div class="panel">
-    <h2>${state.voters.length?"Import a new roll (revision)":"Import your roll"}</h2>
-    ${state.voters.length?`<div class="note">You already have ${state.voters.length} voters. A new import is compared with them first. Your mobile, Aadhaar, ASD, slip and form marks carry over by EPIC number. Nothing is replaced until you confirm.</div>`:""}
-    ${eciWindow()}
-    <label class="drop" for="file">
+    <button class="btn ghost" id="secBack" style="align-self:flex-start">‹ Import</button>
+    <label class="drop" for="file" ${isec==="how"?"hidden":""}>
       <strong>Choose roll file</strong>
       <span class="muted small">PDF from the CEO website · Excel / CSV · photos or scans of the pages</span>
       <span class="btn primary">Select file</span>
     </label>
     <input type="file" id="file" accept=".pdf,.xlsx,.xls,.csv,image/*" multiple hidden>
-    <label class="f">Language of the roll (for PDF / photos)<select id="lang"><option value="tel+eng">Telugu + English</option><option value="eng">English only (faster)</option><option value="hin+eng">Hindi + English</option></select></label>
-    <div class="card panel small">
+    <label class="f" ${isec==="how"?"hidden":""}>Language of the roll (for PDF / photos)<select id="lang"><option value="tel+eng">Telugu + English</option><option value="eng">English only (faster)</option><option value="hin+eng">Hindi + English</option></select></label>
+    <div class="card panel small" ${isec==="how"?"":"hidden"}>
       <h3>How each file is read</h3>
       <div><strong>Excel / CSV</strong> — read straight away. You match the columns once.</div>
       <div><strong>PDF with text</strong> — the text is read directly from the file. Fast and accurate.</div>
@@ -1366,7 +1382,7 @@ function renderImport(el){
       <div class="muted">Everything is read on this phone. The roll is not sent anywhere except your own account.</div>
     </div>
   </div>`;
-  bindEci();
+  $("#secBack").onclick=()=>{ window._impSec=null; render(); };
   $("#lang").value = lsGet("bloreg:lang") || "tel+eng";
   $("#lang").onchange=e=>lsSet("bloreg:lang", e.target.value);
   $("#file").onchange=e=>handleFiles([...e.target.files]);
@@ -1921,56 +1937,78 @@ function confirmBox(text, okLabel, fn, danger){
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true"><p style="margin:0">${esc(text)}</p><div class="row"><button class="btn ${danger?"danger":"primary"}" id="cOk">${esc(okLabel)}</button><button class="btn" id="cNo">Cancel</button></div></div></div>`;
   $("#cOk").onclick=()=>{ closeSheet(); fn(); }; $("#cNo").onclick=closeSheet;
 }
+/* Account: a menu; tapping an item shows only that window */
+function menuList(items){
+  return `<div class="menu">${items.map(it=>`<button class="menu-i" data-sec="${it.id}" style="--mc:${it.color}"><span class="menu-ic">${it.icon}</span><span class="menu-t"><b>${it.title}</b><small>${it.sub||""}</small></span><span class="menu-ch">›</span></button>`).join("")}</div>`;
+}
+function secWin(title, color, body, back){
+  return `<button class="btn ghost" id="secBack" style="align-self:flex-start">‹ ${back}</button>
+    <section class="win" style="--wc:${color}"><div class="win-h"><span>${title}</span></div><div class="panel" style="padding:14px">${body}</div></section>`;
+}
 function renderBackup(el){
-  const m=state.meta, signed=session&&session.token;
-  el.innerHTML=`<div class="panel">
-    <h2>Account and backup</h2>
-    ${whereText()}
-    ${signed?`<div class="card panel"><h3>Your account</h3>
-        <div class="small"><span class="muted">Signed in as</span> <span class="mono">${esc(session.email)}</span><br><span class="muted">Last saved to account:</span> ${fmtDate(state.cloudSavedAt)}</div>
+  const m=state.meta, signed=session&&session.token, sec=window._accSec;
+  const sig=m.signature&&m.signature.png;
+  const items=[
+    { id:"account", icon:"👤", color:"var(--accent)", title: signed?"Your account":"Create a free account", sub: signed?esc(session.email):"Saved on this phone only" },
+    { id:"part", icon:"🗳", color:"var(--info)", title:"My part details", sub:[m.ac&&("AC "+esc(m.ac)), m.part&&("Part "+esc(m.part)), m.blo&&esc(m.blo)].filter(Boolean).join(" · ")||"Not filled yet" },
+    { id:"sign", icon:"✍", color:"var(--accent)", title:"My signature", sub: sig?"Saved · asked each time you download":"Not added" },
+    { id:"backup", icon:"⬇", color:"var(--ok)", title:"Excel backup", sub:"Last backup: "+fmtDate(m.lastBackup) },
+    { id:"restore", icon:"↺", color:"var(--ok)", title:"Restore from a backup", sub:"Bring back data from an Excel backup" },
+    { id:"recent", icon:"🕘", color:"var(--info)", title:"Recent work & undo", sub: (m.activity[0]?esc(m.activity[0].a).slice(0,48):"Nothing yet") },
+    ...(installCard()?[{ id:"install", icon:"📲", color:"var(--info)", title:"Install on this phone", sub:"Open like a normal app" }]:[]),
+    { id:"fresh", icon:"⚠", color:"var(--bad)", title:"Start fresh", sub:"Clear all voters" },
+  ];
+  if(!sec){
+    el.innerHTML=`<div class="panel"><h2>Account</h2>${whereText()}${menuList(items)}</div>`;
+    el.querySelectorAll(".menu-i").forEach(b=>b.onclick=()=>{ window._accSec=b.dataset.sec; render(); window.scrollTo(0,0); });
+    return;
+  }
+  const it=items.find(x=>x.id===sec)||items[0];
+  let body="";
+  if(sec==="account") body = signed?`<div class="small"><span class="muted">Signed in as</span> <span class="mono">${esc(session.email)}</span><br><span class="muted">Last saved to account:</span> ${fmtDate(state.cloudSavedAt)}</div>
         <div class="row"><button class="btn" id="rl">Reload from my account</button><button class="btn" id="chp">Change password</button><button class="btn danger" id="so">Sign out</button></div>
-        <p class="muted small" style="margin:0">Used this account on another phone? Tap Reload to bring those changes here.</p></div>`
-      :`<div class="card panel"><h3>Create a free account</h3><p class="muted small" style="margin:0">Save your list to your own account so it is safe even if this phone is lost. Your current voters will be uploaded to the new account.</p><button class="btn primary" id="toAuth">Sign in or create account</button></div>`}
-    <section class="win" style="--wc:var(--accent)"><div class="win-h"><span>✍ My signature</span><span class="win-s">for PDF receipts</span></div>
-      <div class="panel" style="padding:14px">
-        <div class="sig-box">${m.signature&&m.signature.png?`<img src="${m.signature.png}" alt="My signature">`:`<span class="muted small">No signature yet</span>`}</div>
+        <p class="muted small" style="margin:0">Used this account on another phone? Tap Reload to bring those changes here.</p>`
+      :`<p class="muted small" style="margin:0">Save your list to your own account so it is safe even if this phone is lost. Your current voters will be uploaded to the new account.</p><button class="btn primary" id="toAuth">Sign in or create account</button>`;
+  if(sec==="part") body=`<div class="grid2">
+        <label class="f">AC number<input id="sAc" value="${esc(m.ac)}" inputmode="numeric"></label>
+        <label class="f">AC name<input id="sAcN" value="${esc(m.acName)}"></label>
+        <label class="f">Part number<input id="sPart" value="${esc(m.part)}" inputmode="numeric"></label>
+        <label class="f">Part / polling station name<input id="sPartN" value="${esc(m.partName)}"></label>
+      </div>
+      <label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label>
+      <button class="btn primary" id="sSave">Save details</button>`;
+  if(sec==="sign") body=`<div class="sig-box">${sig?`<img src="${m.signature.png}" alt="My signature">`:`<span class="muted small">No signature yet</span>`}</div>
         <label class="f">Name to show as BLO<input id="sigName" value="${esc((m.signature&&m.signature.name)||m.blo||"")}" placeholder="Your name"></label>
         <div class="row">
           <label class="btn primary" for="sigFile">📷 Upload photo</label><input type="file" id="sigFile" accept="image/*" hidden>
           <button class="btn" id="sigDraw">✎ Sign with finger</button>
-          ${m.signature&&m.signature.png?`<button class="btn danger" id="sigDel">Remove</button>`:""}
+          ${sig?`<button class="btn danger" id="sigDel">Remove</button>`:""}
         </div>
-        <p class="muted small" style="margin:0">Sign in dark ink on plain white paper and take a photo. The app removes the background and crops it. Each time you download a form, the app asks whether to add it.</p>
-      </div></section>
-    <div class="card panel">
-      <h3>Excel backup</h3>
-      <p class="muted small" style="margin:0">One file with every voter and all your marks. Open it in Excel or Google Sheets, or restore the app from it on any phone. Last backup: <strong>${fmtDate(m.lastBackup)}</strong>.</p>
-      <button class="btn primary" id="xl" ${state.voters.length?"":"disabled"}>Download Excel backup</button>
-    </div>
-    <div class="card panel">
-      <h3>Restore from a backup</h3>
-      <p class="muted small" style="margin:0">Choose an Excel backup made by this app.</p>
-      <label class="btn" for="rf" style="text-align:center">Choose backup file</label><input type="file" id="rf" accept=".xlsx,.json" hidden>
-    </div>
-    ${undoStack.length?`<button class="btn" id="undoBtn">Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:""}
-    <div class="card panel">
-      <h3>Start fresh</h3>
-      <p class="muted small" style="margin:0">Clears every voter (for example, to remove example data). Download a backup first if this is real data.</p>
-      <button class="btn danger" id="wipe" ${state.voters.length?"":"disabled"}>Clear all voters</button>
-    </div>
-  </div>`;
-  $("#xl").onclick=exportExcel;
-  $("#sigFile").onchange=e=>{ const f=e.target.files[0]; if(f) sigFromFile(f); };
-  $("#sigDraw").onclick=sigDrawPad;
+        <p class="muted small" style="margin:0">Sign in dark ink on plain white paper and take a photo. The app removes the background and crops it. Each time you download a form, the app asks whether to add it.</p>`;
+  if(sec==="backup") body=`<p class="muted small" style="margin:0">One file with every voter, the ASD list, applications and all your marks. Open it in Excel or Google Sheets, or restore the app from it on any phone. Last backup: <strong>${fmtDate(m.lastBackup)}</strong>.</p>
+      <button class="btn primary" id="xl" ${state.voters.length?"":"disabled"}>⬇ Download Excel backup</button>`;
+  if(sec==="restore") body=`<p class="muted small" style="margin:0">Choose an Excel backup made by this app. Your current list is replaced, and you can undo right after.</p>
+      <label class="btn primary" for="rf" style="text-align:center">Choose backup file</label><input type="file" id="rf" accept=".xlsx,.json" hidden>`;
+  if(sec==="recent") body=`<div class="diff-list">${m.activity.slice(0,40).map(a=>`<div><span class="mono muted small">${fmtDate(a.t)}</span><br>${esc(a.a)}</div>`).join("")||'<span class="muted small">Nothing yet.</span>'}</div>
+      ${undoStack.length?`<button class="btn" id="undoBtn">↶ Undo: ${esc(undoStack[undoStack.length-1].label)}</button>`:`<p class="muted small" style="margin:0">Undo is available for changes made since you opened the app.</p>`}`;
+  if(sec==="install") body=installCard().replace(/^<div class="card panel" id="installCard">|<\/div>$/g,"");
+  if(sec==="fresh") body=`<p class="muted small" style="margin:0">Clears every voter (for example, to remove example data). Your ASD list, saved lists and applications stay. Download a backup first if this is real data.</p>
+      <button class="btn danger" id="wipe" ${state.voters.length?"":"disabled"}>Clear all voters</button>`;
+  el.innerHTML=`<div class="panel">${secWin(it.icon+" "+it.title, it.color, body, "Account")}</div>`;
+  $("#secBack").onclick=()=>{ window._accSec=null; render(); };
+  bindSettings(); bindInstall();
+  if($("#xl")) $("#xl").onclick=exportExcel;
+  if($("#sigFile")) $("#sigFile").onchange=e=>{ const f=e.target.files[0]; if(f) sigFromFile(f); };
+  if($("#sigDraw")) $("#sigDraw").onclick=sigDrawPad;
   if($("#sigDel")) $("#sigDel").onclick=()=>confirmBox("Remove your saved signature?", "Remove", ()=>{ pushUndo("remove signature"); delete state.meta.signature; commit("sig",-1,"Removed signature"); render(); }, true);
-  $("#sigName").addEventListener("change", e=>{ if(state.meta.signature){ state.meta.signature.name=e.target.value.trim(); commit("sig",-1); } });
-  $("#rf").onchange=e=>{ if(e.target.files[0]) restoreFile(e.target.files[0]); };
+  if($("#sigName")) $("#sigName").addEventListener("change", e=>{ if(state.meta.signature){ state.meta.signature.name=e.target.value.trim(); commit("sig",-1); } });
+  if($("#rf")) $("#rf").onchange=e=>{ if(e.target.files[0]) restoreFile(e.target.files[0]); };
   if($("#rl")) $("#rl").onclick=async()=>{ cloud.ready=false; state.savedAt=0; await connectAccount(); toast("Reloaded from your account"); };
   if($("#so")) $("#so").onclick=()=>confirmBox("Sign out on this phone? Your list stays safe in your account.", "Sign out", signOut);
   if($("#chp")) $("#chp").onclick=changePassword;
   if($("#toAuth")) $("#toAuth").onclick=()=>{ lsSet("bloreg:pending-upload", state); session=null; lsSet("bloreg:session",null); showAuth("signup"); };
-  if($("#undoBtn")) $("#undoBtn").onclick=undo;
-  $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists,apps:k.apps}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
+  if($("#undoBtn")) $("#undoBtn").onclick=()=>{ undo(); };
+  if($("#wipe")) $("#wipe").onclick=()=>confirmBox(`Clear all ${state.voters.length} voters? Download an Excel backup first if this is real data.`, "Yes, continue", ()=>setTimeout(()=>confirmBox(`Please confirm again: delete all ${state.voters.length} voters and their marks from this app?`, "Clear all voters", ()=>{ pushUndo("clear all"); const k=state.meta; state.voters=[]; state.meta=Object.assign(blank().meta,{ac:k.ac,acName:k.acName,part:k.part,partName:k.partName,blo:k.blo,activity:k.activity,lastBackup:k.lastBackup,asdList:k.asdList,mode:k.mode,lists:k.lists,apps:k.apps,signature:k.signature,eci:k.eci,formDefaults:k.formDefaults}); commit("wipe",null,"Cleared all voters"); render(); toast("Cleared — use Undo if this was a mistake"); }, true),50), true);
 }
 /* ---------- BLO signature: clean a photo or drawing into a transparent PNG ---------- */
 function cleanSignature(srcCanvas){
