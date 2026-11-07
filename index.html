@@ -230,6 +230,8 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .lk{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .lk a{flex:1 1 200px;min-width:0}
 .cp{font:inherit;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1.5px solid currentColor;background:transparent;color:inherit;cursor:pointer;flex:none}
+.kv-h{grid-column:1/-1;padding:9px 12px 7px;font-family:var(--f-display);font-weight:750;font-size:.92rem;color:var(--wc,var(--accent));background:color-mix(in srgb,var(--wc,var(--accent)) 9%,var(--surface));border-top:1px solid var(--line)}
+.kv-h small{font-family:var(--f-body);font-weight:600;color:var(--muted);font-size:.75rem}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
 .hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -1219,6 +1221,8 @@ function openApp(id, typeHint){
     ${["f6","f7","f8"].includes(a.type)?`<section class="win" id="ordBox" style="--wc:var(--info)"><div class="win-h"><span>${a.type==="f7"?"③":"②"} Details for the PDF</span><span class="win-s" id="tmplTitle">${esc((tmplOf(a)||{}).title||"No office PDF for this request")}</span></div>
     ${a.type==="f6"?`<div class="field-block" style="padding:10px 12px 0"><span>Order to prepare</span>${seg("f6out",[["approve","✓ Approve (inclusion)"],["reject","✕ Reject"]],a.f6out||"approve")}</div>`:""}
     <div class="kv">
+      <div class="kv-h">📄 Order copy <small id="ordName">${a.type==="f6"?"(inclusion / rejection order)":a.type==="f7"?"(deletion order)":"(Form 8 order)"}</small></div>
+      ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
       ${a.type==="f6"?`<div class="k" data-out="reject">Reason for rejection</div><div class="val" data-out="reject"><select id="oRej">${F6_REJ.map(([k,l])=>`<option value="${k}" ${String(a.rejReason||"1")===k?"selected":""}>${k}. ${l}</option>`).join("")}</select>
         <div class="row" data-rej="3" style="gap:6px;flex-wrap:nowrap;margin-top:6px">${inp("oRejPart",a.rejPart||"",'inputmode="numeric" placeholder="Part" style="max-width:90px"')}${inp("oRejSl",a.rejSl||"",'inputmode="numeric" placeholder="Serial"')}</div>
         <div data-rej="4" style="margin-top:6px">${inp("oRejAc",a.rejAc||"",'placeholder="Constituency where enrolled"')}</div>
@@ -1231,19 +1235,19 @@ function openApp(id, typeHint){
       ${kv("Town", inp("oTown",a.town||(state.meta.formDefaults&&state.meta.formDefaults.town)||state.meta.acName||""))}
       ${kv("Part no.", inp("oPart",a.partNo||state.meta.part||"",'inputmode="numeric"'))}
       ${a.type==="f8"?kv("Serial no. in roll", inp("oSl",a.serialNo||"",'inputmode="numeric" placeholder="filled from EPIC if in your roll"')):""}
+      <div class="kv-h">📨 <span id="ntcName">${a.type==="f6"?"Form 12 notice":a.type==="f7"?"Form 13 &amp; Form 14 notices":f8kind(a)==="shifting"?"Form 12 notice":"Form 15 notice"}</span> <small>(hearing)</small></div>
       ${kv("Notice date", inp("oNotice",a.noticeDate||new Date().toISOString().slice(0,10),'type="date"'))}
       ${kv("Hearing date", inp("oHDate",a.hearDate||"",'type="date"'))}
       ${kv("Hearing time", inp("oHTime",a.hearTime||(state.meta.formDefaults&&state.meta.formDefaults.hearTime)||"",'placeholder="11:00 AM"'))}
       ${kv("Hearing place", inp("oHPlace",a.hearPlace||(state.meta.formDefaults&&state.meta.formDefaults.hearPlace)||""))}
-      ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
-      ${a.type==="f7"?`<div class="k" data-why="death">Panchanama</div><div class="val" data-why="death">
-        <div class="hint">Proof of death</div>
+      ${a.type==="f7"?`<div class="kv-h" data-why="death">🧾 Panchanama <small>(death)</small></div><div class="k" data-why="death">Proof</div><div class="val" data-why="death">
         <select id="oProof"><option value="cert" ${a.deathProof==="cert"?"selected":""}>Death certificate — no Panchanama needed</option><option value="panch" ${a.deathProof!=="cert"?"selected":""}>Panchanama (no certificate)</option></select>
         <div id="panchBox" ${a.deathProof==="cert"?"hidden":""}>
         <div class="hint" style="margin-top:6px">Panchanama date (prints at the top: "ది. ___ తేదిన")</div>
         ${inp("oPanchDate",a.panchDate||"",'type="date" title="Panchanama date"')}
         <div class="hint" style="margin-top:6px">Panchas (witnesses) — names print in the table:</div>
         ${[0,1,2,3].map(i=>inp("oPanch"+i,(a.panch||[])[i]||"",`placeholder="${i+1}. Name" style="margin-top:4px"`)).join("")}</div></div>`:""}
+      ${a.type==="f6"?`<div class="kv-h" data-out="approve">📝 Annexure III <small>(21+ declaration)</small></div>`:""}
       ${a.type==="f6"?kv("21+ declaration", `<label class="row small"><input type="checkbox" id="oDecl" ${a.decl===false?"":(a.decl||appAge(a)==null||appAge(a)>=21)?"checked":""}> Add Annexure III page (first-time applicant aged 21 or more)</label>`):""}
     </div></section>`:""}
     ${(a.type==="f6"||a.type==="f8")?declWindow(a, locked):""}
@@ -1318,6 +1322,8 @@ function openApp(id, typeHint){
     const rj=$("#oRej")?$("#oRej").value:""; sh.querySelectorAll("[data-rej]").forEach(e=>e.hidden=rj!==e.dataset.rej);
     const w=f7why(x); sh.querySelectorAll("[data-why]").forEach(e=>e.hidden=w!==e.dataset.why);
     const dw=$("#d4Win"); if(dw) dw.hidden = x.type==="f6" && x.f6out==="reject";
+    const od=$("#oDecl"); if(od){ const k=od.closest(".val"); if(k){ k.hidden=x.f6out==="reject"; if(k.previousElementSibling) k.previousElementSibling.hidden=x.f6out==="reject"; } }
+    const nn=$("#ntcName"); if(nn && x.type==="f8") nn.textContent=f8kind(x)==="shifting"?"Form 12 notice":"Form 15 notice";
     const t=$("#tmplTitle"); if(t) t.textContent=(tmplOf(x)||{}).title||"No office PDF for this request";
     const pv=$("#apPdf"), pp=$("#apPrev"); if(pv){ const ok=!!tmplOf(x); pv.disabled=!ok; pp.disabled=!ok; } };
   sh.querySelectorAll('[data-seg="f6out"] button').forEach(b=>b.addEventListener("click",()=>setTimeout(sync,0)));
