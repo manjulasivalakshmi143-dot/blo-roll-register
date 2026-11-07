@@ -1262,7 +1262,7 @@ function openApp(id, typeHint){
       ${isNew?`<button class="btn primary grow" id="apSave">Save application</button>`:
         a.stage==="received"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Documents checked ✓</button>`:
         a.stage==="verified"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Send to ERO ›</button>`:
-        a.stage==="forwarded"?`<span class="muted small grow">📤 Sent to ERO on ${fmtDate((a.history.slice().reverse().find(h=>h.stage==="forwarded")||{}).at)}</span><button class="btn" id="apBack">Back to documents checked</button>`:
+        a.stage==="forwarded"?`<span class="muted small grow">📤 Sent to ERO on ${fmtDate((a.history.slice().reverse().find(h=>h.stage==="forwarded")||{}).at)}</span><button class="btn" id="apBack">Back</button>${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary" id="apOpenV">Open in voter list</button>`:rollAction(a)?`<button class="btn primary" id="apAddV">${({add:"➕ Add to voter list",remove:"➖ Remove from voter list",update:"✎ Update in voter list"})[rollAction(a)]}</button>`:""}`:
         a.stage==="approved"?`${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary grow" id="apOpenV">Open voter in roll</button>`:`<span class="muted small grow">Approved on ${fmtDate((a.history.find(h=>h.stage==="approved")||{}).at)}</span>`}`:
         `<button class="btn grow" id="apReopen">Reopen application</button>`}
     </div>
@@ -1365,6 +1365,7 @@ function openApp(id, typeHint){
     const x=advance("verified"); if(!x) return; pushUndo("documents checked"); store(x,"Documents checked: "+x.name); openApp(x.id);
   };
   if($("#apRej")) $("#apRej").onclick=()=>{ const x0=collect(); if(!x0) return; askNote("Rejected", "Reason for rejection", "Mark rejected", n=>{ const x=advance("rejected",n,x0); pushUndo("reject application"); store(x,"Application rejected: "+x.name); closeSheet(); render(); }); };
+  if($("#apAddV")) $("#apAddV").onclick=()=>{ closeSheet(); askAddToRoll(a); };
   if($("#apBack")) $("#apBack").onclick=()=>{ a.stage="verified"; a.history.push({stage:"verified",at:Date.now(),note:"Moved back from Sent to ERO"}); pushUndo("move back"); store(a,"Moved back to documents checked: "+a.name); openApp(a.id); };
   if($("#apReopen")) $("#apReopen").onclick=()=>{ a.stage="forwarded"; a.history.push({stage:"forwarded",at:Date.now(),note:"Reopened"}); pushUndo("reopen application"); store(a,"Reopened application: "+a.name); openApp(a.id); };
   if($("#apOpenV")) $("#apOpenV").onclick=()=>openVoter(a.addedVoterId);
@@ -1539,11 +1540,58 @@ async function buildFormPdf(a){
   const name=[clean(a.name||vals.applicant)||"Applicant", clean(a.refNo||vals.refId)].filter(Boolean).join("_")+".pdf";
   return { bytes, name };
 }
+function rollDialog(icon, text, sub, okLabel, extra, onOk){
+  const ov=document.createElement("div"); ov.className="dlg-bg"; ov.id="addRoll";
+  ov.innerHTML=`<div class="dlg" role="alertdialog" aria-modal="true"><div class="dlg-ic">${icon}</div><p class="dlg-t">${text}</p>
+    <p class="muted small" style="margin:0">${sub}</p>${extra||""}
+    <div class="dlg-b"><button class="btn big" id="arNo">Not now</button>${okLabel?`<button class="btn big primary" id="arYes">${okLabel}</button>`:""}</div></div>`;
+  document.body.appendChild(ov); const close=()=>ov.remove(); $("#arNo").onclick=close;
+  if($("#arYes")) $("#arYes").onclick=()=>{ onOk(); close(); render(); };
+}
+function findInRoll(epic, serial){ const e=normEpic(epic||""); return state.voters.find(v=>e&&v.epic===e) || (serial?state.voters.find(v=>String(v.sl)===String(serial)&&!v.gone):null) || null; }
+function rollAction(a){
+  if(a.type==="f6") return a.f6out==="reject"||a.addedVoterId?null:"add";
+  if(a.type==="f7") return a.rollDone?null:"remove";
+  if(a.type==="f8") return a.rollDone?null:f8kind(a)==="shifting"?"add":f8kind(a)==="correction"?"update":null;
+  return null;
+}
+function askAddToRoll(a){
+  const L=appsList(), x=L.find(y=>y.id===a.id)||a, act=rollAction(x); if(!act) return;
+  if(act==="add"){
+    if(x.type==="f8" && findInRoll(x.voterEpic)) return rollDialog("ℹ", `<b>${esc(x.name)}</b> is already in your voter list.`, "Nothing to add.", "", "", ()=>{});
+    return rollDialog("➕", `Add <b>${esc(x.name)}</b> to your voter list?`, x.type==="f6"?"They will show in Voters as a new entry (Form 6). Add the EPIC later when it is issued.":"Shifting into your part: they will show in Voters as a new entry (Form 8).",
+      "Add to voter list", `<label class="f" style="text-align:left">EPIC number${x.type==="f6"?" (if issued)":""}<input id="arEpic" class="mono" autocapitalize="characters" value="${esc(x.voterEpic||"")}"></label>`, ()=>{
+        pushUndo("add voter from application"); const age = x.dob ? String(Math.floor((Date.now()-new Date(x.dob).getTime())/31557600000)) : "";
+        x.epic=normEpic($("#arEpic").value);
+        const v={ id:"M-"+uid8(), sl:"", sec:"", house:x.house, name:x.name, nameEn:/[\u0C00-\u0C7F]/.test(x.name)?translit(x.name):x.name, relType:x.relType, relName:x.relName, relNameEn:/[\u0C00-\u0C7F]/.test(x.relName||"")?translit(x.relName):"", age, gender:x.gender, epic:x.epic, src:"manual", appId:x.id,
+          st:Object.assign(defSt(),{ ph:x.phone, form:APP_TYPES[x.type].short, formSt:"Sent to ERO", formDt:new Date().toISOString().slice(0,10) }) };
+        state.voters.push(v); x.addedVoterId=v.id; x.rollDone=true; markDirty(state.voters.length-1);
+        commit("app",-1,"Added to voter list from application: "+x.name); toast(x.name+" added to your voter list"); });
+  }
+  if(act==="remove"){
+    const D=x.del||{}, v=findInRoll(D.epic||x.voterEpic, D.serial), nm=D.name||(v&&(v.nameEn||v.name))||"this voter";
+    if(!v) return rollDialog("ℹ", `<b>${esc(nm)}</b> was not found in your voter list.`, "Check the EPIC or serial number in ② Person to be deleted.", "", "", ()=>{});
+    if(v.st.del||v.gone){ x.rollDone=true; commit("app",-1); return; }
+    return rollDialog("➖", `Remove <b>${esc(v.nameEn||v.name)}</b> (Sl ${esc(v.sl||"—")}) from your voter list?`, `Reason: ${esc((F7_WHY.find(w=>w[0]===f7why(x))||[,""])[1])}. They move to Removed / deleted and can be restored.`, "Remove from list", "", ()=>{
+      const i=vIndex(v.id); pushUndo("remove "+(v.nameEn||v.name)); state.voters[i].st.del=true; state.voters[i].st.form="Form 7"; state.voters[i].st.formSt="Sent to ERO"; state.voters[i].st.note=[state.voters[i].st.note,"Form 7: "+f7why(x)].filter(Boolean).join(" · ");
+      x.rollDone=true; commit("del",i,"Removed from voter list (Form 7): "+(v.nameEn||v.name)); toast("Removed from your voter list"); });
+  }
+  if(act==="update"){
+    const v=findInRoll(x.voterEpic, x.serialNo);
+    if(!v) return rollDialog("ℹ", `<b>${esc(x.name)}</b> was not found in your voter list.`, "Enter the voter's EPIC in ① to match them.", "", "", ()=>{});
+    return rollDialog("✎", `Update <b>${esc(v.nameEn||v.name)}</b>'s details in your voter list?`, "Name, relation, house, gender and age are replaced with the corrected details from this Form 8.", "Update details", "", ()=>{
+      const i=vIndex(v.id), w=state.voters[i]; pushUndo("update "+(w.nameEn||w.name));
+      const age = x.dob ? String(Math.floor((Date.now()-new Date(x.dob).getTime())/31557600000)) : "";
+      if(x.name){ w.name=x.name; w.nameEn=/[\u0C00-\u0C7F]/.test(x.name)?translit(x.name):x.name; } if(x.relName){ w.relName=x.relName; w.relNameEn=/[\u0C00-\u0C7F]/.test(x.relName)?translit(x.relName):""; w.relType=x.relType||w.relType; }
+      if(x.house) w.house=x.house; if(x.gender) w.gender=x.gender; if(age) w.age=age; w.st.form="Form 8"; w.st.formSt="Sent to ERO";
+      x.rollDone=true; commit("edit",i,"Updated from Form 8: "+(w.nameEn||w.name)); toast("Voter details updated"); });
+  }
+}
 function markSent(a){
   const L=appsList(), i=L.findIndex(y=>y.id===a.id), x=i>=0?L[i]:a; x.pdfAt=a.pdfAt;
   if(isOpenApp(x)){ x.stage="forwarded"; x.history=x.history||[]; x.history.push({stage:"forwarded", at:Date.now(), note:"PDF downloaded"}); a.stage="forwarded";
-    commit("app",-1,"Sent to ERO (PDF downloaded): "+x.name); toast("PDF downloaded · moved to Sent to ERO"); closeSheet(); render(); }
-  else { commit("app",-1); toast("PDF downloaded"); }
+    commit("app",-1,"Sent to ERO (PDF downloaded): "+x.name); toast("PDF downloaded · moved to Sent to ERO"); closeSheet(); render(); askAddToRoll(x); }
+  else { commit("app",-1); toast("PDF downloaded"); askAddToRoll(x); }
 }
 async function downloadFormPdf(a){
   try{ toast("Preparing PDF…"); const {bytes,name}=await buildFormPdf(a);
