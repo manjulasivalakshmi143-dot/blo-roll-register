@@ -227,6 +227,9 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .doc-fold>summary::-webkit-details-marker{display:none}
 .doc-fold:not([open])>summary{border-radius:12px}
 .doc-fold .opt{font-style:normal;font-size:.72rem;font-weight:600;opacity:.85;margin-left:6px;background:rgba(255,255,255,.2);padding:1px 7px;border-radius:999px}
+.lk{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lk a{flex:1 1 200px;min-width:0}
+.cp{font:inherit;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1.5px solid currentColor;background:transparent;color:inherit;cursor:pointer;flex:none}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
 .hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -1075,8 +1078,9 @@ function declWindow(a, locked){
     <p class="muted small" style="margin:6px 12px 0">Copy these exactly from the 2002 roll. Constituency, part and serial numbers changed after 2008, so they won't match today's part${state.meta.part?" "+esc(state.meta.part):""}. For Andhra Pradesh, choose district and constituency from the lists; for other states, type them.</p></div>`;
   return `<section class="win" id="d4Win" style="--wc:var(--accent2)"><div class="win-h"><span>③ Declaration form</span><span class="win-s">Annexure IV · last SIR (2002)</span></div>
     <div class="d4-links">
-      <a href="${SIR_SEARCH_URL}" target="_blank" rel="noopener">🔎 Search your name in the electoral roll (last SIR)</a>
-      <a href="${CEO_AP_ROLL_URL}" target="_blank" rel="noopener">📄 Andhra Pradesh 2002 electoral roll (CEO AP)</a>
+      <div class="lk"><a href="${SIR_SEARCH_URL}" target="_blank" rel="noopener">🔎 Search your name in the electoral roll (last SIR)</a><button type="button" class="cp" data-copy="${SIR_SEARCH_URL}">Copy link</button></div>
+      <div class="lk"><a href="${CEO_AP_ROLL_URL}" target="_blank" rel="noopener">📄 Andhra Pradesh 2002 electoral roll (CEO AP)</a><button type="button" class="cp" data-copy="${CEO_AP_ROLL_URL}">Copy link</button></div>
+      <p class="muted small" style="margin:0">Opens in a small window inside the app. To use full Chrome: tap ⋮ there → <b>Open in Chrome</b>, or tap <b>Copy link</b> and paste it in Chrome.</p>
     </div>
     <div class="panel" style="padding:12px;gap:10px">
       <label class="row small"><input type="checkbox" id="d4Use" ${d.use?"checked":""} ${dis}> Add the declaration form to the PDF${a.type==="f8"?" (Form 8 shifting from outside the state)":""}</label>
@@ -2200,7 +2204,7 @@ function eciWindow(){
         <li><strong>Fastest:</strong> when the download finishes, open it from the notification (or Files → Downloads), tap <strong>Share</strong> and choose <strong>BLO Register</strong>. The app opens and starts reading it.</li>
         <li>Or come back here and tap <strong>Choose the file</strong>. The PDF is in your phone's Downloads.</li>
       </ol>
-      <a class="btn primary" id="eciGo" href="${ECI_URL}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">↗ Open ECI download page</a>
+      <a class="btn primary" id="eciGo" href="${ECI_URL}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">↗ Open ECI download page</a><button type="button" class="btn" data-copy="${ECI_URL}">📋 Copy link (paste in Chrome)</button>
       <p class="muted small" style="margin:0">The ECI site asks for a captcha, so the download has to be done by you. <b>Share → BLO Register</b> works only after the app is installed on the home screen.</p>
     </div></section>`;
 }
@@ -3025,14 +3029,9 @@ function refreshInstall(){ const c=$("#installCard"); if(!c) return; const t=doc
 if("serviceWorker" in navigator){ window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
 
 
-/* outside websites (ECI, CEO AP) open straight in Chrome on Android phones, not inside the app */
-document.addEventListener("click", e=>{
-  const l=e.target.closest('a[href^="http"]'); if(!l || l.origin===location.origin) return;
-  if(!/Android/i.test(navigator.userAgent)) return;            // other phones / computers: normal new tab
-  e.preventDefault();
-  const u=new URL(l.href);
-  location.href=`intent://${u.host}${u.pathname}${u.search}${u.hash}#Intent;scheme=${u.protocol.replace(":","")};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(l.href)};end`;
-}, true);
+/* "Copy link" buttons next to outside websites (paste in Chrome to open there) */
+document.addEventListener("click", e=>{ const b=e.target.closest("[data-copy]"); if(!b) return; e.preventDefault();
+  const u=b.dataset.copy; (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Link copied — paste it in Chrome"),()=>{ prompt&&0; toast(u); }); });
 /* ================= start ================= */
 (function start(){
   try{ navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(()=>{}); }catch(e){}
