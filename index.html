@@ -1237,9 +1237,11 @@ function openApp(id, typeHint){
       ${kv("Hearing place", inp("oHPlace",a.hearPlace||(state.meta.formDefaults&&state.meta.formDefaults.hearPlace)||""))}
       ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
       ${a.type==="f7"?kv("Panchanama", `<label class="row small"><input type="checkbox" id="oPanch" ${a.panchUse===false?"":"checked"}> Add the Panchanama page</label>
+        <div id="panchBox" ${a.panchUse===false?"hidden":""}>
+        <div class="hint" style="margin-top:6px">Panchanama date (prints at the top: "ది. ___ తేదిన")</div>
         ${inp("oPanchDate",a.panchDate||"",'type="date" title="Panchanama date"')}
-        <div class="hint">Panchas (witnesses) — names print in the table:</div>
-        ${[0,1,2,3].map(i=>inp("oPanch"+i,(a.panch||[])[i]||"",`placeholder="${i+1}. Name" style="margin-top:4px"`)).join("")}`):""}
+        <div class="hint" style="margin-top:6px">Panchas (witnesses) — names print in the table:</div>
+        ${[0,1,2,3].map(i=>inp("oPanch"+i,(a.panch||[])[i]||"",`placeholder="${i+1}. Name" style="margin-top:4px"`)).join("")}</div>`):""}
       ${a.type==="f6"?kv("21+ declaration", `<label class="row small"><input type="checkbox" id="oDecl" ${a.decl===false?"":(a.decl||appAge(a)==null||appAge(a)>=21)?"checked":""}> Add Annexure III page (first-time applicant aged 21 or more)</label>`):""}
     </div></section>`:""}
     ${(a.type==="f6"||a.type==="f8")?declWindow(a, locked):""}
@@ -1319,6 +1321,7 @@ function openApp(id, typeHint){
   sh.querySelectorAll('[data-seg="f6out"] button').forEach(b=>b.addEventListener("click",()=>setTimeout(sync,0)));
   ["oRej","pWhy","pReq"].forEach(id=>{ if($("#"+id)) $("#"+id).addEventListener("change",sync); });
   sync();
+  if($("#oPanch")) $("#oPanch").addEventListener("change",()=>{ $("#panchBox").hidden=!$("#oPanch").checked; });
   if($("#dEpic")) $("#dEpic").addEventListener("change", ()=>{ const e=normEpic($("#dEpic").value); const v=e&&state.voters.find(x=>x.epic===e);
     if(!v){ if(e) toast("This EPIC is not in your roll — enter details by hand"); return; }
     const set=(id,val)=>{ const el=$("#"+id); if(el && !el.value && val) el.value=val; };
