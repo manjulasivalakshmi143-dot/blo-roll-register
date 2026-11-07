@@ -692,7 +692,7 @@ function subItems(t){
   if(t==="apps") return [
     ["➕","New application",()=>{ window._appSec=null; setTimeout(()=>openApp(null),0); }],
     ["⏳",`Pending · ${appsPending()}`,()=>{ window._appSec=null; window._appF="open"; }],
-    ["✅","Approved",()=>{ window._appSec=null; window._appF="approved"; }],
+    ["📤","Sent to ERO",()=>{ window._appSec=null; window._appF="forwarded"; }],
     ["📋","All applications",()=>{ window._appSec=null; window._appF="all"; }],
     ["📘","Guidelines",()=>{ window._appSec="guide"; }]];
   if(t==="import") return [["📄","Choose a roll file",()=>{ window._impSec="file"; }],["🌐","Download from ECI website",()=>{ window._impSec="eci"; }],["⇄","Compare revisions (what changed)",()=>{ tab="revisions"; }],["ℹ","How each file is read",()=>{ window._impSec="how"; }]];
@@ -897,7 +897,7 @@ function renderHome(el){
     ${mode()==="election"?`<div class="tally tally-c"><div><b>${s.slip}</b><small>Slips given</small></div><div><b>${s.n-s.asd-s.slip}</b><small>Slips pending</small></div><div><b>${s.asd}</b><small>ASD</small></div></div>`:""}
     ${mode()==="revision"?`<div class="tally tally-c"><div><b>${s.asd}</b><small>ASD</small></div><div><b>${s.forms}</b><small>Forms open</small></div><div><b>${s.newRev}</b><small>New this rev.</small></div><div><b>${s.manual}</b><small>Added by me</small></div></div>`:""}
     <section class="win pend-win" style="--wc:var(--accent2)"><div class="win-h"><span>⏳ Pending applications</span><span class="win-s">${appsPending()}</span></div>
-      <div class="pend-list" id="pendList">${(()=>{ const P=appsList().filter(a=>a.stage!=="approved"&&a.stage!=="rejected").sort((x,y)=>(y.created||0)-(x.created||0));
+      <div class="pend-list" id="pendList">${(()=>{ const P=appsList().filter(isOpenApp).sort((x,y)=>(y.created||0)-(x.created||0));
         return P.length? P.map(a=>`<button class="pend-i" data-id="${esc(a.id)}"><span class="pend-t"><b>${esc(a.name||"—")}</b><small>${esc((APP_TYPES[a.type]||{}).short||"")} · ${esc(stageLabel(a.stage))}${a.refNo?" · "+esc(a.refNo):""}</small></span><span class="menu-ch">›</span></button>`).join("")
           : `<div class="pend-empty muted small">No pending applications.</div>`; })()}</div>
       <div class="pend-foot"><button class="btn primary" id="pendNew">＋ New application</button></div>
@@ -968,11 +968,13 @@ const APP_TYPES={
     "False declaration is punishable under Section 31, RP Act 1950."],
    detail:["Reasons: death, under age, absent / permanently shifted, already enrolled, not an Indian citizen, or deleting own name.","Person's details: name, surname, EPIC and address of the person objected to."]},
 };
-const STAGES=[["received","Received"],["verified","Documents checked"],["forwarded","Sent to ERO"],["approved","Approved"],["rejected","Rejected"]];
-const stageLabel=k=>(STAGES.find(x=>x[0]===k)||["",k])[1];
+const STAGES=[["received","Received"],["verified","Documents checked"],["forwarded","Sent to ERO"]];
+const OLD_STAGES={approved:"Approved",rejected:"Rejected"};
+const stageLabel=k=>(STAGES.find(x=>x[0]===k)||["",OLD_STAGES[k]||k])[1];
 function appsList(){ if(!Array.isArray(state.meta.apps)) state.meta.apps=[]; return state.meta.apps; }
 function appDocs(a){ const T=APP_TYPES[a.type]||APP_TYPES.f6; const need=T.docs.filter(d=>d[2]); return { all:T.docs, need, done:need.filter(d=>a.docs&&a.docs[d[0]]).length }; }
-function appsPending(){ return appsList().filter(a=>a.stage!=="approved"&&a.stage!=="rejected").length; }
+const isOpenApp=a=>a.stage==="received"||a.stage==="verified";
+function appsPending(){ return appsList().filter(isOpenApp).length; }
 function renderGuides(el){
   el.innerHTML=`<div class="panel"><button class="btn ghost" id="secBack" style="align-self:flex-start">‹ Applications</button>
     <section class="win" style="--wc:var(--warn)"><div class="win-h"><span>📘 Guidelines</span><span class="win-s">Form 6 · 7 · 8</span></div>
@@ -990,13 +992,13 @@ function renderApps(el){
   if(window._appSec==="guide") return renderGuides(el);
   const L=appsList(), f=window._appF||"open", q=(window._appQ||"").toLowerCase();
   const cnt=k=>L.filter(a=>a.stage===k).length;
-  const shown=L.filter(a=> (f==="open"?(a.stage!=="approved"&&a.stage!=="rejected"):f==="all"?true:a.stage===f) && (!q || [a.name,a.relName,a.phone,a.house,a.refNo,a.epic].some(x=>String(x||"").toLowerCase().includes(q))) ).sort((a,b)=>(b.updated||0)-(a.updated||0));
+  const shown=L.filter(a=> (f==="open"?isOpenApp(a):f==="all"?true:f==="forwarded"?!isOpenApp(a):a.stage===f) && (!q || [a.name,a.relName,a.phone,a.house,a.refNo,a.epic].some(x=>String(x||"").toLowerCase().includes(q))) ).sort((a,b)=>(b.updated||0)-(a.updated||0));
   el.innerHTML=`<div class="panel">
     <h2 style="text-align:center">Applications</h2>
     <button class="btn primary big-cta" id="appNew">＋ New application</button>
     ${menuList([{ id:"guide", icon:"📘", color:"var(--warn)", title:"Guidelines", sub:"Form 6, 7, 8 and declaration form rules" }])}
-    <div class="tally" style="grid-template-columns:repeat(4,1fr)">
-      <div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded")}</b><small>Sent to ERO</small></div><div><b>${cnt("approved")}</b><small>Approved</small></div>
+    <div class="tally" style="grid-template-columns:repeat(3,1fr)">
+      <div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded")+cnt("approved")+cnt("rejected")}</b><small>Sent to ERO</small></div>
     </div>
     <input class="search" id="appQ" type="search" placeholder="Search Ref ID, name, father name, phone…" value="${esc(window._appQ||"")}">
     <div class="chips" id="appChips">${[["open","Pending"],...STAGES,["all","All"]].map(([k,l])=>`<button class="chip" data-k="${k}" aria-pressed="${f===k}">${l}</button>`).join("")}</div>
@@ -1004,7 +1006,7 @@ function renderApps(el){
       return `<button class="v" data-id="${esc(a.id)}"><span class="sl">${esc(T.short.replace("Form ","F"))}</span><span style="min-width:0">
         <div class="nm">${esc(a.name||"(no name)")}</div>
         <div class="meta">${a.relName?esc(a.relType||"Father")+": "+esc(a.relName)+" · ":""}${a.house?"H "+esc(a.house)+" · ":""}${a.phone?`<span class="mono">${esc(a.phone)}</span> · `:""}${fmtDate(a.created).split(" ").slice(0,3).join(" ")}</div>
-        <div class="stepper" aria-label="Stage">${STAGES.slice(0,4).map((st,i)=>`<i class="${a.stage==="rejected"?(i<=1?"done":""):i<=si?"done":""}"></i>`).join("")}</div>
+        <div class="stepper" aria-label="Stage">${STAGES.map((st,i)=>`<i class="${a.stage==="rejected"?(i<=1?"done":""):i<=si?"done":""}"></i>`).join("")}</div>
         <div class="pills"><span class="pill ${a.stage==="approved"?"ok":a.stage==="rejected"?"bad":"acc"}">${esc(stageLabel(a.stage))}</span><span class="pill ${d.done===d.need.length?"ok":"warn"}">Docs ${d.done}/${d.need.length}</span>${a.refNo?`<span class="pill">Ref ID ${esc(a.refNo)}</span>`:`<span class="pill warn">No Ref ID</span>`}</div>
       </span></button>`; }).join("") || `<div class="note small">${L.length?"No applications in this list.":"No applications yet. Tap “New application” when someone applies."}</div>`}</div>
   </div>`;
@@ -1166,7 +1168,7 @@ function openApp(id, typeHint){
   const locked=a.stage==="approved"||a.stage==="rejected";
   $("#sheetRoot").innerHTML=`<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Application">
     <div class="sheet-top"><div class="sheet-h"><div style="min-width:0"><div class="eyebrow">${isNew?"New application":esc(T.label)+" · "+esc(stageLabel(a.stage))}</div><h2>${esc(isNew?"Add applicant":(a.name||"Applicant"))}</h2></div><button class="btn" id="apX" aria-label="Close">✕</button></div>
-    ${isNew?"":`<div class="stepper big">${STAGES.slice(0,4).map((st,i)=>{ const si=STAGES.findIndex(x=>x[0]===a.stage); return `<span class="${a.stage==="rejected"&&i>1?"":i<=si?"done":""}"><i></i>${st[1]}</span>`; }).join("")}</div>`}</div>
+    ${isNew?"":`<div class="stepper big">${STAGES.map((st,i)=>{ const si=STAGES.findIndex(x=>x[0]===a.stage); return `<span class="${a.stage==="rejected"&&i>1?"":i<=si?"done":""}"><i></i>${st[1]}</span>`; }).join("")}</div>`}</div>
     ${isNew?`<div class="field-block"><span>Type of application</span>${seg("atype",Object.entries(APP_TYPES).map(([k,t])=>[k,t.short]),a.type)}</div>`:""}
     <section class="win eci-doc" style="--wc:#1D7349"><div class="win-h"><span>📎 ECI application PDF</span><span class="win-s">printed first</span></div>
       <div class="panel" style="padding:12px;gap:8px">
@@ -1256,7 +1258,7 @@ function openApp(id, typeHint){
       ${isNew?`<button class="btn primary grow" id="apSave">Save application</button>`:
         a.stage==="received"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Documents checked ✓</button>`:
         a.stage==="verified"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Send to ERO ›</button>`:
-        a.stage==="forwarded"?`<button class="btn danger" id="apRej">Rejected</button><button class="btn primary grow" id="apNext">Approved ✓</button>`:
+        a.stage==="forwarded"?`<span class="muted small grow">📤 Sent to ERO on ${fmtDate((a.history.slice().reverse().find(h=>h.stage==="forwarded")||{}).at)}</span><button class="btn" id="apBack">Back to documents checked</button>`:
         a.stage==="approved"?`${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary grow" id="apOpenV">Open voter in roll</button>`:`<span class="muted small grow">Approved on ${fmtDate((a.history.find(h=>h.stage==="approved")||{}).at)}</span>`}`:
         `<button class="btn grow" id="apReopen">Reopen application</button>`}
     </div>
@@ -1359,6 +1361,7 @@ function openApp(id, typeHint){
     const x=advance("verified"); if(!x) return; pushUndo("documents checked"); store(x,"Documents checked: "+x.name); openApp(x.id);
   };
   if($("#apRej")) $("#apRej").onclick=()=>{ const x0=collect(); if(!x0) return; askNote("Rejected", "Reason for rejection", "Mark rejected", n=>{ const x=advance("rejected",n,x0); pushUndo("reject application"); store(x,"Application rejected: "+x.name); closeSheet(); render(); }); };
+  if($("#apBack")) $("#apBack").onclick=()=>{ a.stage="verified"; a.history.push({stage:"verified",at:Date.now(),note:"Moved back from Sent to ERO"}); pushUndo("move back"); store(a,"Moved back to documents checked: "+a.name); openApp(a.id); };
   if($("#apReopen")) $("#apReopen").onclick=()=>{ a.stage="forwarded"; a.history.push({stage:"forwarded",at:Date.now(),note:"Reopened"}); pushUndo("reopen application"); store(a,"Reopened application: "+a.name); openApp(a.id); };
   if($("#apOpenV")) $("#apOpenV").onclick=()=>openVoter(a.addedVoterId);
   const pdfReady=()=>{ const x=locked?a:collect(); if(!x) return null; if(!x.refNo){ toast("Enter the Ref ID first"); return null; }
@@ -1532,9 +1535,15 @@ async function buildFormPdf(a){
   const name=[clean(a.name||vals.applicant)||"Applicant", clean(a.refNo||vals.refId)].filter(Boolean).join("_")+".pdf";
   return { bytes, name };
 }
+function markSent(a){
+  const L=appsList(), i=L.findIndex(y=>y.id===a.id), x=i>=0?L[i]:a; x.pdfAt=a.pdfAt;
+  if(isOpenApp(x)){ x.stage="forwarded"; x.history=x.history||[]; x.history.push({stage:"forwarded", at:Date.now(), note:"PDF downloaded"}); a.stage="forwarded";
+    commit("app",-1,"Sent to ERO (PDF downloaded): "+x.name); toast("PDF downloaded · moved to Sent to ERO"); closeSheet(); render(); }
+  else { commit("app",-1); toast("PDF downloaded"); }
+}
 async function downloadFormPdf(a){
   try{ toast("Preparing PDF…"); const {bytes,name}=await buildFormPdf(a);
-    if(saveFile(name, new Blob([bytes],{type:"application/pdf"}))){ toast("PDF downloaded"); a.pdfAt=Date.now(); } }
+    if(saveFile(name, new Blob([bytes],{type:"application/pdf"}))){ a.pdfAt=Date.now(); markSent(a); } }
   catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
 }
 function printPages(ov, fname){
