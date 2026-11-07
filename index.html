@@ -442,7 +442,7 @@ td,th{background:var(--surface)}
 
 <nav class="tabs" id="tabs" aria-label="Sections" hidden>
   <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Register</b></div>
-  <div class="blo-card" id="bloCard"><div role="button" tabindex="0" class="blo-ph" id="bloPh" title="Add or change your photo"></div><div role="button" tabindex="0" class="blo-tx" id="bloTx"><b id="bloNm"></b><small id="bloPt"></small></div><input type="file" id="bloPhIn" accept="image/*" hidden><select id="psSel" class="ps-sel" aria-label="Polling station (part)" title="View another part"></select></div>
+  <div class="blo-card" id="bloCard"><div role="button" tabindex="0" class="blo-ph" id="bloPh" title="Add or change your photo"></div><div role="button" tabindex="0" class="blo-tx" id="bloTx"><b id="bloNm"></b><small id="bloPt"></small></div><input type="file" id="bloPhIn" accept="image/*" hidden></div>
   <button data-tab="home" style="--tc:#5A2DA3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button data-tab="apps" style="--tc:#8A2D6B" class="add-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Applications</button>
   <button data-tab="lists" data-label="Rolls & voters" style="--tc:#0F7C7C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="13" height="16" rx="2"/><path d="M19 7v13a1 1 0 0 1-1 1H8"/><path d="M7 9h5M7 13h5"/></svg><span class="lb">Rolls &amp; <br>voters</span></button>
@@ -558,9 +558,9 @@ async function connectAccount(){
       if(state.savedAt > (state.cloudSavedAt||0)) lsSet("bloreg:older-phone-copy:"+session.email, state);
       const voters=[]; for(const c of r.chunks) voters.push(...((c&&c.v)||[]));
       state = { meta:Object.assign(blank().meta, r.meta||{}), voters, savedAt:r.saved_at||0, cloudSavedAt:r.saved_at||0 };
-      saveLocal(); cloud.ready=true; setSync("saved","Saved to account"); render(); syncLists(); psLoadDir(); permCount();
+      saveLocal(); cloud.ready=true; setSync("saved","Saved to account"); render(); syncLists();
     } else {
-      cloud.ready=true; syncLists(); psLoadDir(); permCount();
+      cloud.ready=true; syncLists();
       if(state.voters.length || state.meta.part){ markDirty(null); scheduleCloud(); } else setSync("saved","Account ready");
     }
   }catch(e){
@@ -696,7 +696,7 @@ function subItems(t){
     ["📋","All applications",()=>{ window._appSec=null; window._appF="all"; }],
     ["📘","Guidelines",()=>{ window._appSec="guide"; }]];
   if(t==="import") return [["📄","Choose a roll file",()=>{ window._impSec="file"; }],["🌐","Download from ECI website",()=>{ window._impSec="eci"; }],["⇄","Compare revisions (what changed)",()=>{ tab="revisions"; }],["ℹ","How each file is read",()=>{ window._impSec="how"; }]];
-  if(t==="backup") return [["🖼","My photo & name",()=>{ window._accSec="part"; setTimeout(()=>{ const i=$("#bloPhIn"); if(i) i.click(); },150); }],["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["🔐",window._permNew?`View permissions · ${window._permNew} new`:"View permissions",()=>{ window._accSec="perm"; }],["✍","My signature",()=>{ window._accSec="sign"; }],["⬇","Excel backup",()=>{ window._accSec="backup"; }],["↺","Restore from a backup",()=>{ window._accSec="restore"; }],["🕘","Recent work & undo",()=>{ window._accSec="recent"; }],["⚠","Start fresh",()=>{ window._accSec="fresh"; }]];
+  if(t==="backup") return [["🖼","My photo & name",()=>{ window._accSec="part"; setTimeout(()=>{ const i=$("#bloPhIn"); if(i) i.click(); },150); }],["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["✍","My signature",()=>{ window._accSec="sign"; }],["⬇","Excel backup",()=>{ window._accSec="backup"; }],["↺","Restore from a backup",()=>{ window._accSec="restore"; }],["🕘","Recent work & undo",()=>{ window._accSec="recent"; }],["⚠","Start fresh",()=>{ window._accSec="fresh"; }]];
   if(t==="lists"){
     const V=state.voters.length? [["","Voters in my working roll",null], ...subItems("voters").map(it=>[it[0],it[1],()=>{ tab="voters"; window._vSec=null; it[2](); }])]
                               : [["★","My working roll",()=>{ tab="voters"; window._vSec=null; }]];
@@ -725,7 +725,7 @@ addEventListener("scroll",e=>{ if(!(e.target&&e.target.closest&&e.target.closest
 
 /* ================= BLO photo card ================= */
 function bloCard(){
-  const m=myMeta(), ph=$("#bloPh"); if(!ph) return; psFill();
+  const m=myMeta(), ph=$("#bloPh"); if(!ph) return;
   ph.style.backgroundImage=m.bloPhoto?`url("${m.bloPhoto}")`:""; ph.textContent=m.bloPhoto?"":"👤";
   $("#bloNm").textContent=m.blo||"Add your name"; $("#bloPt").textContent=m.part?"Part "+m.part:"Set your part";
 }
@@ -790,7 +790,7 @@ function exitView(){
   state=myState; myState=null; viewing=null; undoStack.length=0;
   document.body.classList.remove("viewing"); tab="home"; render(); window.scrollTo(0,0); toast("Back to your part");
 }
-$("#psSel").onchange=e=>psChoose(e.target.value);
+
 function viewBanner(){
   return viewing?`<div class="view-ban"><span>👁 Viewing <b>PS ${esc(viewing.part)}</b>${viewing.blo?" · "+esc(viewing.blo):""} · view only</span><button class="btn" onclick="exitView()">‹ My part</button></div>`:"";
 }
@@ -935,7 +935,7 @@ function bindSettings(){
   const b=$("#sSave"); if(!b) return;
   b.onclick=()=>{ pushUndo("part details");
     Object.assign(state.meta,{ac:$("#sAc").value.trim(),acName:$("#sAcN").value.trim(),part:$("#sPart").value.trim(),partName:$("#sPartN").value.trim(),blo:$("#sBlo").value.trim(), bloPhone:($("#sBloPh")?$("#sBloPh").value.replace(/\D/g,""):state.meta.bloPhone)||""});
-    commit("details", -1, "Updated part details"); toast("Details saved"); render(); setTimeout(psLoadDir, 3000); };
+    commit("details", -1, "Updated part details"); toast("Details saved"); render(); };
 }
 
 /* ---------- applications: received → documents checked → sent to ERO → approved / rejected ---------- */
@@ -2758,7 +2758,6 @@ function renderBackup(el){
   const items=[
     { id:"account", icon:"👤", color:"var(--accent)", title: signed?"Your account":"Create a free account", sub: signed?esc(session.email):"Saved on this phone only" },
     { id:"part", icon:"🗳", color:"var(--info)", title:"My part details", sub:[m.ac&&("AC "+esc(m.ac)), m.part&&("Part "+esc(m.part)), m.blo&&esc(m.blo)].filter(Boolean).join(" · ")||"Not filled yet" },
-    { id:"perm", icon:"🔐", color:"#0F7C7C", title:"View permissions", sub: window._permNew?`${window._permNew} new request${window._permNew>1?"s":""} — tap to allow`:"Who can view my part" },
     { id:"sign", icon:"✍", color:"var(--accent)", title:"My signature", sub: sig?"Saved · asked each time you download":"Not added" },
     { id:"backup", icon:"⬇", color:"var(--ok)", title:"Excel backup", sub:"Last backup: "+fmtDate(m.lastBackup) },
     { id:"restore", icon:"↺", color:"var(--ok)", title:"Restore from a backup", sub:"Bring back data from an Excel backup" },
