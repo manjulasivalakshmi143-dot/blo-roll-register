@@ -1447,7 +1447,11 @@ async function buildFormPdf(a){
   const ink=PDFLib.rgb(0.05,0.1,0.45), white=PDFLib.rgb(1,1,1);
   let font=null;
   if(a.ecPdf){ const eb=await getAppDoc(a);
-    if(eb){ const src=await PDFLib.PDFDocument.load(eb,{ignoreEncryption:true}); (await out.copyPages(src, src.getPageIndices())).forEach(pg=>out.addPage(pg)); }
+    if(eb){ const src=await PDFLib.PDFDocument.load(eb,{ignoreEncryption:true});
+      // every page of the ECI application is fitted onto an A4 sheet (it comes as A3)
+      const emb=await out.embedPdf(eb, src.getPageIndices()), A4W=595.28, A4H=841.89;
+      for(const ep of emb){ const pg=out.addPage([A4W,A4H]); const k=Math.min(A4W/ep.width, A4H/ep.height), w=ep.width*k, h=ep.height*k;
+        pg.drawPage(ep,{ x:(A4W-w)/2, y:(A4H-h)/2, width:w, height:h }); } }
     else toast("The attached ECI application PDF isn't on this phone and couldn't be loaded — making the rest"); }
   for(const P of T.parts){
     if(P.optional==="panch" && a.panchUse===false) continue;
