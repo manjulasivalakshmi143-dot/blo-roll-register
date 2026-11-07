@@ -1152,7 +1152,7 @@ async function appendDecl(doc, a, font){
   if(sig&&sig.png&&a.useSig===true){ try{ const img=await src.embedPng(sig.png), b=DECL4.sig; const k=Math.min(b.w/img.width,b.h/img.height), w=img.width*k, h=img.height*k;
     pg.drawImage(img,{x:b.x+(b.w-w)/2,y:H-(b.y+b.h)+(b.h-h)/2,width:w,height:h}); }catch(e){} }
   if(a.appSig){ try{ await drawSigBox(src, pg, a.appSig, DECL4.appSig); }catch(e){} }
-  const copied=await doc.copyPages(await PDFLib.PDFDocument.load(await src.save()), src.getPageIndices());
+  const copied=await doc.copyPages(await PDFLib.PDFDocument.load(await src.save()), [0]);   // only the declaration; the information sheet (page 2) is left out
   copied.forEach(p=>doc.addPage(p));
 }
 function appAge(a){ if(!a.dob) return null; const t=new Date(a.dob); if(isNaN(t)) return null; return Math.floor((Date.now()-t.getTime())/31557600000); }
