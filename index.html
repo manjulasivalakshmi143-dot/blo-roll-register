@@ -223,6 +223,10 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .ec-yn .ec-q{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding-bottom:5px}
 .ec-yn .ec-q span{min-width:0} .ec-yn select{width:auto;flex:none}
 [hidden]{display:none!important}
+.doc-fold>summary{cursor:pointer;list-style:none}
+.doc-fold>summary::-webkit-details-marker{display:none}
+.doc-fold:not([open])>summary{border-radius:12px}
+.doc-fold .opt{font-style:normal;font-size:.72rem;font-weight:600;opacity:.85;margin-left:6px;background:rgba(255,255,255,.2);padding:1px 7px;border-radius:999px}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
 .hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -1007,7 +1011,7 @@ function renderApps(el){
         <div class="nm">${esc(a.name||"(no name)")}</div>
         <div class="meta">${a.relName?esc(a.relType||"Father")+": "+esc(a.relName)+" · ":""}${a.house?"H "+esc(a.house)+" · ":""}${a.phone?`<span class="mono">${esc(a.phone)}</span> · `:""}${fmtDate(a.created).split(" ").slice(0,3).join(" ")}</div>
         <div class="stepper" aria-label="Stage">${STAGES.map((st,i)=>`<i class="${a.stage==="rejected"?(i<=1?"done":""):i<=si?"done":""}"></i>`).join("")}</div>
-        <div class="pills"><span class="pill ${a.stage==="approved"?"ok":a.stage==="rejected"?"bad":"acc"}">${esc(stageLabel(a.stage))}</span><span class="pill ${d.done===d.need.length?"ok":"warn"}">Docs ${d.done}/${d.need.length}</span>${a.refNo?`<span class="pill">Ref ID ${esc(a.refNo)}</span>`:`<span class="pill warn">No Ref ID</span>`}</div>
+        <div class="pills"><span class="pill ${a.stage==="approved"?"ok":a.stage==="rejected"?"bad":"acc"}">${esc(stageLabel(a.stage))}</span>${d.done?`<span class="pill ok">Docs ${d.done}/${d.need.length}</span>`:""}${a.refNo?`<span class="pill">Ref ID ${esc(a.refNo)}</span>`:`<span class="pill warn">No Ref ID</span>`}</div>
       </span></button>`; }).join("") || `<div class="note small">${L.length?"No applications in this list.":"No applications yet. Tap “New application” when someone applies."}</div>`}</div>
   </div>`;
   $("#appNew").onclick=()=>openApp(null);
@@ -1235,9 +1239,9 @@ function openApp(id, typeHint){
       ${a.type==="f6"?kv("21+ declaration", `<label class="row small"><input type="checkbox" id="oDecl" ${a.decl===false?"":(a.decl||appAge(a)==null||appAge(a)>=21)?"checked":""}> Add Annexure III page (first-time applicant aged 21 or more)</label>`):""}
     </div></section>`:""}
     ${(a.type==="f6"||a.type==="f8")?declWindow(a, locked):""}
-    <section class="win" style="--wc:var(--ok)"><div class="win-h"><span>④ Document checklist</span><span class="win-s" id="docCount">${d.done}/${d.need.length} required</span></div>
+    <details class="win doc-fold" style="--wc:var(--ok)"><summary class="win-h"><span>④ Document checklist <em class="opt">optional</em></span><span class="win-s" id="docCount">${d.done}/${d.need.length} ticked ▾</span></summary>
     <div class="checklist" id="docList">${T.docs.map(([k,l,req])=>`<label class="chk"><input type="checkbox" data-doc="${k}" ${a.docs[k]?"checked":""} ${locked?"disabled":""}><span>${esc(l)}${req?"":` <em class="muted">(if needed)</em>`}</span></label>`).join("")}</div>
-    <p class="muted small" style="margin:0;padding:8px 12px">Tick what you have checked. Details: Applications → Guidelines.</p></section>
+    <p class="muted small" style="margin:0;padding:8px 12px">Only if you want to keep a note of the documents. Details: Applications → Guidelines.</p></details>
     ${["f6","f7","f8"].includes(a.type)?`<section class="win" style="--wc:var(--ink)"><div class="win-h"><span>⑤ Preview &amp; download</span><span class="win-s">${esc(a.type==="f6"?"Order, notice & declaration":a.type==="f7"?"Order, Form 13 & 14, Panchanama":"Order & notice")}</span></div>
     <div class="app-sig">
       <div class="small"><strong>Applicant's signature</strong> <span class="muted">— printed only where the applicant signs${a.type==="f6"?" (receipt, declarations)":" (receipt, declaration)"}</span></div>
@@ -1321,7 +1325,7 @@ function openApp(id, typeHint){
     set("pName",v.nameEn||v.name); set("pRel",v.relNameEn||v.relName); set("pHouse",v.house); set("oSl",v.sl); set("oPart",state.meta.part);
     if($("#pRelT")&&v.relType) $("#pRelT").value=v.relType; if($("#pGen")&&!$("#pGen").value) $("#pGen").value=v.gender||"";
     toast("Filled from your roll: Sl "+v.sl); });
-  $("#docList").addEventListener("change", ()=>{ const t=APP_TYPES[a.type]||APP_TYPES.f6; const need=t.docs.filter(x=>x[2]); const done=need.filter(x=>{ const c=sh.querySelector(`[data-doc="${x[0]}"]`); return c&&c.checked; }).length; const dc=$("#docCount"); dc.textContent=`${done}/${need.length} required${done===need.length?" ✓":""}`; });
+  $("#docList").addEventListener("change", ()=>{ const t=APP_TYPES[a.type]||APP_TYPES.f6; const need=t.docs.filter(x=>x[2]); const done=need.filter(x=>{ const c=sh.querySelector(`[data-doc="${x[0]}"]`); return c&&c.checked; }).length; const dc=$("#docCount"); dc.textContent=`${done}/${need.length} ticked ▾`; });
   function collect(){
     const ph=$("#pPh").value.replace(/\D/g,"");
     if(ph && ph.length!==10){ toast("Phone number must be 10 digits"); return null; }
@@ -1355,7 +1359,7 @@ function openApp(id, typeHint){
   function advance(stage, note, x){ x=x||(locked?a:collect()); if(!x) return null; x.stage=stage; x.history.push({stage, at:Date.now(), note:note||""}); return x; }
   if($("#apSave")) $("#apSave").onclick=()=>{ const x=collect(); if(!x) return; if(isNew) x.history.push({stage:"received",at:Date.now(),note:""}); pushUndo(isNew?"new application":"edit application"); store(x,(isNew?"New application: ":"Updated application: ")+x.name+" ("+(APP_TYPES[x.type]||APP_TYPES.f6).short+")"); closeSheet(); render(); toast("Saved"); };
   if($("#apNext")) $("#apNext").onclick=()=>{
-    if(a.stage==="received"){ const x=collect(); if(!x) return; const dd=appDocs(x); if(dd.done<dd.need.length){ toast(`Tick all required documents first (${dd.done}/${dd.need.length})`); return; } }
+    if(a.stage==="received"){ const x=collect(); if(!x) return;  }
     if(a.stage==="verified"){ const x0=collect(); if(!x0) return; return askNote("Send to ERO", "Who it was sent to / how (optional)", "Sent", n=>{ const x=advance("forwarded",n,x0); pushUndo("send application"); store(x,"Sent to ERO: "+x.name); closeSheet(); render(); toast("Marked as sent to ERO"); }); }
     if(a.stage==="forwarded"){ const x0=collect(); if(!x0) return; return approveApp(x0, store); }
     const x=advance("verified"); if(!x) return; pushUndo("documents checked"); store(x,"Documents checked: "+x.name); openApp(x.id);
