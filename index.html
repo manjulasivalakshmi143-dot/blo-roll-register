@@ -1237,8 +1237,9 @@ function openApp(id, typeHint){
       ${kv("Hearing place", inp("oHPlace",a.hearPlace||(state.meta.formDefaults&&state.meta.formDefaults.hearPlace)||""))}
       ${kv("Order date", inp("oOrder",a.orderDate||"",'type="date"'))}
       ${a.type==="f7"?`<div class="k" data-why="death">Panchanama</div><div class="val" data-why="death">
-        <div class="hint">Death: the Panchanama page is added to the PDF.</div>
-        <div id="panchBox">
+        <div class="hint">Proof of death</div>
+        <select id="oProof"><option value="cert" ${a.deathProof==="cert"?"selected":""}>Death certificate — no Panchanama needed</option><option value="panch" ${a.deathProof!=="cert"?"selected":""}>Panchanama (no certificate)</option></select>
+        <div id="panchBox" ${a.deathProof==="cert"?"hidden":""}>
         <div class="hint" style="margin-top:6px">Panchanama date (prints at the top: "ది. ___ తేదిన")</div>
         ${inp("oPanchDate",a.panchDate||"",'type="date" title="Panchanama date"')}
         <div class="hint" style="margin-top:6px">Panchas (witnesses) — names print in the table:</div>
@@ -1322,6 +1323,7 @@ function openApp(id, typeHint){
   sh.querySelectorAll('[data-seg="f6out"] button').forEach(b=>b.addEventListener("click",()=>setTimeout(sync,0)));
   ["oRej","pWhy","pReq"].forEach(id=>{ if($("#"+id)) $("#"+id).addEventListener("change",sync); });
   sync();
+  if($("#oProof")) $("#oProof").addEventListener("change",()=>{ $("#panchBox").hidden=$("#oProof").value==="cert"; });
   if($("#dEpic")) $("#dEpic").addEventListener("change", ()=>{ const e=normEpic($("#dEpic").value); const v=e&&state.voters.find(x=>x.epic===e);
     if(!v){ if(e) toast("This EPIC is not in your roll — enter details by hand"); return; }
     const set=(id,val)=>{ const el=$("#"+id); if(el && !el.value && val) el.value=val; };
@@ -1352,7 +1354,7 @@ function openApp(id, typeHint){
       if(a.type==="f7"){ a.f7why=$("#pWhy").value; a.reason=(F7_WHY.find(x=>x[0]===a.f7why)||[])[1];
         a.del={ epic:normEpic(v("dEpic")), name:v("dName"), relName:v("dRel"), relation:v("dRelation"), house:v("dHouse"), village:v("dVillage"), mandal:v("dMandal"),
           part:v("dPart"), serial:v("dSl"), age:v("dAge"), deathDate:v("dDeath"), leftYear:v("dLeft"), otherPart:v("dOP"), otherSerial:v("dOS") };
-        a.voterEpic=a.del.epic; a.panchUse=a.f7why==="death"; a.panchDate=v("oPanchDate"); a.panch=[0,1,2,3].map(i=>v("oPanch"+i)); }
+        a.voterEpic=a.del.epic; a.deathProof=$("#oProof")?$("#oProof").value:"panch"; a.panchUse=a.f7why==="death"&&a.deathProof!=="cert"; a.panchDate=v("oPanchDate"); a.panch=[0,1,2,3].map(i=>v("oPanch"+i)); }
       state.meta.formDefaults=Object.assign({}, state.meta.formDefaults, { mandal:a.mandal||undefined, village:a.village||(state.meta.formDefaults||{}).village, rcNo:a.rcNo||(state.meta.formDefaults||{}).rcNo }); }
     if($("#oArea")){ Object.assign(a,{ appDate:od("oApp"), area:od("oArea"), town:od("oTown"), partNo:od("oPart"), serialNo:od("oSl")??a.serialNo, decl:$("#oDecl")?$("#oDecl").checked:a.decl, noticeDate:od("oNotice"), hearDate:od("oHDate"), hearTime:od("oHTime"), hearPlace:od("oHPlace"), orderDate:od("oOrder") });
       state.meta.formDefaults=Object.assign({}, state.meta.formDefaults, { area:a.area, town:a.town, hearTime:a.hearTime, hearPlace:a.hearPlace }); }
@@ -1502,7 +1504,7 @@ function formValues(a){
     deathDate:why==="death"?dmy(D.deathDate):"", leftYear:why==="migration"?String(D.leftYear||""):"",
     delAddr:[D.house, up(D.village||fd.village||town), up(D.mandal||mandal)].filter(Boolean).join(", "),
     aVillage:up(a.area||town), aMandal:mandal,
-    ground1: why==="death"?`Died on ${dmy(D.deathDate)||"........"} (death certificate / panchanama).`
+    ground1: why==="death"?`Died on ${dmy(D.deathDate)||"........"} (${a.deathProof==="cert"?"death certificate":"panchanama"}).`
             : why==="double"?`Enrolled twice in the electoral roll${D.otherPart||D.otherSerial?` (also at part ${D.otherPart||"..."}, serial ${D.otherSerial||"..."})`:""}.`
             : `Not residing at the given address${D.leftYear?` since ${D.leftYear}`:""} (shifted).`,
     ground2:latin(a.ground2||""), ground3:"",
@@ -1529,7 +1531,7 @@ async function buildFormPdf(a){
         pg.drawPage(ep,{ x:(A4W-w)/2, y:(A4H-h)/2, width:w, height:h }); } }
     else toast("The attached ECI application PDF isn't on this phone and couldn't be loaded — making the rest"); }
   for(const P of T.parts){
-    if(P.optional==="panch" && f7why(a)!=="death") continue;   // Panchanama only for death
+    if(P.optional==="panch" && (f7why(a)!=="death" || a.deathProof==="cert")) continue;   // Panchanama only for death without a certificate
     const src=await PDFLib.PDFDocument.load(await (await fetch(P.file)).arrayBuffer());
     const f=await src.embedFont(PDFLib.StandardFonts.HelveticaBold), pages=src.getPages();
     P.pages.forEach((fields,pi)=>{ const pg=pages[pi], H=pg.getHeight();
