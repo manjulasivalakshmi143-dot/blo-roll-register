@@ -1259,14 +1259,15 @@ function openApp(id, typeHint){
     </div>
     <div class="win-f" style="border-top:0">
       <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
-      <p class="muted small" style="margin:0">Names print in English capitals. Preview and check before submitting; you can print from the preview.</p>
+      <p class="muted small" style="margin:0">${a.pdfAt?`✓ Printed ${fmtDate(a.pdfAt)}. Correct anything and download again if needed, then tap <b>Move to ERO</b>.`:"Names print in English capitals. Preview and check before submitting; you can print from the preview."}</p>
     </div></section>`:""}
     ${a.history.length?`<div class="sec-h"><span>History</span></div><div class="diff-list">${a.history.slice().reverse().map(h=>`<div><span class="mono muted small">${fmtDate(h.at)}</span><br>${esc(stageLabel(h.stage))}${h.note?" — "+esc(h.note):""}</div>`).join("")}</div>`:""}
     <div class="sheet-bar">
       ${isNew?`<button class="btn primary grow" id="apSave">Save application</button>`:
+        (a.stage==="received"||a.stage==="verified")&&a.pdfAt?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apEro">📤 Move to ERO ✓</button>`:
         a.stage==="received"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Documents checked ✓</button>`:
-        a.stage==="verified"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Send to ERO ›</button>`:
-        a.stage==="forwarded"?`<span class="muted small grow">📤 Sent to ERO on ${fmtDate((a.history.slice().reverse().find(h=>h.stage==="forwarded")||{}).at)}</span><button class="btn" id="apBack">Back</button>${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary" id="apOpenV">Open in voter list</button>`:rollAction(a)?`<button class="btn primary" id="apAddV">${({add:"➕ Add to voter list",remove:"➖ Remove from voter list",update:"✎ Update in voter list"})[rollAction(a)]}</button>`:""}`:
+        a.stage==="verified"?`<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apPdf2">⬇ Download PDF</button>`:
+        a.stage==="forwarded"?`<span class="muted small grow">📤 Sent to ERO on ${fmtDate((a.history.slice().reverse().find(h=>h.stage==="forwarded")||{}).at)}</span><button class="btn" id="apBack">✎ Edit</button>${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary" id="apOpenV">Open in voter list</button>`:rollAction(a)?`<button class="btn primary" id="apAddV">${({add:"➕ Add to voter list",remove:"➖ Remove from voter list",update:"✎ Update in voter list"})[rollAction(a)]}</button>`:""}`:
         a.stage==="approved"?`${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary grow" id="apOpenV">Open voter in roll</button>`:`<span class="muted small grow">Approved on ${fmtDate((a.history.find(h=>h.stage==="approved")||{}).at)}</span>`}`:
         `<button class="btn grow" id="apReopen">Reopen application</button>`}
     </div>
@@ -1369,8 +1370,10 @@ function openApp(id, typeHint){
     const x=advance("verified"); if(!x) return; pushUndo("documents checked"); store(x,"Documents checked: "+x.name); openApp(x.id);
   };
   if($("#apRej")) $("#apRej").onclick=()=>{ const x0=collect(); if(!x0) return; askNote("Rejected", "Reason for rejection", "Mark rejected", n=>{ const x=advance("rejected",n,x0); pushUndo("reject application"); store(x,"Application rejected: "+x.name); closeSheet(); render(); }); };
+  if($("#apEro")) $("#apEro").onclick=()=>{ const x=collect(); if(!x) return; store(x,"Updated application: "+x.name); moveToEro(x); };
+  if($("#apPdf2")) $("#apPdf2").onclick=()=>{ const b=$("#apPdf"); if(b) b.click(); };
   if($("#apAddV")) $("#apAddV").onclick=()=>{ closeSheet(); askAddToRoll(a); };
-  if($("#apBack")) $("#apBack").onclick=()=>{ a.stage="verified"; a.history.push({stage:"verified",at:Date.now(),note:"Moved back from Sent to ERO"}); pushUndo("move back"); store(a,"Moved back to documents checked: "+a.name); openApp(a.id); };
+  if($("#apBack")) $("#apBack").onclick=()=>{ a.stage="verified"; a.history.push({stage:"verified",at:Date.now(),note:"Reopened to correct"}); pushUndo("edit sent application"); store(a,"Reopened to correct: "+a.name); openApp(a.id); toast("You can correct it and print again"); };
   if($("#apReopen")) $("#apReopen").onclick=()=>{ a.stage="forwarded"; a.history.push({stage:"forwarded",at:Date.now(),note:"Reopened"}); pushUndo("reopen application"); store(a,"Reopened application: "+a.name); openApp(a.id); };
   if($("#apOpenV")) $("#apOpenV").onclick=()=>openVoter(a.addedVoterId);
   const pdfReady=()=>{ const x=locked?a:collect(); if(!x) return null; if(!x.refNo){ toast("Enter the Ref ID first"); return null; }
@@ -1591,15 +1594,20 @@ function askAddToRoll(a){
       x.rollDone=true; commit("edit",i,"Updated from Form 8: "+(w.nameEn||w.name)); toast("Voter details updated"); });
   }
 }
-function markSent(a){
-  const L=appsList(), i=L.findIndex(y=>y.id===a.id), x=i>=0?L[i]:a; x.pdfAt=a.pdfAt;
-  if(isOpenApp(x)){ x.stage="forwarded"; x.history=x.history||[]; x.history.push({stage:"forwarded", at:Date.now(), note:"PDF downloaded"}); a.stage="forwarded";
-    commit("app",-1,"Sent to ERO (PDF downloaded): "+x.name); toast("PDF downloaded · moved to Sent to ERO"); closeSheet(); render(); askAddToRoll(x); }
-  else { commit("app",-1); toast("PDF downloaded"); askAddToRoll(x); }
+function markPrinted(a){
+  const L=appsList(), i=L.findIndex(y=>y.id===a.id); a.pdfAt=Date.now();
+  if(i>=0){ L[i].pdfAt=a.pdfAt; commit("app",-1,"PDF downloaded: "+a.name); }
+  toast("PDF downloaded · tap Move to ERO when it is final");
+  if(i>=0 && document.getElementById("sbg")) openApp(a.id);
+}
+function moveToEro(a){
+  const L=appsList(), i=L.findIndex(y=>y.id===a.id); if(i<0) return; const x=L[i];
+  x.stage="forwarded"; x.history=x.history||[]; x.history.push({stage:"forwarded", at:Date.now(), note:x.pdfAt?"Printed and moved to ERO":"Moved to ERO"});
+  pushUndo("move to ERO"); commit("app",-1,"Moved to ERO: "+x.name); closeSheet(); render(); toast("Completed · moved to ERO"); askAddToRoll(x);
 }
 async function downloadFormPdf(a){
   try{ toast("Preparing PDF…"); const {bytes,name}=await buildFormPdf(a);
-    if(saveFile(name, new Blob([bytes],{type:"application/pdf"}))){ a.pdfAt=Date.now(); markSent(a); } }
+    if(saveFile(name, new Blob([bytes],{type:"application/pdf"}))) markPrinted(a); }
   catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); }
 }
 function printPages(ov, fname){
