@@ -2964,6 +2964,15 @@ function bindInstall(){ const b=$("#installBtn"); if(b) b.onclick=async()=>{ if(
 function refreshInstall(){ const c=$("#installCard"); if(!c) return; const t=document.createElement("div"); t.innerHTML=installCard(); if(t.firstElementChild) c.replaceWith(t.firstElementChild); else c.remove(); bindInstall(); }
 if("serviceWorker" in navigator){ window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
 
+
+/* outside websites (ECI, CEO AP) open straight in Chrome on Android phones, not inside the app */
+document.addEventListener("click", e=>{
+  const l=e.target.closest('a[href^="http"]'); if(!l || l.origin===location.origin) return;
+  if(!/Android/i.test(navigator.userAgent)) return;            // other phones / computers: normal new tab
+  e.preventDefault();
+  const u=new URL(l.href);
+  location.href=`intent://${u.host}${u.pathname}${u.search}${u.hash}#Intent;scheme=${u.protocol.replace(":","")};package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(l.href)};end`;
+}, true);
 /* ================= start ================= */
 (function start(){
   try{ navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(()=>{}); }catch(e){}
