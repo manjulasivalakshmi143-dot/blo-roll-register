@@ -236,8 +236,13 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .credit b{color:var(--ink);font-weight:700}
 .kind-pick select{font:inherit;font-weight:700;font-size:1rem;padding:11px 12px;border-radius:12px;border:2px solid var(--accent);background:var(--accent-soft);color:var(--ink);width:100%}
 .kind-tag{align-self:flex-start;font-weight:700;font-size:.85rem;padding:5px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
-.fly .fly-grp{text-transform:none;letter-spacing:0;font-size:.8rem;padding:7px 12px 5px 22px;background:transparent;color:var(--ink)}
-.fly button.fly-sub{padding-left:30px;grid-template-columns:20px 1fr;font-size:.88rem}
+.fly button.fly-tog{grid-template-columns:24px 1fr 18px;font-weight:750;font-family:var(--f-display)}
+.fly button.fly-tog .fly-car{font-size:1.2rem;line-height:1;transition:transform .2s;color:var(--fc,var(--accent));text-align:center}
+.fly button.fly-tog[aria-expanded="true"]{background:var(--surface);background:color-mix(in srgb,var(--fc,var(--accent)) 10%,var(--surface));color:var(--fc,var(--accent))}
+.fly button.fly-tog[aria-expanded="true"] .fly-car{transform:rotate(90deg)}
+.fly button.fly-sub{padding-left:34px;grid-template-columns:20px 1fr;font-size:.88rem;background:var(--surface);background:color-mix(in srgb,var(--fc,var(--accent)) 4%,var(--surface))}
+.apps-empty{min-height:55vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:var(--muted)}
+.apps-empty .big{font-size:2.4rem}
 /* ---- look & feel ---- */
 .ribbon{display:flex;align-items:center;gap:10px;margin:0 0 8px;border-radius:0 0 12px 12px;background:linear-gradient(90deg,#3B1D7A,#5A2DA3 45%,#8A2D6B);color:#fff;padding:5px 10px;overflow:hidden;box-shadow:0 3px 10px rgba(59,29,122,.25)}
 .rb-by{flex:none;font-size:.6rem;letter-spacing:.08em;font-weight:800;white-space:nowrap;background:rgba(255,255,255,.16);padding:3px 8px;border-radius:999px}
@@ -981,8 +986,9 @@ function subItems(t) {
   ];
   if (t === "apps") return [
     ["", "New application", null],
-    ...APP_KINDS.flatMap(([t2, gl, ks]) => [["", gl, null, "grp"], ...ks.map(([k, l]) => ["➕", l, () => {
+    ...APP_KINDS.flatMap(([t2, gl, ks]) => [["📝", gl, "toggle", "grp"], ...ks.map(([k, l]) => ["➕", l, () => {
       window._appSec = null;
+      window._appF = null;
       setTimeout(() => openApp(null, t2 + ":" + k), 0);
     }, "sub"])]),
     ["", "Lists", null],
@@ -1066,7 +1072,18 @@ function openFly(btn, t) {
   f.id = "fly";
   f.className = "fly";
   f.style.setProperty("--fc", getComputedStyle(btn).getPropertyValue("--tc"));
-  f.innerHTML = `<div class="fly-h">${esc(btn.dataset.label || btn.textContent.trim())}</div><div class="fly-list">` + items.map((it, i) => it[2] ? `<button type="button" data-i="${i}" class="${it[3] === "sub" ? "fly-sub" : ""}"><span>${it[0]}</span><span>${esc(it[1])}</span></button>` : `<div class="fly-sec ${it[3] === "grp" ? "fly-grp" : ""}">${esc(it[1])}</div>`).join("") + `</div>`;
+  f.innerHTML = `<div class="fly-h">${esc(btn.dataset.label || btn.textContent.trim())}</div><div class="fly-list">` + (() => {
+    let g = -1;
+    return items.map((it, i) => {
+      if (it[2] === "toggle") {
+        g = i;
+        return `<button type="button" class="fly-tog" data-g="${i}" aria-expanded="false"><span>${it[0]}</span><span>${esc(it[1])}</span><span class="fly-car">›</span></button>`;
+      }
+      if (it[3] === "sub") return `<button type="button" data-i="${i}" class="fly-sub" data-gp="${g}" hidden><span>${it[0]}</span><span>${esc(it[1])}</span></button>`;
+      if (!it[2]) g = -1;
+      return it[2] ? `<button type="button" data-i="${i}"><span>${it[0]}</span><span>${esc(it[1])}</span></button>` : `<div class="fly-sec">${esc(it[1])}</div>`;
+    }).join("");
+  })() + `</div>`;
   document.body.appendChild(f);
   btn.classList.add("fly-open");
   f.style.top = "0px";
@@ -1083,6 +1100,19 @@ function openFly(btn, t) {
   const top = Math.max(8, Math.min(r.top, vh - f.offsetHeight - 8));
   f.style.top = top + "px";
   f.addEventListener("click", (e) => {
+    const tg = e.target.closest("button.fly-tog");
+    if (tg) {
+      const open = tg.getAttribute("aria-expanded") !== "true";
+      f.querySelectorAll("button.fly-tog").forEach((x) => x.setAttribute("aria-expanded", "false"));
+      f.querySelectorAll("button.fly-sub").forEach((x) => x.hidden = true);
+      if (open) {
+        tg.setAttribute("aria-expanded", "true");
+        f.querySelectorAll(`button.fly-sub[data-gp="${tg.dataset.g}"]`).forEach((x) => x.hidden = false);
+      }
+      const top2 = Math.max(8, Math.min(parseFloat(f.style.top) || 8, innerHeight / k - f.offsetHeight - 8));
+      f.style.top = top2 + "px";
+      return;
+    }
     const b = e.target.closest("button[data-i]");
     if (!b) return;
     tab = t;
@@ -1589,13 +1619,15 @@ function renderGuides(el) {
 }
 function renderApps(el) {
   if (window._appSec === "guide") return renderGuides(el);
-  const L = appsList(), f = window._appF || "open", q = (window._appQ || "").toLowerCase();
+  if (!window._appF) {
+    el.innerHTML = `<div class="panel apps-empty"><div class="big">📝</div><div><b style="color:var(--ink)">Tap Applications on the left</b><br>Pick Form 6, 7 or 8 to start, or open a list.</div><span class="tap-here">👈 Click here</span></div>`;
+    return;
+  }
+  const L = appsList(), f = window._appF, q = (window._appQ || "").toLowerCase();
   const cnt = (k) => L.filter((a) => a.stage === k).length;
   const shown = L.filter((a) => (f === "open" ? isOpenApp(a) : f === "all" ? true : f === "forwarded" ? !isOpenApp(a) : a.stage === f) && (!q || [a.name, a.relName, a.phone, a.house, a.refNo, a.epic].some((x) => String(x || "").toLowerCase().includes(q)))).sort((a, b) => (b.updated || 0) - (a.updated || 0));
   el.innerHTML = `<div class="panel">
     <h2 style="text-align:center">Applications</h2>
-    <div class="cta-wrap"><button class="btn primary big-cta" id="appNew">＋ New application</button><span class="tap-here" aria-hidden="true">👆 Click here</span></div>
-    ${menuList([{ id: "guide", icon: "📘", color: "var(--warn)", title: "Guidelines", sub: "Form 6, 7, 8 and declaration form rules" }])}
     <div class="tally" style="grid-template-columns:repeat(3,1fr)">
       <div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded") + cnt("approved") + cnt("rejected")}</b><small>Sent to ERO</small></div>
     </div>
@@ -1609,9 +1641,8 @@ function renderApps(el) {
         <div class="stepper" aria-label="Stage">${STAGES.map((st, i) => `<i class="${a.stage === "rejected" ? i <= 1 ? "done" : "" : i <= si ? "done" : ""}"></i>`).join("")}</div>
         <div class="pills"><span class="pill ${a.stage === "approved" ? "ok" : a.stage === "rejected" ? "bad" : "acc"}">${esc(stageLabel(a.stage))}</span>${d.done ? `<span class="pill ok">Docs ${d.done}/${d.need.length}</span>` : ""}${a.refNo ? `<span class="pill">Ref ID ${esc(a.refNo)}</span>` : `<span class="pill warn">No Ref ID</span>`}</div>
       </span></button>`;
-  }).join("") || `<div class="note small">${L.length ? "No applications in this list." : "No applications yet. Tap “New application” when someone applies."}</div>`}</div>
+  }).join("") || `<div class="note small">${L.length ? "No applications in this list." : "No applications yet. Tap Applications on the left and pick a form."}</div>`}</div>
   </div>`;
-  $("#appNew").onclick = () => openApp(null);
   el.querySelectorAll('.menu-i[data-sec="guide"]').forEach((b) => b.onclick = () => {
     window._appSec = "guide";
     render();
@@ -2350,6 +2381,7 @@ function openApp(id, typeHint) {
     pushUndo(isNew ? "new application" : "edit application");
     store(x, (isNew ? "New application: " : "Updated application: ") + x.name + " (" + (APP_TYPES[x.type] || APP_TYPES.f6).short + ")");
     closeSheet();
+    if (!window._appF) window._appF = "open";
     render();
     toast("Saved");
   };
