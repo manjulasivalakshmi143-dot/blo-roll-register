@@ -814,6 +814,13 @@ function showAuth(mode2) {
       <button type="button" class="mode-btn" id="mWithout"><span class="mode-ic">📱</span><span><b>Without sign in</b><small>Saved on this phone only — previous data may not be available</small></span><span class="mode-go">›</span></button>
     </div>
     <div id="signBox" class="sign-box" ${window._signOpen || mode2 !== "login" ? "" : "hidden"}>
+      ${mode2 === "signup" ? `<div class="note small" style="margin:0">👋 <b>First time?</b> Create your account with your Gmail and a password. Next time your email shows here by itself — just type the password. Already have an account? Tap <b>Sign in</b>.</div>` : mode2 === "login" ? `<div class="note small" style="margin:0">${(() => {
+    try {
+      return localStorage.getItem("blo:lastEmail");
+    } catch (_) {
+      return "";
+    }
+  })() ? "Welcome back — your email is filled in. Type your password and tap <b>Sign in</b>." : "Sign in with the Gmail and password of your account. New here? Tap <b>Create account</b>."}</div>` : ""}
     <div class="auth-tabs"><button data-m="login" aria-pressed="${mode2 === "login"}">Sign in</button><button data-m="signup" aria-pressed="${mode2 === "signup"}">Create account</button></div>
     <form class="card" id="authForm" novalidate>
       <label class="f">Email (your Gmail)<input id="aEmail" type="email" autocomplete="username" inputmode="email" required></label>
@@ -833,15 +840,28 @@ function showAuth(mode2) {
   </div>`;
   v.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => showAuth(b.dataset.m));
   $("#mWith").onclick = () => {
+    let known = "";
+    try {
+      known = localStorage.getItem("blo:lastEmail") || (lsGet("blofm:session") || {}).email || (lsGet("bloreg:session") || {}).email || "";
+    } catch (_) {
+    }
+    const go = () => {
+      const sb = $("#signBox");
+      sb.hidden = false;
+      sb.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => {
+        const e = $("#aEmail"), pw = $("#aPass");
+        const t = e && e.value ? pw : e;
+        if (t) t.focus();
+      }, 350);
+    };
     window._signOpen = true;
-    const sb = $("#signBox");
-    sb.hidden = false;
-    sb.scrollIntoView({ behavior: "smooth", block: "start" });
-    setTimeout(() => {
-      const e = $("#aEmail"), pw = $("#aPass");
-      const t = e && e.value ? pw : e;
-      if (t) t.focus();
-    }, 350);
+    if (!known && mode2 === "login") {
+      showAuth("signup");
+      setTimeout(go, 30);
+      return;
+    }
+    go();
   };
   $("#mWithout").onclick = () => confirmBox("Use without sign in? Applications are saved on this phone only. If the phone is changed or the app data is cleared, previous data may not be available.", "Continue", () => $("#deviceMode").click());
   if ($("#forgot")) $("#forgot").onclick = () => showAuth("reset");
