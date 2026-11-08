@@ -34,7 +34,16 @@ rep("function render(){", 'function render(){\n  if(tab!=="apps" && tab!=="backu
 s = s.replace('"No roll loaded yet"', '"Set your part in Account settings"')
 # ---- sign-in screen wording ----
 rep("<div><h2>Keep your part's roll safe</h2><p class=\"muted small\" style=\"margin:6px 0 0\">Free for every BLO. Sign in with your email so your voter list is saved to your own private account and comes back on any phone.</p></div>",
-    "<div><h2>BLO Forms</h2><p class=\"muted small\" style=\"margin:6px 0 0\">Fill Form 6, 7 and 8 office papers and download them as one PDF. Free for every BLO. Sign in so your applications are saved to your own account and come back on any phone.</p></div>")
+    """<div class="hero">
+      <span class="hero-o o1"></span><span class="hero-o o2"></span>
+      <span class="hero-pill">✦ FREE FOR EVERY BLO ✦</span>
+      <h1 class="hero-t">BLO <span>Forms</span></h1>
+      <p class="hero-big">No writing.<br><em>Only online.</em></p>
+      <p class="hero-sub">Form 6 · Form 7 · Form 8 — filled, signed and ready as one PDF in minutes.</p>
+      <div class="hero-f"><span><b>⚡</b>Fill in minutes</span><span><b>📄</b>Ready PDF for ERO</span><span><b>📱</b>Any phone, old or new</span></div>
+      <div class="hero-by">DESIGNED BY <b>SIVANANDA PUJARI</b></div>
+    </div>
+    <p class="hero-in">Sign in to keep your applications safe in your own account — they come back on any phone.</p>""")
 s = s.replace('<div class="auth-tabs"><button data-m="login"', '''<div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
     <div class="auth-tabs"><button data-m="login"''', 1)
@@ -100,6 +109,27 @@ function rollAction(){ return null; }
 '''
 anchor = "/* ================= start ================= */"
 s = s.replace("/* compact home */", ".sample-card{display:flex;flex-direction:column;gap:10px;border:2px solid var(--accent)}\n/* compact home */", 1)
+HERO_CSS = r'''.hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 18px 16px;text-align:center;color:#fff;background:linear-gradient(140deg,#24104F 0%,#4B1FA0 45%,#8A2D6B 100%);box-shadow:0 14px 34px rgba(59,29,122,.35);isolation:isolate}
+.hero-o{position:absolute;border-radius:50%;z-index:-1;filter:blur(2px)}
+.hero-o.o1{width:190px;height:190px;right:-60px;top:-70px;background:radial-gradient(circle,#FFB84D88,transparent 70%)}
+.hero-o.o2{width:220px;height:220px;left:-90px;bottom:-110px;background:radial-gradient(circle,#4DD0FF66,transparent 70%)}
+.hero-pill{display:inline-block;font-size:.62rem;font-weight:900;letter-spacing:.14em;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3)}
+.hero-t{margin:12px 0 2px;font-family:var(--f-display);font-weight:900;font-size:clamp(2.1rem,11vw,2.9rem);line-height:1;letter-spacing:-.01em;text-shadow:0 3px 14px rgba(0,0,0,.3)}
+.hero-t span{background:linear-gradient(90deg,#FFD24D,#FF9F43);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-big{margin:12px 0 6px;font-family:var(--f-display);font-weight:850;font-size:clamp(1.35rem,7vw,1.75rem);line-height:1.15}
+.hero-big em{font-style:normal;color:#FFD24D;position:relative;white-space:nowrap}
+.hero-big em::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;border-radius:3px;background:linear-gradient(90deg,#FFD24D,#FF9F43);animation:heroLine 2.4s ease-in-out infinite;transform-origin:left}
+@keyframes heroLine{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}
+.hero-sub{margin:8px auto 14px;max-width:30ch;font-size:.9rem;line-height:1.4;color:rgba(255,255,255,.88)}
+.hero-f{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.hero-f span{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.7rem;font-weight:750;line-height:1.2;padding:9px 4px;border-radius:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2)}
+.hero-f b{font-size:1.25rem}
+.hero-by{margin-top:14px;font-size:.6rem;font-weight:800;letter-spacing:.12em;opacity:.9}
+.hero-by b{color:#FFD24D;font-weight:900}
+.hero-in{margin:0;text-align:center;font-size:.86rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.hero-big em::after{animation:none}}
+'''
+s = s.replace("/* compact home */", HERO_CSS + "/* compact home */", 1)
 rep(anchor, over + anchor)
 # no "add to voter list" / roll lookups in the sent bar
 s = s.replace('${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary" id="apOpenV">Open in voter list</button>`:rollAction(a)?', '${false?"":rollAction(a)?')
