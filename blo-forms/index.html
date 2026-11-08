@@ -272,6 +272,10 @@ nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
 .tap-here.inline{align-self:center}
 .fill-here{display:block;width:118px;overflow:hidden;margin:0 0 4px;border-radius:999px;background:#FFF1C2;border:1.5px solid #F2B705;color:#B3261E;font-size:.72rem;font-weight:800;white-space:nowrap;animation:tapBlink 1.1s ease-in-out infinite}
 .fill-here[hidden]{display:none}
+.ec-verify{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:12px;background:#FFF6D6;border:1.5px solid #F2B705;font-size:.84rem;line-height:1.35}
+.ec-verify b{color:#8A5A00}
+.ec-verify[hidden]{display:none}
+input.from-slip,select.from-slip{border-color:#1D7349!important;background:#EAF7EF!important}
 .fill-here>span{display:inline-block;padding:2px 0;animation:fhRun 3.2s linear infinite}
 @keyframes fhRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes tapBlink{0%,100%{opacity:1;transform:translateY(0)}50%{opacity:.25;transform:translateY(-3px)}}
@@ -2041,8 +2045,9 @@ function openApp(id, typeHint) {
     <section class="win eci-doc" style="--wc:#1D7349"><div class="win-h"><span>📎 Check slip</span><span class="win-s">printed first</span></div>
       <div class="panel" style="padding:12px;gap:8px">
         <div id="ecInfo" class="small">${a.ecPdf ? `<b>${esc(a.ecPdf.name)}</b> · ${Math.round((a.ecPdf.size || 0) / 1024)} KB${a.ecPdf.cloud ? " · saved to account" : ""}` : `<span class="muted">The ECI application PDF with the <b>Checklist for BLO</b>. Upload it and the name, father name, address and phone fill in by themselves; it comes first in the downloaded PDF.</span>`}</div>
-        <div class="row" style="gap:6px"><label class="btn ${a.ecPdf ? "" : "primary"}" for="ecFile">⬆ ${a.ecPdf ? "Replace check slip" : "Upload check slip"}</label>${a.ecPdf ? "" : `<span class="tap-here inline" aria-hidden="true">👈 Click here</span>`}<input type="file" id="ecFile" accept="application/pdf,.pdf" hidden>
+        <div class="row" style="gap:6px"><label class="btn ${a.ecPdf ? "" : "primary"}" id="ecUp" for="ecFile">⬆ ${a.ecPdf ? "Replace check slip" : "Upload check slip"}</label>${a.ecPdf ? "" : `<span class="tap-here inline" id="ecTap" aria-hidden="true">👈 Click here</span>`}<input type="file" id="ecFile" accept="application/pdf,.pdf" hidden>
           <button class="btn danger" id="ecDel" type="button" ${a.ecPdf ? "" : "hidden"}>Remove</button></div>
+        <div class="ec-verify" id="ecVerify" ${a.ecPdf ? "" : "hidden"}><b>🔎 Please verify the details</b><span>Name, father / husband name, address, phone and other details were read from the check slip. Check each one with the applicant's documents and correct anything wrong before downloading. Boxes filled from the slip are marked in green.</span></div>
         <div id="ecChk" ${a.ecPdf ? "" : "hidden"}>${eciChkHtml(a)}</div>
       </div></section>
     <section class="win" style="--wc:var(--accent)"><div class="win-h"><span>① Applicant details</span><span class="win-s">${esc(T.short)}</span></div>
@@ -2199,6 +2204,8 @@ function openApp(id, typeHint) {
           if (el && v && el.value !== v) {
             el.value = v;
             n++;
+            el.classList.add("from-slip");
+            el.addEventListener("input", () => el.classList.remove("from-slip"), { once: true });
           }
         };
         put("pRef", r.refNo);
@@ -2222,10 +2229,21 @@ function openApp(id, typeHint) {
         }
         if ($("#pDob")) $("#pDob").dispatchEvent(new Event("change"));
         if (r.form && "f" + r.form !== a.type) toast(`This PDF is Form ${r.form}, but this application is ${(APP_TYPES[a.type] || {}).short}`);
-        else if (n) toast(`Filled ${n} details from the check slip — please check them`);
+        else if (n) toast(`Filled ${n} details from the check slip — please verify them`);
         fillHints();
       }
     } catch (err) {
+    }
+    {
+      const tp = $("#ecTap");
+      if (tp) tp.remove();
+      const up = $("#ecUp");
+      if (up) {
+        up.classList.remove("primary");
+        up.textContent = "⬆ Replace check slip";
+      }
+      const vf = $("#ecVerify");
+      if (vf) vf.hidden = false;
     }
     try {
       const c = await putAppDoc(a, bytes);
@@ -2280,6 +2298,15 @@ function openApp(id, typeHint) {
     a.ecPdf = null;
     $("#ecInfo").innerHTML = `<span class="muted">Removed. Upload again if needed.</span>`;
     $("#ecDel").hidden = true;
+    {
+      const up = $("#ecUp");
+      if (up) {
+        up.classList.add("primary");
+        up.textContent = "⬆ Upload check slip";
+      }
+      const vf = $("#ecVerify");
+      if (vf) vf.hidden = true;
+    }
     const i = L.findIndex((y) => y.id === a.id);
     if (i >= 0) {
       L[i].ecPdf = null;
