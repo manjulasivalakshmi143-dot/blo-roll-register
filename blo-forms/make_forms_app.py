@@ -34,6 +34,10 @@ s = s.replace('"No roll loaded yet"', '"Set your part in Account settings"')
 # ---- sign-in screen wording ----
 rep("<div><h2>Keep your part's roll safe</h2><p class=\"muted small\" style=\"margin:6px 0 0\">Free for every BLO. Sign in with your email so your voter list is saved to your own private account and comes back on any phone.</p></div>",
     "<div><h2>BLO Forms</h2><p class=\"muted small\" style=\"margin:6px 0 0\">Fill Form 6, 7 and 8 office papers and download them as one PDF. Free for every BLO. Sign in so your applications are saved to your own account and come back on any phone.</p></div>")
+s = s.replace('<div class="auth-tabs"><button data-m="login"', '''<div class="card sample-card"><div><b>👁 See a sample filled PDF</b><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
+    <div class="auth-tabs"><button data-m="login"''', 1)
+s = s.replace("  bindInstall();\n  $(\"#deviceMode\").onclick", "  bindInstall();\n  v.querySelectorAll(\"[data-sample]\").forEach(b=>b.onclick=()=>showSample(b.dataset.sample));\n  $(\"#deviceMode\").onclick", 1)
 s = s.replace("Your data stays on this phone; download Excel backups often.", "Your applications stay on this phone only.")
 s = s.replace('$("#partLine").textContent="Your part\'s voter register";', '$("#partLine").textContent="Forms for BLOs";')
 
@@ -75,11 +79,26 @@ async function connectAccount(){
   }
 }
 function syncLists(){}
+/* sample papers on the sign-in screen (marked SAMPLE) */
+function showSample(k){
+  const d=n=>{ const t=new Date(Date.now()+n*864e5); return t.toISOString().slice(0,10); };
+  const base={ sample:true, id:"sample", refNo:"S01150O6N0000000000001", appDate:d(-6), noticeDate:d(-4), hearDate:d(4), hearTime:"11:00 AM", hearPlace:"GUNTAKAL MUNICIPALITY", orderDate:d(10), town:"GUNTAKAL", area:"SAMPLE COLONY", partNo:"159", mandal:"GUNTAKAL", history:[], docs:{} };
+  const A={
+    f6:Object.assign({},base,{ type:"f6", f6out:"approve", name:"KAVYA SREE", relType:"Father", relName:"RAMESH KUMAR", gender:"F", dob:"2007-05-14", house:"1-245", decl:true,
+      d4:{ use:true, sir:"rel", e:{}, r:{Name:"RAMESH KUMAR", Rel:"NARAYANA", RelType:"Father", State:"Andhra Pradesh", Dist:"Anantapur", AcNo:"170", AcName:"Gooty", Part:"112", Sr:"487"}, f:{fName:"RAMESH KUMAR", mName:"LAKSHMI DEVI"} } }),
+    f7:Object.assign({},base,{ type:"f7", f7why:"death", deathProof:"panch", refNo:"F7-SAMPLE-0001", name:"RAMESH KUMAR", relType:"Father", relName:"NARAYANA", house:"1-245",
+      del:{ name:"NARAYANA REDDY", relName:"VENKATA REDDY", relation:"FATHER", house:"2-118", village:"GUNTAKAL", mandal:"GUNTAKAL", part:"159", serial:"487", age:"78", deathDate:d(-90) },
+      panchDate:d(-3), panch:["K. RAMANA","S. LAKSHMI","P. SURESH","M. ANJI"] }),
+    f8:Object.assign({},base,{ type:"f8", req:"Shifting of residence", refNo:"S01150O8N0000000000002", name:"LAKSHMI DEVI", relType:"Husband", relName:"SURESH", house:"3-77", area:"NEW COLONY" })
+  };
+  previewFormPdf(A[k]);
+}
 async function uploadList(){}
 function askAddToRoll(){}
 function rollAction(){ return null; }
 '''
 anchor = "/* ================= start ================= */"
+s = s.replace("/* compact home */", ".sample-card{display:flex;flex-direction:column;gap:10px;border:2px solid var(--accent)}\n/* compact home */", 1)
 rep(anchor, over + anchor)
 # no "add to voter list" / roll lookups in the sent bar
 s = s.replace('${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary" id="apOpenV">Open in voter list</button>`:rollAction(a)?', '${false?"":rollAction(a)?')

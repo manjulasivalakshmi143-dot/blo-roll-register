@@ -232,6 +232,7 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .cp{font:inherit;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1.5px solid currentColor;background:transparent;color:inherit;cursor:pointer;flex:none}
 .kv-h{grid-column:1/-1;padding:9px 12px 7px;font-family:var(--f-display);font-weight:750;font-size:.92rem;color:var(--wc,var(--accent));background:color-mix(in srgb,var(--wc,var(--accent)) 9%,var(--surface));border-top:1px solid var(--line)}
 .kv-h small{font-family:var(--f-body);font-weight:600;color:var(--muted);font-size:.75rem}
+.sample-card{display:flex;flex-direction:column;gap:10px;border:2px solid var(--accent)}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
 .hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -586,6 +587,8 @@ function showAuth(mode){
   if(mode==="recovery"){ return; }
   v.innerHTML=`<div class="auth">
     <div><h2>BLO Forms</h2><p class="muted small" style="margin:6px 0 0">Fill Form 6, 7 and 8 office papers and download them as one PDF. Free for every BLO. Sign in so your applications are saved to your own account and come back on any phone.</p></div>
+    <div class="card sample-card"><div><b>👁 See a sample filled PDF</b><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
     <div class="auth-tabs"><button data-m="login" aria-pressed="${mode==="login"}">Sign in</button><button data-m="signup" aria-pressed="${mode==="signup"}">Create account</button></div>
     <form class="card" id="authForm" novalidate>
       <label class="f">Email (your Gmail)<input id="aEmail" type="email" autocomplete="username" inputmode="email" required></label>
@@ -604,6 +607,7 @@ function showAuth(mode){
   if($("#forgot")) $("#forgot").onclick=()=>showAuth("reset");
   if($("#backLogin")) $("#backLogin").onclick=()=>showAuth("login");
   bindInstall();
+  v.querySelectorAll("[data-sample]").forEach(b=>b.onclick=()=>showSample(b.dataset.sample));
   $("#deviceMode").onclick=()=>{ session={device:true}; lsSet("blofm:session", session); startData(); };
   $("#authForm").onsubmit=async e=>{
     e.preventDefault();
@@ -1551,6 +1555,9 @@ async function buildFormPdf(a){
     (await out.copyPages(src, keep)).forEach(pg=>out.addPage(pg));
   }
   if(tmplKey(a)!=="f6r") await appendDecl(out, a, font);   // a rejection order needs no declaration
+  if(a.sample){ const wf=await out.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    for(const pg of out.getPages()){ const {width:W,height:H}=pg.getSize();
+      pg.drawText("SAMPLE", {x:W*0.18, y:H*0.3, size:Math.min(W,H)*0.2, font:wf, color:PDFLib.rgb(0.85,0.1,0.1), opacity:0.16, rotate:PDFLib.degrees(40)}); } }
   const bytes=await out.save();
   const clean=x=>String(x||"").trim().replace(/[^\w\-]+/g,"_").replace(/_+/g,"_").replace(/^_|_$/g,"");
   const name=[clean(a.name||vals.applicant)||"Applicant", clean(a.refNo||vals.refId)].filter(Boolean).join("_")+".pdf";
@@ -1630,7 +1637,7 @@ async function previewFormPdf(a){
   let built; try{ toast("Preparing preview…"); built=await buildFormPdf(a); }catch(e){ toast("Couldn't make the PDF: "+(e.message||"error")); return; }
   const ov=document.createElement("div"); ov.className="pv-bg"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-label","PDF preview");
   ov.innerHTML=`<div class="pv-band"><div style="min-width:0"><div class="pv-k">Preview</div><div class="pv-n">${esc(built.name)}</div></div>
-    <div class="row pv-act"><button class="btn" id="pvEd">✎ Edit</button><button class="btn" id="pvPr">🖨 Print</button><button class="btn primary" id="pvDl">⬇ Download</button></div></div>
+    <div class="row pv-act"><button class="btn" id="pvEd">${a.sample?"✕ Close":"✎ Edit"}</button><button class="btn" id="pvPr">🖨 Print</button><button class="btn primary" id="pvDl">⬇ Download</button></div></div>
     <div class="pv-pages" id="pvPages"><div class="muted small" style="padding:20px;text-align:center">Loading pages…</div></div>`;
   document.body.appendChild(ov);
   const close=()=>ov.remove();
@@ -3076,6 +3083,20 @@ async function connectAccount(){
   }
 }
 function syncLists(){}
+/* sample papers on the sign-in screen (marked SAMPLE) */
+function showSample(k){
+  const d=n=>{ const t=new Date(Date.now()+n*864e5); return t.toISOString().slice(0,10); };
+  const base={ sample:true, id:"sample", refNo:"S01150O6N0000000000001", appDate:d(-6), noticeDate:d(-4), hearDate:d(4), hearTime:"11:00 AM", hearPlace:"GUNTAKAL MUNICIPALITY", orderDate:d(10), town:"GUNTAKAL", area:"SAMPLE COLONY", partNo:"159", mandal:"GUNTAKAL", history:[], docs:{} };
+  const A={
+    f6:Object.assign({},base,{ type:"f6", f6out:"approve", name:"KAVYA SREE", relType:"Father", relName:"RAMESH KUMAR", gender:"F", dob:"2007-05-14", house:"1-245", decl:true,
+      d4:{ use:true, sir:"rel", e:{}, r:{Name:"RAMESH KUMAR", Rel:"NARAYANA", RelType:"Father", State:"Andhra Pradesh", Dist:"Anantapur", AcNo:"170", AcName:"Gooty", Part:"112", Sr:"487"}, f:{fName:"RAMESH KUMAR", mName:"LAKSHMI DEVI"} } }),
+    f7:Object.assign({},base,{ type:"f7", f7why:"death", deathProof:"panch", refNo:"F7-SAMPLE-0001", name:"RAMESH KUMAR", relType:"Father", relName:"NARAYANA", house:"1-245",
+      del:{ name:"NARAYANA REDDY", relName:"VENKATA REDDY", relation:"FATHER", house:"2-118", village:"GUNTAKAL", mandal:"GUNTAKAL", part:"159", serial:"487", age:"78", deathDate:d(-90) },
+      panchDate:d(-3), panch:["K. RAMANA","S. LAKSHMI","P. SURESH","M. ANJI"] }),
+    f8:Object.assign({},base,{ type:"f8", req:"Shifting of residence", refNo:"S01150O8N0000000000002", name:"LAKSHMI DEVI", relType:"Husband", relName:"SURESH", house:"3-77", area:"NEW COLONY" })
+  };
+  previewFormPdf(A[k]);
+}
 async function uploadList(){}
 function askAddToRoll(){}
 function rollAction(){ return null; }
