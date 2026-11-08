@@ -812,6 +812,14 @@ function showAuth(mode2) {
   v.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => showAuth(b.dataset.m));
   if ($("#forgot")) $("#forgot").onclick = () => showAuth("reset");
   if ($("#backLogin")) $("#backLogin").onclick = () => showAuth("login");
+  try {
+    const em = $("#aEmail");
+    const le = localStorage.getItem("blo:lastEmail") || (lsGet("blofm:session") || {}).email || (lsGet("blofm:session") || {}).email || "";
+    if (em && !em.value && le) {
+      em.value = le;
+    }
+  } catch (_) {
+  }
   bindInstall();
   v.querySelectorAll("[data-sample]").forEach((b) => b.onclick = () => showSample(b.dataset.sample));
   $("#deviceMode").onclick = () => {
@@ -837,6 +845,10 @@ function showAuth(mode2) {
       else r = await rpc("blo_reset", { p_email: email, p_recovery: $("#aRc").value, p_new: pass });
       session = { token: r.token, email: r.email };
       lsSet("blofm:session", session);
+      try {
+        localStorage.setItem("blo:lastEmail", r.email);
+      } catch (_) {
+      }
       if (r.recovery) showRecovery(r.recovery);
       else connectAccount();
     } catch (ex) {
@@ -1389,7 +1401,7 @@ function updateHeader() {
   bloCard();
   if (m.ac || m.acName) bits.push("AC " + [m.ac, m.acName].filter(Boolean).join("-"));
   if (m.part) bits.push("Part " + m.part + (m.partName ? " · " + m.partName : ""));
-  $("#partLine").textContent = bits.length ? bits.join(" · ") : state.voters.length ? state.voters.length + " voters" : "Set your part in Account settings";
+  $("#partLine").textContent = FORMS_ONLY ? session && session.email ? "👤 " + session.email : "On this phone only · not signed in" : bits.length ? bits.join(" · ") : state.voters.length ? state.voters.length + " voters" : "Set your part in Account settings";
 }
 function vIndex(id) {
   return state.voters.findIndex((v) => v.id === id);
