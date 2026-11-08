@@ -518,6 +518,7 @@ const FORMS = ["", "Form 6", "Form 7", "Form 8", "Form 6B"];
 let session = null;
 let state = blank();
 let tab = "home";
+const FORMS_ONLY = false;
 let listOpts = { q: "", filter: "all", group: "none", sort: "sl", shown: 150 };
 let undoStack = [];
 let staging = null;
@@ -996,7 +997,10 @@ function subItems(t) {
       window._appSec = null;
       window._appF = "open";
     }],
-    ["📤", "Sent to ERO", () => {
+    FORMS_ONLY ? ["✅", "Completed", () => {
+      window._appSec = null;
+      window._appF = "forwarded";
+    }] : ["📤", "Sent to ERO", () => {
       window._appSec = null;
       window._appF = "forwarded";
     }],
@@ -1587,7 +1591,7 @@ const APP_TYPES = {
 };
 const STAGES = [["received", "Received"], ["verified", "Documents checked"], ["forwarded", "Sent to ERO"]];
 const OLD_STAGES = { approved: "Approved", rejected: "Rejected" };
-const stageLabel = (k) => (STAGES.find((x) => x[0] === k) || ["", OLD_STAGES[k] || k])[1];
+const stageLabel = (k) => FORMS_ONLY ? k === "received" || k === "verified" ? "Pending" : "Completed" : (STAGES.find((x) => x[0] === k) || ["", OLD_STAGES[k] || k])[1];
 function appsList() {
   if (!Array.isArray(state.meta.apps)) state.meta.apps = [];
   return state.meta.apps;
@@ -1628,18 +1632,18 @@ function renderApps(el) {
   const shown = L.filter((a) => (f === "open" ? isOpenApp(a) : f === "all" ? true : f === "forwarded" ? !isOpenApp(a) : a.stage === f) && (!q || [a.name, a.relName, a.phone, a.house, a.refNo, a.epic].some((x) => String(x || "").toLowerCase().includes(q)))).sort((a, b) => (b.updated || 0) - (a.updated || 0));
   el.innerHTML = `<div class="panel">
     <h2 style="text-align:center">Applications</h2>
-    <div class="tally" style="grid-template-columns:repeat(3,1fr)">
-      <div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded") + cnt("approved") + cnt("rejected")}</b><small>Sent to ERO</small></div>
+    <div class="tally" style="grid-template-columns:repeat(${FORMS_ONLY ? 2 : 3},1fr)">
+      ${FORMS_ONLY ? `<div><b>${cnt("received") + cnt("verified")}</b><small>Pending</small></div><div><b>${cnt("forwarded") + cnt("approved") + cnt("rejected")}</b><small>Completed</small></div>` : `<div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded") + cnt("approved") + cnt("rejected")}</b><small>Sent to ERO</small></div>`}
     </div>
     <input class="search" id="appQ" type="search" placeholder="Search Ref ID, name, father name, phone…" value="${esc(window._appQ || "")}">
-    <div class="chips" id="appChips">${[["open", "Pending"], ...STAGES, ["all", "All"]].map(([k, l]) => `<button class="chip" data-k="${k}" aria-pressed="${f === k}">${l}</button>`).join("")}</div>
+    <div class="chips" id="appChips">${(FORMS_ONLY ? [["open", "Pending"], ["forwarded", "Completed"], ["all", "All"]] : [["open", "Pending"], ...STAGES, ["all", "All"]]).map(([k, l]) => `<button class="chip" data-k="${k}" aria-pressed="${f === k}">${l}</button>`).join("")}</div>
     <div class="voters">${shown.map((a) => {
     const d = appDocs(a), T = APP_TYPES[a.type] || APP_TYPES.f6, si = STAGES.findIndex((x) => x[0] === a.stage);
     return `<button class="v" data-id="${esc(a.id)}"><span class="sl">${esc(T.short.replace("Form ", "F"))}</span><span style="min-width:0">
         <div class="nm">${esc(a.name || "(no name)")}</div>
         <div class="meta">${a.relName ? esc(a.relType || "Father") + ": " + esc(a.relName) + " · " : ""}${a.house ? "H " + esc(a.house) + " · " : ""}${a.phone ? `<span class="mono">${esc(a.phone)}</span> · ` : ""}${fmtDate(a.created).split(" ").slice(0, 3).join(" ")}</div>
-        <div class="stepper" aria-label="Stage">${STAGES.map((st, i) => `<i class="${a.stage === "rejected" ? i <= 1 ? "done" : "" : i <= si ? "done" : ""}"></i>`).join("")}</div>
-        <div class="pills"><span class="pill ${a.stage === "approved" ? "ok" : a.stage === "rejected" ? "bad" : "acc"}">${esc(stageLabel(a.stage))}</span>${d.done ? `<span class="pill ok">Docs ${d.done}/${d.need.length}</span>` : ""}${a.refNo ? `<span class="pill">Ref ID ${esc(a.refNo)}</span>` : `<span class="pill warn">No Ref ID</span>`}</div>
+        ${FORMS_ONLY ? "" : `<div class="stepper" aria-label="Stage">${STAGES.map((st, i) => `<i class="${a.stage === "rejected" ? i <= 1 ? "done" : "" : i <= si ? "done" : ""}"></i>`).join("")}</div>`}
+        <div class="pills"><span class="pill ${a.stage === "approved" || FORMS_ONLY && !isOpenApp(a) ? "ok" : a.stage === "rejected" ? "bad" : "acc"}">${esc(stageLabel(a.stage))}</span>${d.done ? `<span class="pill ok">Docs ${d.done}/${d.need.length}</span>` : ""}${a.refNo ? `<span class="pill">Ref ID ${esc(a.refNo)}</span>` : `<span class="pill warn">No Ref ID</span>`}</div>
       </span></button>`;
   }).join("") || `<div class="note small">${L.length ? "No applications in this list." : "No applications yet. Tap Applications on the left and pick a form."}</div>`}</div>
   </div>`;
@@ -1924,7 +1928,7 @@ function openApp(id, typeHint) {
   const locked = a.stage === "approved" || a.stage === "rejected";
   $("#sheetRoot").innerHTML = `<div class="sheet-bg" id="sbg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Application">
     <div class="sheet-top"><div class="sheet-h"><div style="min-width:0"><div class="eyebrow">${isNew ? "New application" : esc(T.label) + " · " + esc(stageLabel(a.stage))}</div><h2>${esc(isNew ? "Add applicant" : a.name || "Applicant")}</h2></div><button class="btn" id="apX" aria-label="Close">✕</button></div>
-    ${isNew ? "" : `<div class="stepper big">${STAGES.map((st, i) => {
+    ${isNew || FORMS_ONLY ? "" : `<div class="stepper big">${STAGES.map((st, i) => {
     const si = STAGES.findIndex((x) => x[0] === a.stage);
     return `<span class="${a.stage === "rejected" && i > 1 ? "" : i <= si ? "done" : ""}"><i></i>${st[1]}</span>`;
   }).join("")}</div>`}</div>
@@ -2018,11 +2022,11 @@ function openApp(id, typeHint) {
     </div>
     <div class="win-f" style="border-top:0">
       <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
-      <p class="muted small" style="margin:0">${a.pdfAt ? `✓ Printed ${fmtDate(a.pdfAt)}. Correct anything and download again if needed, then tap <b>Move to ERO</b>.` : "Names print in English capitals. Preview and check before submitting; you can print from the preview."}</p>
+      <p class="muted small" style="margin:0">${a.pdfAt ? `✓ Printed ${fmtDate(a.pdfAt)}. Correct anything and download again if needed, then tap <b>${FORMS_ONLY ? "Completed" : "Move to ERO"}</b>.` : "Names print in English capitals. Preview and check before submitting; you can print from the preview."}</p>
     </div></section>` : ""}
     ${a.history.length ? `<div class="sec-h"><span>History</span></div><div class="diff-list">${a.history.slice().reverse().map((h) => `<div><span class="mono muted small">${fmtDate(h.at)}</span><br>${esc(stageLabel(h.stage))}${h.note ? " — " + esc(h.note) : ""}</div>`).join("")}</div>` : ""}
     <div class="sheet-bar">
-      ${isNew ? `<button class="btn primary grow" id="apSave">Save application</button>` : (a.stage === "received" || a.stage === "verified") && a.pdfAt ? `<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apEro">📤 Move to ERO ✓</button>` : a.stage === "received" ? `<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apNext">Documents checked ✓</button>` : a.stage === "verified" ? `<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apPdf2">⬇ Download PDF</button>` : a.stage === "forwarded" ? `<span class="muted small grow">📤 Sent to ERO on ${fmtDate((a.history.slice().reverse().find((h) => h.stage === "forwarded") || {}).at)}</span><button class="btn" id="apBack">✎ Edit</button>${a.addedVoterId && vIndex(a.addedVoterId) >= 0 ? `<button class="btn primary" id="apOpenV">Open in voter list</button>` : rollAction(a) ? `<button class="btn primary" id="apAddV">${{ add: "➕ Add to voter list", remove: "➖ Remove from voter list", update: "✎ Update in voter list" }[rollAction(a)]}</button>` : ""}` : a.stage === "approved" ? `${a.addedVoterId && vIndex(a.addedVoterId) >= 0 ? `<button class="btn primary grow" id="apOpenV">Open voter in roll</button>` : `<span class="muted small grow">Approved on ${fmtDate((a.history.find((h) => h.stage === "approved") || {}).at)}</span>`}` : `<button class="btn grow" id="apReopen">Reopen application</button>`}
+      ${isNew ? `<button class="btn primary grow" id="apSave">Save application</button>` : (a.stage === "received" || a.stage === "verified") && a.pdfAt ? `<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apEro">${FORMS_ONLY ? "✅ Completed" : "📤 Move to ERO ✓"}</button>` : a.stage === "received" ? `<button class="btn" id="apSave">Save</button>${FORMS_ONLY ? `<button class="btn primary grow" id="apPdf2">⬇ Download PDF</button>` : `<button class="btn primary grow" id="apNext">Documents checked ✓</button>`}` : a.stage === "verified" ? `<button class="btn" id="apSave">Save</button><button class="btn primary grow" id="apPdf2">⬇ Download PDF</button>` : a.stage === "forwarded" ? `<span class="muted small grow">${FORMS_ONLY ? "✅ Completed on" : "📤 Sent to ERO on"} ${fmtDate((a.history.slice().reverse().find((h) => h.stage === "forwarded") || {}).at)}</span><button class="btn" id="apBack">✎ Edit</button>${a.addedVoterId && vIndex(a.addedVoterId) >= 0 ? `<button class="btn primary" id="apOpenV">Open in voter list</button>` : rollAction(a) ? `<button class="btn primary" id="apAddV">${{ add: "➕ Add to voter list", remove: "➖ Remove from voter list", update: "✎ Update in voter list" }[rollAction(a)]}</button>` : ""}` : a.stage === "approved" ? `${a.addedVoterId && vIndex(a.addedVoterId) >= 0 ? `<button class="btn primary grow" id="apOpenV">Open voter in roll</button>` : `<span class="muted small grow">Approved on ${fmtDate((a.history.find((h) => h.stage === "approved") || {}).at)}</span>`}` : `<button class="btn grow" id="apReopen">Reopen application</button>`}
     </div>
     ${!isNew && !locked ? `<button class="btn ghost" id="apDel" style="align-self:flex-start">Delete application</button>` : ""}
   </div></div>`;
@@ -2989,7 +2993,7 @@ function markPrinted(a) {
     L[i].pdfAt = a.pdfAt;
     commit("app", -1, "PDF downloaded: " + a.name);
   }
-  toast("PDF downloaded · tap Move to ERO when it is final");
+  toast(FORMS_ONLY ? "PDF downloaded · tap ✅ Completed when it is final" : "PDF downloaded · tap Move to ERO when it is final");
   if (i >= 0 && document.getElementById("sbg")) openApp(a.id);
 }
 function moveToEro(a) {
@@ -2998,12 +3002,12 @@ function moveToEro(a) {
   const x = L[i];
   x.stage = "forwarded";
   x.history = x.history || [];
-  x.history.push({ stage: "forwarded", at: Date.now(), note: x.pdfAt ? "Printed and moved to ERO" : "Moved to ERO" });
-  pushUndo("move to ERO");
-  commit("app", -1, "Moved to ERO: " + x.name);
+  x.history.push({ stage: "forwarded", at: Date.now(), note: FORMS_ONLY ? "Downloaded and completed" : x.pdfAt ? "Printed and moved to ERO" : "Moved to ERO" });
+  pushUndo(FORMS_ONLY ? "mark completed" : "move to ERO");
+  commit("app", -1, (FORMS_ONLY ? "Completed: " : "Moved to ERO: ") + x.name);
   closeSheet();
   render();
-  toast("Completed · moved to ERO");
+  toast(FORMS_ONLY ? "✅ Completed" : "Completed · moved to ERO");
   askAddToRoll(x);
 }
 async function downloadFormPdf(a) {

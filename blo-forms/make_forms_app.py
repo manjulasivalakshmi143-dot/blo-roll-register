@@ -28,6 +28,7 @@ for line in rail.split("\n"):
     keep.append(line)
 s = s.replace(rail, "\n".join(keep))
 rep('let tab = "home";', 'let tab = "apps";')
+rep("const FORMS_ONLY=false;", "const FORMS_ONLY=true;")
 rep("function render(){", 'function render(){\n  if(tab!=="apps" && tab!=="backup") tab="apps";   // forms app: only applications and settings')
 
 s = s.replace('"No roll loaded yet"', '"Set your part in Account settings"')
