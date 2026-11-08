@@ -90,7 +90,7 @@ async function connectAccount(){
 }
 function syncLists(){}
 /* sample papers on the sign-in screen (marked SAMPLE) */
-function showSample(k){
+function sampleApp(k){
   const d=n=>{ const t=new Date(Date.now()+n*864e5); return t.toISOString().slice(0,10); };
   const base={ sample:true, id:"sample", refNo:"S01150O6N0000000000001", appDate:d(-6), noticeDate:d(-4), hearDate:d(4), hearTime:"11:00 AM", hearPlace:"GUNTAKAL MUNICIPALITY", orderDate:d(10), town:"GUNTAKAL", area:"SAMPLE COLONY", partNo:"159", mandal:"GUNTAKAL", history:[], docs:{} };
   const A={
@@ -102,7 +102,19 @@ function showSample(k){
       panchDate:d(-3), panch:["K. RAMANA","S. LAKSHMI","P. SURESH","M. ANJI"] }),
     f8:Object.assign({},base,{ type:"f8", req:"Shifting of residence", refNo:"S01150O8N0000000000002", name:"LAKSHMI DEVI", relType:"Husband", relName:"SURESH", house:"3-77", area:"NEW COLONY" })
   };
-  previewFormPdf(A[k]);
+  return A[k];
+}
+/* samples are ready-made pictures + PDF files, so they open on every phone (no PDF maker needed) */
+const SAMPLE_PAGES=__SAMPLE_PAGES__;
+function showSample(k){
+  const n=SAMPLE_PAGES[k]||0; if(!n){ previewFormPdf(sampleApp(k)); return; }
+  const nm={f6:"Form 6 + check slip",f7:"Form 7 (death)",f8:"Form 8 (shifting)"}[k]||"Sample";
+  const ov=document.createElement("div"); ov.className="pv-bg"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-label","Sample PDF");
+  let pages=""; for(let i=1;i<=n;i++) pages+=`<div class="pv-page"><div class="pv-pn">Page ${i} of ${n}</div><img src="../forms/samples/${k}-${i}.jpg" alt="Sample page ${i}" loading="${i<3?"eager":"lazy"}" style="width:100%;display:block;background:#fff"></div>`;
+  ov.innerHTML=`<div class="pv-band"><div style="min-width:0"><div class="pv-k">Sample</div><div class="pv-n">${esc(nm)}</div></div>
+    <div class="row pv-act"><button class="btn" id="pvEd">✕ Close</button><a class="btn primary" id="pvDl" style="text-decoration:none" href="../forms/samples/sample-${k}.pdf" download="BLO-Forms-sample-${k}.pdf">⬇ Download PDF</a></div></div>
+    <div class="pv-pages">${pages}</div>`;
+  document.body.appendChild(ov); ov.querySelector("#pvEd").onclick=()=>ov.remove();
 }
 async function uploadList(){}
 function askAddToRoll(){}
@@ -145,5 +157,9 @@ rep(anchor, over + anchor)
 s = s.replace('${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary" id="apOpenV">Open in voter list</button>`:rollAction(a)?', '${false?"":rollAction(a)?')
 
 exec(open("/home/claude/blo-register/forms_signin.py").read())
+import os, json as _json
+_sd = "/home/claude/blo-roll-register/forms/samples"
+_cnt = {k: len([f for f in os.listdir(_sd) if f.startswith(k+"-") and f.endswith(".jpg")]) if os.path.isdir(_sd) else 0 for k in ("f6","f7","f8")}
+s = s.replace("__SAMPLE_PAGES__", _json.dumps(_cnt))
 open("/home/claude/blo-register/blo-forms/index.html", "w").write(s)
 print("ok", len(s))

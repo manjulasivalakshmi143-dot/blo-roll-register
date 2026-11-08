@@ -5852,7 +5852,7 @@ async function connectAccount() {
 }
 function syncLists() {
 }
-function showSample(k) {
+function sampleApp(k) {
   const d = (n) => {
     const t = new Date(Date.now() + n * 864e5);
     return t.toISOString().slice(0, 10);
@@ -5890,7 +5890,27 @@ function showSample(k) {
     }),
     f8: Object.assign({}, base, { type: "f8", req: "Shifting of residence", refNo: "S01150O8N0000000000002", name: "LAKSHMI DEVI", relType: "Husband", relName: "SURESH", house: "3-77", area: "NEW COLONY" })
   };
-  previewFormPdf(A[k]);
+  return A[k];
+}
+const SAMPLE_PAGES = { "f6": 5, "f7": 4, "f8": 2 };
+function showSample(k) {
+  const n = SAMPLE_PAGES[k] || 0;
+  if (!n) {
+    previewFormPdf(sampleApp(k));
+    return;
+  }
+  const nm = { f6: "Form 6 + check slip", f7: "Form 7 (death)", f8: "Form 8 (shifting)" }[k] || "Sample";
+  const ov = document.createElement("div");
+  ov.className = "pv-bg";
+  ov.setAttribute("role", "dialog");
+  ov.setAttribute("aria-label", "Sample PDF");
+  let pages = "";
+  for (let i = 1; i <= n; i++) pages += `<div class="pv-page"><div class="pv-pn">Page ${i} of ${n}</div><img src="../forms/samples/${k}-${i}.jpg" alt="Sample page ${i}" loading="${i < 3 ? "eager" : "lazy"}" style="width:100%;display:block;background:#fff"></div>`;
+  ov.innerHTML = `<div class="pv-band"><div style="min-width:0"><div class="pv-k">Sample</div><div class="pv-n">${esc(nm)}</div></div>
+    <div class="row pv-act"><button class="btn" id="pvEd">✕ Close</button><a class="btn primary" id="pvDl" style="text-decoration:none" href="../forms/samples/sample-${k}.pdf" download="BLO-Forms-sample-${k}.pdf">⬇ Download PDF</a></div></div>
+    <div class="pv-pages">${pages}</div>`;
+  document.body.appendChild(ov);
+  ov.querySelector("#pvEd").onclick = () => ov.remove();
 }
 async function uploadList() {
 }
