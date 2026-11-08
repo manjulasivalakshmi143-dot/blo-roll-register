@@ -37,11 +37,11 @@ s = s.replace('"No roll loaded yet"', '"Set your part in Account settings"')
 rep("<div><h2>Keep your part's roll safe</h2><p class=\"muted small\" style=\"margin:6px 0 0\">Free for every BLO. Sign in with your email so your voter list is saved to your own private account and comes back on any phone.</p></div>",
     """<div class="hero">
       <span class="hero-o o1"></span><span class="hero-o o2"></span>
-      <span class="hero-pill">✦ FREE FOR EVERY BLO ✦</span>
-      <h1 class="hero-t">BLO <span>Forms</span></h1>
-      <p class="hero-big">No writing.<br><em>Only online.</em></p>
-      <p class="hero-sub">Form 6 · Form 7 · Form 8 — filled, signed and ready as one PDF in minutes.</p>
-      <div class="hero-f"><span><b>⚡</b>Fill in minutes</span><span><b>📄</b>Ready PDF for ERO</span><span><b>📱</b>Any phone, old or new</span></div>
+      <div class="hero-row">
+        <div class="hero-l"><span class="hero-pill">✦ FREE FOR EVERY BLO</span><h1 class="hero-t">BLO <span>Forms</span></h1></div>
+        <p class="hero-big">No writing.<br><em>Only online.</em></p>
+      </div>
+      <div class="hero-f"><span>⚡ Fill in minutes</span><span>📄 Ready PDF</span><span>📱 Any phone</span></div>
     </div>
     <p class="hero-in">Sign in to keep your applications safe in your own account — they come back on any phone.</p>""")
 s = s.replace('<div class="auth-tabs"><button data-m="login"', '''<div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
@@ -129,6 +129,15 @@ HERO_CSS = r'''.hero{position:relative;overflow:hidden;border-radius:22px;paddin
 .hero-by b{color:#FFD24D;font-weight:900}
 .hero-in{margin:0;text-align:center;font-size:.86rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.hero-big em::after{animation:none}}
+.hero{padding:12px 14px 10px;border-radius:18px;text-align:left}
+.hero-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hero-l{min-width:0}
+.hero-pill{font-size:.52rem;padding:2px 8px;letter-spacing:.1em}
+.hero-t{margin:5px 0 0;font-size:clamp(1.55rem,8vw,2rem)}
+.hero-big{margin:0;text-align:right;font-size:clamp(.98rem,4.6vw,1.2rem);line-height:1.2;flex:none}
+.hero-big em::after{bottom:-2px;height:2px}
+.hero-f{display:flex;gap:6px;margin-top:9px;grid-template-columns:none}
+.hero-f span{flex:1;flex-direction:row;justify-content:center;gap:4px;font-size:.66rem;padding:5px 4px;border-radius:999px;white-space:nowrap}
 '''
 s = s.replace("/* compact home */", HERO_CSS + "/* compact home */", 1)
 rep(anchor, over + anchor)

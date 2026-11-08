@@ -74,6 +74,7 @@ nav.tabs .rail-brand b{display:none}
 .inst-top[hidden]{display:none}
 body.has-rail .inst-top{padding:7px 9px}
 body.has-rail .inst-top .it-l{display:none}
+@media (max-width:380px){.inst-top{padding:7px 9px}.inst-top .it-l{display:none}}
 nav.tabs button.rail-out{margin-top:6px;color:#B3261E;border:1.5px dashed transparent;border:1.5px dashed color-mix(in srgb,#B3261E 45%,transparent)}
 nav.tabs button{position:relative;background:none;border:0;padding:8px 2px;border-radius:12px;font-size:.68rem;font-weight:650;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;transition:background .15s ease,color .15s ease}
 nav.tabs button svg{width:24px;height:24px;flex:none}
@@ -296,6 +297,15 @@ nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
 .hero-by b{color:#FFD24D;font-weight:900}
 .hero-in{margin:0;text-align:center;font-size:.86rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.hero-big em::after{animation:none}}
+.hero{padding:12px 14px 10px;border-radius:18px;text-align:left}
+.hero-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hero-l{min-width:0}
+.hero-pill{font-size:.52rem;padding:2px 8px;letter-spacing:.1em}
+.hero-t{margin:5px 0 0;font-size:clamp(1.55rem,8vw,2rem)}
+.hero-big{margin:0;text-align:right;font-size:clamp(.98rem,4.6vw,1.2rem);line-height:1.2;flex:none}
+.hero-big em::after{bottom:-2px;height:2px}
+.hero-f{display:flex;gap:6px;margin-top:9px;grid-template-columns:none}
+.hero-f span{flex:1;flex-direction:row;justify-content:center;gap:4px;font-size:.66rem;padding:5px 4px;border-radius:999px;white-space:nowrap}
 .mode-pick{display:grid;gap:10px}
 .mode-btn{display:grid;grid-template-columns:44px 1fr 18px;align-items:center;gap:10px;text-align:left;font:inherit;padding:14px;border-radius:16px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:0 4px 14px rgba(40,20,90,.08);transition:transform .1s}
 .mode-btn:active{transform:scale(.98)}
@@ -808,11 +818,11 @@ function showAuth(mode2) {
   v.innerHTML = `<div class="auth">
     <div class="hero">
       <span class="hero-o o1"></span><span class="hero-o o2"></span>
-      <span class="hero-pill">✦ FREE FOR EVERY BLO ✦</span>
-      <h1 class="hero-t">BLO <span>Forms</span></h1>
-      <p class="hero-big">No writing.<br><em>Only online.</em></p>
-      <p class="hero-sub">Form 6 · Form 7 · Form 8 — filled, signed and ready as one PDF in minutes.</p>
-      <div class="hero-f"><span><b>⚡</b>Fill in minutes</span><span><b>📄</b>Ready PDF for ERO</span><span><b>📱</b>Any phone, old or new</span></div>
+      <div class="hero-row">
+        <div class="hero-l"><span class="hero-pill">✦ FREE FOR EVERY BLO</span><h1 class="hero-t">BLO <span>Forms</span></h1></div>
+        <p class="hero-big">No writing.<br><em>Only online.</em></p>
+      </div>
+      <div class="hero-f"><span>⚡ Fill in minutes</span><span>📄 Ready PDF</span><span>📱 Any phone</span></div>
     </div>
     <div class="mode-pick">
       <button type="button" class="mode-btn on" id="mWith"><span class="mode-ic">🔐</span><span><b>With sign in</b><small>Your data is saved for next time — on any phone</small></span><span class="mode-go">›</span></button>
