@@ -70,6 +70,7 @@ nav.tabs{position:fixed;left:0;top:0;bottom:0;width:calc(var(--rail) + env(safe-
 nav.tabs .rail-brand{display:none}
 nav.tabs .rail-brand span{width:12px;height:34px;border-radius:6px 6px 9px 9px;background:linear-gradient(var(--accent),var(--accent));background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent))}
 nav.tabs .rail-brand b{display:none}
+nav.tabs button.rail-out{margin-top:6px;color:#B3261E;border:1.5px dashed transparent;border:1.5px dashed color-mix(in srgb,#B3261E 45%,transparent)}
 nav.tabs button{position:relative;background:none;border:0;padding:8px 2px;border-radius:12px;font-size:.68rem;font-weight:650;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;transition:background .15s ease,color .15s ease}
 nav.tabs button svg{width:24px;height:24px;flex:none}
 nav.tabs button:hover{background:var(--paper);color:var(--ink)}
@@ -264,9 +265,13 @@ nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
 @keyframes ctaGlow{0%,100%{box-shadow:0 4px 14px rgba(90,45,163,.35)}50%{box-shadow:0 4px 14px rgba(90,45,163,.35),0 0 0 8px rgba(123,79,208,.18)}}
 .tap-here{font-size:.78rem;font-weight:800;color:#B3261E;background:#FFF1C2;border:1.5px solid #F2B705;border-radius:999px;padding:3px 10px;animation:tapBlink 1.1s ease-in-out infinite;pointer-events:none;white-space:nowrap}
 .tap-here.inline{align-self:center}
+.fill-here{display:block;width:118px;overflow:hidden;margin:0 0 4px;border-radius:999px;background:#FFF1C2;border:1.5px solid #F2B705;color:#B3261E;font-size:.72rem;font-weight:800;white-space:nowrap;animation:tapBlink 1.1s ease-in-out infinite}
+.fill-here[hidden]{display:none}
+.fill-here>span{display:inline-block;padding:2px 0;animation:fhRun 3.2s linear infinite}
+@keyframes fhRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes tapBlink{0%,100%{opacity:1;transform:translateY(0)}50%{opacity:.25;transform:translateY(-3px)}}
 .sample-card{position:relative;background:linear-gradient(135deg,var(--surface),var(--accent-soft))}
-@media (prefers-reduced-motion:reduce){.rb-track,.big-cta,.tap-here{animation:none}}
+@media (prefers-reduced-motion:reduce){.rb-track,.big-cta,.tap-here,.fill-here,.fill-here>span{animation:none}}
 .sample-card{display:flex;flex-direction:column;gap:10px;border:2px solid var(--accent)}
 .hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 18px 16px;text-align:center;color:#fff;background:linear-gradient(140deg,#24104F 0%,#4B1FA0 45%,#8A2D6B 100%);box-shadow:0 14px 34px rgba(59,29,122,.35);isolation:isolate}
 .hero-o{position:absolute;border-radius:50%;z-index:-1;filter:blur(2px)}
@@ -514,6 +519,7 @@ td,th{background:var(--surface)}
   <div class="blo-card" id="bloCard"><div role="button" tabindex="0" class="blo-ph" id="bloPh" title="Add or change your photo"></div><div role="button" tabindex="0" class="blo-tx" id="bloTx"><b id="bloNm"></b><small id="bloPt"></small></div><input type="file" id="bloPhIn" accept="image/*" hidden></div>
   <button data-tab="apps" style="--tc:#8A2D6B" class="add-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Applications</button>
   <button data-tab="backup" data-label="Account settings" style="--tc:#5B5670"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg><span class="lb">Account <br>settings</span></button>
+  <button type="button" id="railOut" class="rail-out" style="--tc:#B3261E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/></svg>Sign out</button>
 </nav>
 <div id="sheetRoot"></div>
 
@@ -794,7 +800,7 @@ function showAuth(mode2) {
     </div>
     <p class="hero-in">Sign in to keep your applications safe in your own account — they come back on any phone.</p>
     <div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
-      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6 + check slip</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
     <div class="auth-tabs"><button data-m="login" aria-pressed="${mode2 === "login"}">Sign in</button><button data-m="signup" aria-pressed="${mode2 === "signup"}">Create account</button></div>
     <form class="card" id="authForm" novalidate>
       <label class="f">Email (your Gmail)<input id="aEmail" type="email" autocomplete="username" inputmode="email" required></label>
@@ -896,6 +902,8 @@ function startData() {
 }
 function showApp() {
   $("#tabs").hidden = false;
+  const ro = $("#railOut");
+  if (ro) ro.onclick = () => confirmBox(session && session.token ? "Sign out on this phone? Your applications stay safe in your account." : "Go back to the sign-in page? Applications saved on this phone stay here.", "Sign out", signOut);
   document.body.classList.add("has-rail");
   applyView();
   render();
@@ -1960,10 +1968,10 @@ function openApp(id, typeHint) {
     return `<span class="${a.stage === "rejected" && i > 1 ? "" : i <= si ? "done" : ""}"><i></i>${st[1]}</span>`;
   }).join("")}</div>`}</div>
     ${isNew ? `<label class="field-block kind-pick"><span>Type of application</span><select id="pKind">${APP_KINDS.map(([t, gl, ks]) => `<optgroup label="${esc(gl)}">${ks.map(([k, l]) => `<option value="${t}:${k}" ${a.type === t && kindOf(a) === k ? "selected" : ""}>${esc(gl.split(" · ")[0])} · ${esc(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>` : `<div class="kind-tag">${esc(kindLabel(a))}</div>`}
-    <section class="win eci-doc" style="--wc:#1D7349"><div class="win-h"><span>📎 ECI application PDF</span><span class="win-s">printed first</span></div>
+    <section class="win eci-doc" style="--wc:#1D7349"><div class="win-h"><span>📎 Check slip</span><span class="win-s">printed first</span></div>
       <div class="panel" style="padding:12px;gap:8px">
-        <div id="ecInfo" class="small">${a.ecPdf ? `<b>${esc(a.ecPdf.name)}</b> · ${Math.round((a.ecPdf.size || 0) / 1024)} KB${a.ecPdf.cloud ? " · saved to account" : ""}` : `<span class="muted">The application PDF with the <b>Checklist for BLO</b>. Upload it and its details fill this form; it comes first in the downloaded PDF.</span>`}</div>
-        <div class="row" style="gap:6px"><label class="btn ${a.ecPdf ? "" : "primary"}" for="ecFile">⬆ ${a.ecPdf ? "Replace PDF" : "Upload PDF"}</label>${a.ecPdf ? "" : `<span class="tap-here inline" aria-hidden="true">👈 Click here</span>`}<input type="file" id="ecFile" accept="application/pdf,.pdf" hidden>
+        <div id="ecInfo" class="small">${a.ecPdf ? `<b>${esc(a.ecPdf.name)}</b> · ${Math.round((a.ecPdf.size || 0) / 1024)} KB${a.ecPdf.cloud ? " · saved to account" : ""}` : `<span class="muted">The ECI application PDF with the <b>Checklist for BLO</b>. Upload it and the name, father name, address and phone fill in by themselves; it comes first in the downloaded PDF.</span>`}</div>
+        <div class="row" style="gap:6px"><label class="btn ${a.ecPdf ? "" : "primary"}" for="ecFile">⬆ ${a.ecPdf ? "Replace check slip" : "Upload check slip"}</label>${a.ecPdf ? "" : `<span class="tap-here inline" aria-hidden="true">👈 Click here</span>`}<input type="file" id="ecFile" accept="application/pdf,.pdf" hidden>
           <button class="btn danger" id="ecDel" type="button" ${a.ecPdf ? "" : "hidden"}>Remove</button></div>
         <div id="ecChk" ${a.ecPdf ? "" : "hidden"}>${eciChkHtml(a)}</div>
       </div></section>
@@ -2061,6 +2069,7 @@ function openApp(id, typeHint) {
   sh.onclick = (e) => {
     if (e.target.id === "sbg" || e.target.closest("#apX")) closeSheet();
   };
+  setTimeout(fillHints, 0);
   sh.querySelectorAll(".seg").forEach((sg) => sg.onclick = (e) => {
     const b = e.target.closest("button");
     if (!b) return;
@@ -2143,7 +2152,8 @@ function openApp(id, typeHint) {
         }
         if ($("#pDob")) $("#pDob").dispatchEvent(new Event("change"));
         if (r.form && "f" + r.form !== a.type) toast(`This PDF is Form ${r.form}, but this application is ${(APP_TYPES[a.type] || {}).short}`);
-        else if (n) toast(`Filled ${n} details from the PDF — please check them`);
+        else if (n) toast(`Filled ${n} details from the check slip — please check them`);
+        fillHints();
       }
     } catch (err) {
     }
@@ -2195,7 +2205,7 @@ function openApp(id, typeHint) {
   };
   ecBind();
   a._ecRead = ecRead;
-  if ($("#ecDel")) $("#ecDel").onclick = () => confirmBox("Remove the attached ECI application PDF?", "Remove", async () => {
+  if ($("#ecDel")) $("#ecDel").onclick = () => confirmBox("Remove the attached check slip?", "Remove", async () => {
     await dropAppDoc(a);
     a.ecPdf = null;
     $("#ecInfo").innerHTML = `<span class="muted">Removed. Upload again if needed.</span>`;
@@ -2573,6 +2583,14 @@ async function putAppDoc(a, bytes) {
   return false;
 }
 async function getAppDoc(a) {
+  if (a.ecPdf && a.ecPdf.url) {
+    try {
+      const r = await fetch(a.ecPdf.url);
+      if (r.ok) return new Uint8Array(await r.arrayBuffer());
+    } catch (e) {
+    }
+    return null;
+  }
   try {
     const b = await idbDo("readonly", (st) => st.get(docKey(a)));
     if (b) return new Uint8Array(b);
@@ -2602,6 +2620,25 @@ async function dropAppDoc(a) {
     } catch (e) {
     }
   }
+}
+const FILL_IDS = ["pName", "pRel", "pHouse", "oArea", "pPh"];
+function fillHints() {
+  FILL_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el || el.disabled) return;
+    let t = el.parentNode.querySelector(':scope > .fill-here[data-for="' + id + '"]');
+    if (!t) {
+      t = document.createElement("span");
+      t.className = "fill-here";
+      t.dataset.for = id;
+      t.setAttribute("aria-hidden", "true");
+      t.innerHTML = "<span>✍ Fill here &nbsp;✍ Fill here &nbsp;</span>";
+      el.parentNode.insertBefore(t, el);
+      el.addEventListener("input", fillHints);
+      el.addEventListener("change", fillHints);
+    }
+    t.hidden = !!el.value.trim();
+  });
 }
 async function readEciApp(bytes) {
   if (typeof pdfjsLib === "undefined") return null;
@@ -5739,14 +5776,18 @@ function showSample(k) {
     f6: Object.assign({}, base, {
       type: "f6",
       f6out: "approve",
-      name: "KAVYA SREE",
+      name: "RAVI KUMAR",
       relType: "Father",
-      relName: "RAMESH KUMAR",
-      gender: "F",
-      dob: "2007-05-14",
-      house: "1-245",
+      relName: "SURESH KUMAR",
+      gender: "M",
+      dob: "2007-06-15",
+      house: "1-2-3",
+      area: "SAMPLE STREET",
+      phone: "9000000001",
       decl: true,
-      d4: { use: true, sir: "rel", e: {}, r: { Name: "RAMESH KUMAR", Rel: "NARAYANA", RelType: "Father", State: "Andhra Pradesh", Dist: "Anantapur", AcNo: "170", AcName: "Gooty", Part: "112", Sr: "487" }, f: { fName: "RAMESH KUMAR", mName: "LAKSHMI DEVI" } }
+      ecPdf: { url: "../forms/sample-check-slip.pdf", name: "sample-check-slip.pdf" },
+      eciChk: Object.assign(eciDefaults("yes"), { place: "GUNTAKAL" }),
+      d4: { use: true, sir: "rel", e: {}, r: { Name: "SURESH KUMAR", Rel: "NARAYANA", RelType: "Father", State: "Andhra Pradesh", Dist: "Anantapur", AcNo: "170", AcName: "Gooty", Part: "112", Sr: "487" }, f: { fName: "SURESH KUMAR", mName: "LAKSHMI DEVI" } }
     }),
     f7: Object.assign({}, base, {
       type: "f7",

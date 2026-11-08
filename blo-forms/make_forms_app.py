@@ -44,7 +44,7 @@ rep("<div><h2>Keep your part's roll safe</h2><p class=\"muted small\" style=\"ma
     </div>
     <p class="hero-in">Sign in to keep your applications safe in your own account — they come back on any phone.</p>""")
 s = s.replace('<div class="auth-tabs"><button data-m="login"', '''<div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
-      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6 + check slip</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
     <div class="auth-tabs"><button data-m="login"''', 1)
 s = s.replace("  bindInstall();\n  $(\"#deviceMode\").onclick", "  bindInstall();\n  v.querySelectorAll(\"[data-sample]\").forEach(b=>b.onclick=()=>showSample(b.dataset.sample));\n  $(\"#deviceMode\").onclick", 1)
 s = s.replace("Your data stays on this phone; download Excel backups often.", "Your applications stay on this phone only.")
@@ -93,8 +93,9 @@ function showSample(k){
   const d=n=>{ const t=new Date(Date.now()+n*864e5); return t.toISOString().slice(0,10); };
   const base={ sample:true, id:"sample", refNo:"S01150O6N0000000000001", appDate:d(-6), noticeDate:d(-4), hearDate:d(4), hearTime:"11:00 AM", hearPlace:"GUNTAKAL MUNICIPALITY", orderDate:d(10), town:"GUNTAKAL", area:"SAMPLE COLONY", partNo:"159", mandal:"GUNTAKAL", history:[], docs:{} };
   const A={
-    f6:Object.assign({},base,{ type:"f6", f6out:"approve", name:"KAVYA SREE", relType:"Father", relName:"RAMESH KUMAR", gender:"F", dob:"2007-05-14", house:"1-245", decl:true,
-      d4:{ use:true, sir:"rel", e:{}, r:{Name:"RAMESH KUMAR", Rel:"NARAYANA", RelType:"Father", State:"Andhra Pradesh", Dist:"Anantapur", AcNo:"170", AcName:"Gooty", Part:"112", Sr:"487"}, f:{fName:"RAMESH KUMAR", mName:"LAKSHMI DEVI"} } }),
+    f6:Object.assign({},base,{ type:"f6", f6out:"approve", name:"RAVI KUMAR", relType:"Father", relName:"SURESH KUMAR", gender:"M", dob:"2007-06-15", house:"1-2-3", area:"SAMPLE STREET", phone:"9000000001", decl:true,
+      ecPdf:{ url:"../forms/sample-check-slip.pdf", name:"sample-check-slip.pdf" }, eciChk:Object.assign(eciDefaults("yes"),{ place:"GUNTAKAL" }),
+      d4:{ use:true, sir:"rel", e:{}, r:{Name:"SURESH KUMAR", Rel:"NARAYANA", RelType:"Father", State:"Andhra Pradesh", Dist:"Anantapur", AcNo:"170", AcName:"Gooty", Part:"112", Sr:"487"}, f:{fName:"SURESH KUMAR", mName:"LAKSHMI DEVI"} } }),
     f7:Object.assign({},base,{ type:"f7", f7why:"death", deathProof:"panch", refNo:"F7-SAMPLE-0001", name:"RAMESH KUMAR", relType:"Father", relName:"NARAYANA", house:"1-245",
       del:{ name:"NARAYANA REDDY", relName:"VENKATA REDDY", relation:"FATHER", house:"2-118", village:"GUNTAKAL", mandal:"GUNTAKAL", part:"159", serial:"487", age:"78", deathDate:d(-90) },
       panchDate:d(-3), panch:["K. RAMANA","S. LAKSHMI","P. SURESH","M. ANJI"] }),
