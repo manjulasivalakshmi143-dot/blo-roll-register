@@ -276,7 +276,13 @@ nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
 @keyframes fhRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes tapBlink{0%,100%{opacity:1;transform:translateY(0)}50%{opacity:.25;transform:translateY(-3px)}}
 .sample-card{position:relative;background:linear-gradient(135deg,var(--surface),var(--accent-soft))}
+/* inside the app the credit ribbon comes and goes: shows ~6 s, then hides ~34 s */
+body.has-rail .ribbon{overflow:hidden;animation:rbPeek 40s ease-in-out infinite}
+@keyframes rbPeek{0%{max-height:0;opacity:0;margin-bottom:0;padding-top:0;padding-bottom:0}
+  3%,15%{max-height:40px;opacity:1;margin-bottom:8px;padding-top:5px;padding-bottom:5px}
+  18%,100%{max-height:0;opacity:0;margin-bottom:0;padding-top:0;padding-bottom:0}}
 @media (prefers-reduced-motion:reduce){.rb-track,.big-cta,.tap-here,.fill-here,.fill-here>span{animation:none}}
+@media (prefers-reduced-motion:reduce){body.has-rail .ribbon{animation:none;display:none}}
 .sample-card{display:flex;flex-direction:column;gap:10px;border:2px solid var(--accent)}
 .hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 18px 16px;text-align:center;color:#fff;background:linear-gradient(140deg,#24104F 0%,#4B1FA0 45%,#8A2D6B 100%);box-shadow:0 14px 34px rgba(59,29,122,.35);isolation:isolate}
 .hero-o{position:absolute;border-radius:50%;z-index:-1;filter:blur(2px)}
