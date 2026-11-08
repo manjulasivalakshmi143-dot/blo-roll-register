@@ -70,6 +70,10 @@ nav.tabs{position:fixed;left:0;top:0;bottom:0;width:calc(var(--rail) + env(safe-
 nav.tabs .rail-brand{display:none}
 nav.tabs .rail-brand span{width:12px;height:34px;border-radius:6px 6px 9px 9px;background:linear-gradient(var(--accent),var(--accent));background:linear-gradient(var(--accent),color-mix(in srgb,var(--accent) 55%,transparent))}
 nav.tabs .rail-brand b{display:none}
+.inst-top{font:inherit;font-size:.74rem;font-weight:800;white-space:nowrap;padding:7px 11px;border-radius:999px;border:0;color:#fff;background:linear-gradient(135deg,#1D7349,#2E9E62);box-shadow:0 3px 10px rgba(29,115,73,.35);cursor:pointer;animation:ctaGlow 2.2s ease-in-out infinite}
+.inst-top[hidden]{display:none}
+body.has-rail .inst-top{padding:7px 9px}
+body.has-rail .inst-top .it-l{display:none}
 nav.tabs button.rail-out{margin-top:6px;color:#B3261E;border:1.5px dashed transparent;border:1.5px dashed color-mix(in srgb,#B3261E 45%,transparent)}
 nav.tabs button{position:relative;background:none;border:0;padding:8px 2px;border-radius:12px;font-size:.68rem;font-weight:650;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;transition:background .15s ease,color .15s ease}
 nav.tabs button svg{width:24px;height:24px;flex:none}
@@ -516,6 +520,7 @@ td,th{background:var(--surface)}
         </div>
       </div>
       <div class="top-act">
+        <button class="inst-top" id="topInstall" type="button" hidden>⬇ Install<span class="it-l"> app</span></button>
         <button class="view-tg" id="viewTg" type="button" aria-label="Switch app / desktop view"><span id="viewIc">📱</span><span id="viewTx">App view</span></button>
         <span class="sync" id="sync" data-s="off"><i></i><span id="syncText">Starting…</span></span>
       </div>
@@ -950,6 +955,7 @@ function startData() {
 }
 function showApp() {
   $("#tabs").hidden = false;
+  bindInstall();
   const ro = $("#railOut");
   if (ro) ro.onclick = () => confirmBox(session && session.token ? "Sign out on this phone? Your applications stay safe in your account." : "Go back to the sign-in page? Applications saved on this phone stay here.", "Sign out", signOut);
   document.body.classList.add("has-rail");
@@ -5702,30 +5708,40 @@ function installCard() {
 }
 function bindInstall() {
   const b = $("#installBtn");
-  if (b) b.onclick = async () => {
-    if (installPrompt) {
-      installPrompt.prompt();
-      try {
-        await installPrompt.userChoice;
-      } catch (e) {
-      }
-      installPrompt = null;
-      refreshInstall();
-      return;
+  if (b) b.onclick = doInstall;
+  const t = $("#topInstall");
+  if (t) {
+    t.hidden = isStandalone();
+    t.onclick = doInstall;
+  }
+}
+async function doInstall() {
+  if (installPrompt) {
+    installPrompt.prompt();
+    try {
+      await installPrompt.userChoice;
+    } catch (e) {
     }
-    const ios = isIOS();
-    const ov = document.createElement("div");
-    ov.className = "ask-bg";
-    ov.innerHTML = `<div class="ask" role="dialog" aria-modal="true" aria-label="Install"><section class="win" style="--wc:var(--accent)"><div class="win-h"><span>📲 Install ${esc(document.title || "the app")}</span></div>
+    installPrompt = null;
+    refreshInstall();
+    return;
+  }
+  const ios = isIOS();
+  const ov = document.createElement("div");
+  ov.className = "ask-bg";
+  ov.innerHTML = `<div class="ask" role="dialog" aria-modal="true" aria-label="Install"><section class="win" style="--wc:var(--accent)"><div class="win-h"><span>📲 Install ${esc(document.title || "the app")}</span></div>
     <div class="panel" style="padding:14px">${ios ? `<p style="margin:0">In <b>Safari</b>, tap the <b>Share</b> button (square with arrow), then <b>Add to Home Screen</b>.</p>` : `<ol style="margin:0;padding-left:20px;line-height:1.6"><li>Open this page in <b>Chrome</b> (if it opened inside WhatsApp or another app, tap ⋮ → <b>Open in Chrome</b>).</li><li>Tap the <b>⋮</b> menu at the top right.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>.</li></ol>`}</div>
     <div class="win-f"><button class="btn primary" id="insOk">OK</button></div></section></div>`;
-    document.body.appendChild(ov);
-    ov.querySelector("#insOk").onclick = () => ov.remove();
-    ov.onclick = (e) => {
-      if (e.target === ov) ov.remove();
-    };
+  document.body.appendChild(ov);
+  ov.querySelector("#insOk").onclick = () => ov.remove();
+  ov.onclick = (e) => {
+    if (e.target === ov) ov.remove();
   };
 }
+addEventListener("appinstalled", () => {
+  const t = document.getElementById("topInstall");
+  if (t) t.hidden = true;
+});
 function refreshInstall() {
   const c = $("#installCard");
   if (!c) return;
