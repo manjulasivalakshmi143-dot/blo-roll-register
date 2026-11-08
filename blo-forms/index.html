@@ -515,7 +515,7 @@ td,th{background:var(--surface)}
 </div>
 
 <nav class="tabs" id="tabs" aria-label="Sections" hidden>
-  <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Register</b></div>
+  <div class="rail-brand" aria-hidden="true"><span></span><b>BLO Forms</b></div>
   <div class="blo-card" id="bloCard"><div role="button" tabindex="0" class="blo-ph" id="bloPh" title="Add or change your photo"></div><div role="button" tabindex="0" class="blo-tx" id="bloTx"><b id="bloNm"></b><small id="bloPt"></small></div><input type="file" id="bloPhIn" accept="image/*" hidden></div>
   <button data-tab="apps" style="--tc:#8A2D6B" class="add-tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M19 8v6M16 11h6"/></svg>Applications</button>
   <button data-tab="backup" data-label="Account settings" style="--tc:#5B5670"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg><span class="lb">Account <br>settings</span></button>
@@ -5649,7 +5649,7 @@ const isStandalone = () => matchMedia("(display-mode: standalone)").matches || n
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 function installCard() {
   if (isStandalone()) return "";
-  if (installPrompt) return `<div class="card panel" id="installCard"><h3>Install on this phone</h3><p class="muted small" style="margin:0">Add BLO Register to your home screen. It opens like a normal app, works without internet, and your data stays the same.</p><button class="btn primary" id="installBtn">Install app</button></div>`;
+  if (installPrompt) return `<div class="card panel" id="installCard"><h3>Install on this phone</h3><p class="muted small" style="margin:0">Add BLO Forms to your home screen. It opens like a normal app, works without internet, and your data stays the same.</p><button class="btn primary" id="installBtn">Install app</button></div>`;
   if (isIOS()) return `<div class="card panel" id="installCard"><h3>Install on this iPhone</h3><p class="muted small" style="margin:0">In Safari, tap the Share button, then <strong>Add to Home Screen</strong>.</p></div>`;
   return `<div class="card panel" id="installCard"><h3>Install on this phone</h3><p class="muted small" style="margin:0">In Chrome, tap the ⋮ menu at the top right, then <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p></div>`;
 }
