@@ -34,7 +34,7 @@ s = s.replace('"No roll loaded yet"', '"Set your part in Account settings"')
 # ---- sign-in screen wording ----
 rep("<div><h2>Keep your part's roll safe</h2><p class=\"muted small\" style=\"margin:6px 0 0\">Free for every BLO. Sign in with your email so your voter list is saved to your own private account and comes back on any phone.</p></div>",
     "<div><h2>BLO Forms</h2><p class=\"muted small\" style=\"margin:6px 0 0\">Fill Form 6, 7 and 8 office papers and download them as one PDF. Free for every BLO. Sign in so your applications are saved to your own account and come back on any phone.</p></div>")
-s = s.replace('<div class="auth-tabs"><button data-m="login"', '''<div class="card sample-card"><div><b>👁 See a sample filled PDF</b><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
+s = s.replace('<div class="auth-tabs"><button data-m="login"', '''<div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
     <div class="auth-tabs"><button data-m="login"''', 1)
 s = s.replace("  bindInstall();\n  $(\"#deviceMode\").onclick", "  bindInstall();\n  v.querySelectorAll(\"[data-sample]\").forEach(b=>b.onclick=()=>showSample(b.dataset.sample));\n  $(\"#deviceMode\").onclick", 1)

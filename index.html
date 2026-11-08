@@ -238,6 +238,30 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .kind-tag{align-self:flex-start;font-weight:700;font-size:.85rem;padding:5px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
 .fly .fly-grp{text-transform:none;letter-spacing:0;font-size:.8rem;padding:7px 12px 5px 22px;background:transparent;color:var(--ink)}
 .fly button.fly-sub{padding-left:30px;grid-template-columns:20px 1fr;font-size:.88rem}
+/* ---- look & feel ---- */
+.ribbon{display:flex;align-items:center;gap:10px;margin:0 0 8px;border-radius:0 0 12px 12px;background:linear-gradient(90deg,#3B1D7A,#5A2DA3 45%,#8A2D6B);color:#fff;padding:5px 10px;overflow:hidden;box-shadow:0 3px 10px rgba(59,29,122,.25)}
+.rb-by{flex:none;font-size:.6rem;letter-spacing:.08em;font-weight:800;white-space:nowrap;background:rgba(255,255,255,.16);padding:3px 8px;border-radius:999px}
+.rb-by b{font-weight:900;color:#FFD24D}
+.rb-run{flex:1;min-width:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.rb-track{display:inline-block;white-space:nowrap;font-size:.72rem;font-weight:700;animation:rbRun 26s linear infinite;padding-left:4px}
+@keyframes rbRun{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+body.narrow .rb-by{font-size:.55rem;padding:2px 6px}
+.btn{border-radius:14px;transition:transform .08s ease,box-shadow .15s ease,filter .15s ease}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,#7B4FD0 0%,var(--accent) 55%,#47208A 100%);box-shadow:0 4px 14px rgba(90,45,163,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.danger-fill{box-shadow:0 4px 14px rgba(179,38,30,.3)}
+nav.tabs button{transition:transform .1s ease,box-shadow .15s ease}
+nav.tabs button:active{transform:scale(.96)}
+nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
+.cta-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px}
+.big-cta{animation:ctaGlow 2.2s ease-in-out infinite}
+@keyframes ctaGlow{0%,100%{box-shadow:0 4px 14px rgba(90,45,163,.35)}50%{box-shadow:0 4px 14px rgba(90,45,163,.35),0 0 0 8px rgba(123,79,208,.18)}}
+.tap-here{font-size:.78rem;font-weight:800;color:#B3261E;background:#FFF1C2;border:1.5px solid #F2B705;border-radius:999px;padding:3px 10px;animation:tapBlink 1.1s ease-in-out infinite;pointer-events:none;white-space:nowrap}
+.tap-here.inline{align-self:center}
+@keyframes tapBlink{0%,100%{opacity:1;transform:translateY(0)}50%{opacity:.25;transform:translateY(-3px)}}
+.sample-card{position:relative;background:linear-gradient(135deg,var(--surface),var(--accent-soft))}
+@media (prefers-reduced-motion:reduce){.rb-track,.big-cta,.tap-here{animation:none}}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
 .hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -437,6 +461,10 @@ td,th{background:var(--surface)}
 </head>
 <body>
 <div class="wrap">
+  <div class="ribbon" aria-label="Designed by Sivananda Pujari">
+    <span class="rb-by">DESIGNED BY <b>SIVANANDA PUJARI</b></span>
+    <span class="rb-run" aria-hidden="true"><span class="rb-track">✍ No writing — only online&nbsp;&nbsp;★&nbsp;&nbsp;Fill Form 6, 7, 8 in minutes&nbsp;&nbsp;★&nbsp;&nbsp;Download ready PDFs for ERO&nbsp;&nbsp;★&nbsp;&nbsp;Works on any phone&nbsp;&nbsp;★&nbsp;&nbsp;✍ No writing — only online&nbsp;&nbsp;★&nbsp;&nbsp;Fill Form 6, 7, 8 in minutes&nbsp;&nbsp;★&nbsp;&nbsp;Download ready PDFs for ERO&nbsp;&nbsp;★&nbsp;&nbsp;Works on any phone&nbsp;&nbsp;★&nbsp;&nbsp;</span></span>
+  </div>
   <header class="top">
     <div class="top-row">
       <div class="brand">
@@ -453,7 +481,7 @@ td,th{background:var(--surface)}
     </div>
   </header>
   <main id="view"></main>
-  <footer class="credit">Designed by <b>Sivananda Pujari</b></footer>
+
 </div>
 
 <nav class="tabs" id="tabs" aria-label="Sections" hidden>
@@ -1566,7 +1594,7 @@ function renderApps(el) {
   const shown = L.filter((a) => (f === "open" ? isOpenApp(a) : f === "all" ? true : f === "forwarded" ? !isOpenApp(a) : a.stage === f) && (!q || [a.name, a.relName, a.phone, a.house, a.refNo, a.epic].some((x) => String(x || "").toLowerCase().includes(q)))).sort((a, b) => (b.updated || 0) - (a.updated || 0));
   el.innerHTML = `<div class="panel">
     <h2 style="text-align:center">Applications</h2>
-    <button class="btn primary big-cta" id="appNew">＋ New application</button>
+    <div class="cta-wrap"><button class="btn primary big-cta" id="appNew">＋ New application</button><span class="tap-here" aria-hidden="true">👆 Click here</span></div>
     ${menuList([{ id: "guide", icon: "📘", color: "var(--warn)", title: "Guidelines", sub: "Form 6, 7, 8 and declaration form rules" }])}
     <div class="tally" style="grid-template-columns:repeat(3,1fr)">
       <div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded") + cnt("approved") + cnt("rejected")}</b><small>Sent to ERO</small></div>
@@ -1873,7 +1901,7 @@ function openApp(id, typeHint) {
     <section class="win eci-doc" style="--wc:#1D7349"><div class="win-h"><span>📎 ECI application PDF</span><span class="win-s">printed first</span></div>
       <div class="panel" style="padding:12px;gap:8px">
         <div id="ecInfo" class="small">${a.ecPdf ? `<b>${esc(a.ecPdf.name)}</b> · ${Math.round((a.ecPdf.size || 0) / 1024)} KB${a.ecPdf.cloud ? " · saved to account" : ""}` : `<span class="muted">The application PDF with the <b>Checklist for BLO</b>. Upload it and its details fill this form; it comes first in the downloaded PDF.</span>`}</div>
-        <div class="row" style="gap:6px"><label class="btn ${a.ecPdf ? "" : "primary"}" for="ecFile">⬆ ${a.ecPdf ? "Replace PDF" : "Upload PDF"}</label><input type="file" id="ecFile" accept="application/pdf,.pdf" hidden>
+        <div class="row" style="gap:6px"><label class="btn ${a.ecPdf ? "" : "primary"}" for="ecFile">⬆ ${a.ecPdf ? "Replace PDF" : "Upload PDF"}</label>${a.ecPdf ? "" : `<span class="tap-here inline" aria-hidden="true">👈 Click here</span>`}<input type="file" id="ecFile" accept="application/pdf,.pdf" hidden>
           <button class="btn danger" id="ecDel" type="button" ${a.ecPdf ? "" : "hidden"}>Remove</button></div>
         <div id="ecChk" ${a.ecPdf ? "" : "hidden"}>${eciChkHtml(a)}</div>
       </div></section>
@@ -5493,7 +5521,7 @@ function changePassword() {
 function loadDemo() {
   const names = [["వెంకట రమణ", "M", 54], ["లక్ష్మీ దేవి", "F", 49], ["సాయి కుమార్", "M", 24], ["శ్రావణి", "F", 19], ["శ్రీనివాసులు", "M", 61], ["పద్మావతి", "F", 57], ["హుస్సేన్ బాషా", "M", 45], ["షబానా", "F", 39], ["నారాయణ", "M", 83], ["రామక్క", "F", 78], ["మహేష్", "M", 32], ["అనిత", "F", 28]];
   const houses = ["1-12", "1-12", "1-12", "1-12", "1-15", "1-15", "2-4", "2-4", "2-9", "2-9", "3-1", "3-1"];
-  const rels = [["Father", "నారాయణ"], ["Husband", "వెంకట రమణ"], ["Father", "వెంకట రమణ"], ["Father", "వెంకట రమణ"], ["Father", "రామయ్య"], ["Husband", "శ్రీనివాసులు"], ["Father", "మహబ��బ్ బాషా"], ["Husband", "హుస్సేన్ బాషా"], ["Father", "చిన్నయ్య"], ["Husband", "నారాయణ"], ["Father", "నారాయణ"], ["Husband", "మహేష్"]];
+  const rels = [["Father", "నారాయణ"], ["Husband", "వెంకట రమణ"], ["Father", "వెంకట రమణ"], ["Father", "వెంకట రమణ"], ["Father", "రామయ్య"], ["Husband", "శ్రీనివాసులు"], ["Father", "మహబూబ్ బాషా"], ["Husband", "హుస్సేన్ బాషా"], ["Father", "చిన్నయ్య"], ["Husband", "నారాయణ"], ["Father", "నారాయణ"], ["Husband", "మహేష్"]];
   state.voters = names.map((n, i) => {
     const st = defSt();
     if (i % 3 !== 2) st.mob = "yes";
