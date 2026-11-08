@@ -12,7 +12,6 @@ def rep(old, new, cnt=1):
 # ---- name, storage keys (separate from the roll app), files ----
 rep("<title>BLO Roll Register</title>", "<title>BLO Forms</title>")
 rep("<h1>BLO Roll Register</h1>", "<h1>BLO Forms</h1>")
-rep("Add BLO Register to your home screen.", "Add BLO Forms to your home screen.")
 rep('<b>BLO Register</b></div>', '<b>BLO Forms</b></div>')
 s = s.replace('"bloreg:session"', '"blofm:session"').replace('"bloreg:data:', '"blofm:data:').replace('"bloreg:pending-upload"', '"blofm:pending-upload"')
 s = s.replace('"bloreg:older-phone-copy:', '"blofm:older-phone-copy:')

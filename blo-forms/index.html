@@ -5677,21 +5677,33 @@ const isStandalone = () => matchMedia("(display-mode: standalone)").matches || n
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 function installCard() {
   if (isStandalone()) return "";
-  if (installPrompt) return `<div class="card panel" id="installCard"><h3>Install on this phone</h3><p class="muted small" style="margin:0">Add BLO Forms to your home screen. It opens like a normal app, works without internet, and your data stays the same.</p><button class="btn primary" id="installBtn">Install app</button></div>`;
-  if (isIOS()) return `<div class="card panel" id="installCard"><h3>Install on this iPhone</h3><p class="muted small" style="margin:0">In Safari, tap the Share button, then <strong>Add to Home Screen</strong>.</p></div>`;
-  return `<div class="card panel" id="installCard"><h3>Install on this phone</h3><p class="muted small" style="margin:0">In Chrome, tap the ⋮ menu at the top right, then <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p></div>`;
+  const nm = document.title || "the app";
+  return `<div class="card panel" id="installCard"><h3>📲 Install on this phone</h3><p class="muted small" style="margin:0">Add ${esc(nm)} to your home screen. It opens like a normal app, works without internet, and your data stays the same.</p><button class="btn primary" id="installBtn">⬇ Install app</button></div>`;
 }
 function bindInstall() {
   const b = $("#installBtn");
   if (b) b.onclick = async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    try {
-      await installPrompt.userChoice;
-    } catch (e) {
+    if (installPrompt) {
+      installPrompt.prompt();
+      try {
+        await installPrompt.userChoice;
+      } catch (e) {
+      }
+      installPrompt = null;
+      refreshInstall();
+      return;
     }
-    installPrompt = null;
-    refreshInstall();
+    const ios = isIOS();
+    const ov = document.createElement("div");
+    ov.className = "ask-bg";
+    ov.innerHTML = `<div class="ask" role="dialog" aria-modal="true" aria-label="Install"><section class="win" style="--wc:var(--accent)"><div class="win-h"><span>📲 Install ${esc(document.title || "the app")}</span></div>
+    <div class="panel" style="padding:14px">${ios ? `<p style="margin:0">In <b>Safari</b>, tap the <b>Share</b> button (square with arrow), then <b>Add to Home Screen</b>.</p>` : `<ol style="margin:0;padding-left:20px;line-height:1.6"><li>Open this page in <b>Chrome</b> (if it opened inside WhatsApp or another app, tap ⋮ → <b>Open in Chrome</b>).</li><li>Tap the <b>⋮</b> menu at the top right.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>, then <b>Install</b>.</li></ol>`}</div>
+    <div class="win-f"><button class="btn primary" id="insOk">OK</button></div></section></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#insOk").onclick = () => ov.remove();
+    ov.onclick = (e) => {
+      if (e.target === ov) ov.remove();
+    };
   };
 }
 function refreshInstall() {
