@@ -41,7 +41,6 @@ rep("<div><h2>Keep your part's roll safe</h2><p class=\"muted small\" style=\"ma
       <p class="hero-big">No writing.<br><em>Only online.</em></p>
       <p class="hero-sub">Form 6 · Form 7 · Form 8 — filled, signed and ready as one PDF in minutes.</p>
       <div class="hero-f"><span><b>⚡</b>Fill in minutes</span><span><b>📄</b>Ready PDF for ERO</span><span><b>📱</b>Any phone, old or new</span></div>
-      <div class="hero-by">DESIGNED BY <b>SIVANANDA PUJARI</b></div>
     </div>
     <p class="hero-in">Sign in to keep your applications safe in your own account — they come back on any phone.</p>""")
 s = s.replace('<div class="auth-tabs"><button data-m="login"', '''<div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
