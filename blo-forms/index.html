@@ -232,6 +232,8 @@ body.narrow .fly button{font-size:.85rem;padding:10px 10px}
 .cp{font:inherit;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;border:1.5px solid currentColor;background:transparent;color:inherit;cursor:pointer;flex:none}
 .kv-h{grid-column:1/-1;padding:9px 12px 7px;font-family:var(--f-display);font-weight:750;font-size:.92rem;color:var(--wc,var(--accent));background:color-mix(in srgb,var(--wc,var(--accent)) 9%,var(--surface));border-top:1px solid var(--line)}
 .kv-h small{font-family:var(--f-body);font-weight:600;color:var(--muted);font-size:.75rem}
+.credit{text-align:center;font-size:.78rem;color:var(--muted);padding:22px 0 calc(18px + env(safe-area-inset-bottom,0px));letter-spacing:.02em}
+.credit b{color:var(--ink);font-weight:700}
 .sample-card{display:flex;flex-direction:column;gap:10px;border:2px solid var(--accent)}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
@@ -448,6 +450,7 @@ td,th{background:var(--surface)}
     </div>
   </header>
   <main id="view"></main>
+  <footer class="credit">Designed by <b>Sivananda Pujari</b></footer>
 </div>
 
 <nav class="tabs" id="tabs" aria-label="Sections" hidden>
