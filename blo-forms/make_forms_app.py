@@ -136,5 +136,6 @@ rep(anchor, over + anchor)
 # no "add to voter list" / roll lookups in the sent bar
 s = s.replace('${a.addedVoterId&&vIndex(a.addedVoterId)>=0?`<button class="btn primary" id="apOpenV">Open in voter list</button>`:rollAction(a)?', '${false?"":rollAction(a)?')
 
+exec(open("/home/claude/blo-register/forms_signin.py").read())
 open("/home/claude/blo-register/blo-forms/index.html", "w").write(s)
 print("ok", len(s))

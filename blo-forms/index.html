@@ -292,6 +292,17 @@ nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
 .hero-by b{color:#FFD24D;font-weight:900}
 .hero-in{margin:0;text-align:center;font-size:.86rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.hero-big em::after{animation:none}}
+.mode-pick{display:grid;gap:10px}
+.mode-btn{display:grid;grid-template-columns:44px 1fr 18px;align-items:center;gap:10px;text-align:left;font:inherit;padding:14px;border-radius:16px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:0 4px 14px rgba(40,20,90,.08);transition:transform .1s}
+.mode-btn:active{transform:scale(.98)}
+.mode-btn b{display:block;font-family:var(--f-display);font-size:1.08rem;font-weight:800}
+.mode-btn small{display:block;font-size:.8rem;color:var(--muted);line-height:1.3;margin-top:2px}
+.mode-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.4rem;background:var(--accent-soft)}
+.mode-go{font-size:1.5rem;color:var(--accent);font-weight:700}
+.mode-btn.on{border-color:var(--accent);background:linear-gradient(135deg,#F3EDFF,#FFFFFF)}
+.mode-btn.on .mode-ic{background:linear-gradient(140deg,#4B1FA0,#8A2D6B);color:#fff}
+.sign-box{display:flex;flex-direction:column;gap:12px}
+.sign-box[hidden]{display:none}
 /* compact home */
 .home-top{display:grid;grid-template-columns:1fr 1.25fr;gap:10px}
 .hstat{padding:10px 12px!important;display:flex;flex-direction:column;gap:4px;min-width:0}
@@ -798,9 +809,11 @@ function showAuth(mode2) {
       <p class="hero-sub">Form 6 · Form 7 · Form 8 — filled, signed and ready as one PDF in minutes.</p>
       <div class="hero-f"><span><b>⚡</b>Fill in minutes</span><span><b>📄</b>Ready PDF for ERO</span><span><b>📱</b>Any phone, old or new</span></div>
     </div>
-    <p class="hero-in">Sign in to keep your applications safe in your own account — they come back on any phone.</p>
-    <div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
-      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6 + check slip</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
+    <div class="mode-pick">
+      <button type="button" class="mode-btn on" id="mWith"><span class="mode-ic">🔐</span><span><b>With sign in</b><small>Your data is saved for next time — on any phone</small></span><span class="mode-go">›</span></button>
+      <button type="button" class="mode-btn" id="mWithout"><span class="mode-ic">📱</span><span><b>Without sign in</b><small>Saved on this phone only — previous data may not be available</small></span><span class="mode-go">›</span></button>
+    </div>
+    <div id="signBox" class="sign-box" ${window._signOpen || mode2 !== "login" ? "" : "hidden"}>
     <div class="auth-tabs"><button data-m="login" aria-pressed="${mode2 === "login"}">Sign in</button><button data-m="signup" aria-pressed="${mode2 === "signup"}">Create account</button></div>
     <form class="card" id="authForm" novalidate>
       <label class="f">Email (your Gmail)<input id="aEmail" type="email" autocomplete="username" inputmode="email" required></label>
@@ -812,10 +825,25 @@ function showAuth(mode2) {
       ${mode2 === "login" ? `<button type="button" class="linkbtn" id="forgot">Forgot password?</button>` : ""}
       ${mode2 === "reset" ? `<button type="button" class="linkbtn" id="backLogin">Back to sign in</button>` : ""}
     </form>
+    </div>
+    <div class="card sample-card"><div><b>👁 See a sample filled PDF</b> <span class="tap-here">👇 Click here</span><div class="muted small">Example papers the app makes — no sign-in needed.</div></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-sample="f6">Form 6 + check slip</button><button class="btn" data-sample="f7">Form 7 (death)</button><button class="btn" data-sample="f8">Form 8 (shifting)</button></div></div>
     ${installCard()}
-    <div class="card small"><strong>No internet or no account?</strong><span class="muted">You can also use the app on this phone only. Your applications stay on this phone only.</span><button class="btn" id="deviceMode">Use on this phone only</button></div>
+    <div class="card small" hidden><strong>No internet or no account?</strong><span class="muted">You can also use the app on this phone only. Your applications stay on this phone only.</span><button class="btn" id="deviceMode">Use on this phone only</button></div>
   </div>`;
   v.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => showAuth(b.dataset.m));
+  $("#mWith").onclick = () => {
+    window._signOpen = true;
+    const sb = $("#signBox");
+    sb.hidden = false;
+    sb.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => {
+      const e = $("#aEmail"), pw = $("#aPass");
+      const t = e && e.value ? pw : e;
+      if (t) t.focus();
+    }, 350);
+  };
+  $("#mWithout").onclick = () => confirmBox("Use without sign in? Applications are saved on this phone only. If the phone is changed or the app data is cleared, previous data may not be available.", "Continue", () => $("#deviceMode").click());
   if ($("#forgot")) $("#forgot").onclick = () => showAuth("reset");
   if ($("#backLogin")) $("#backLogin").onclick = () => showAuth("login");
   try {
