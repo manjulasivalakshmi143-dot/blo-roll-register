@@ -272,6 +272,7 @@ nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
 .tap-here.inline{align-self:center}
 .fill-here{display:block;width:118px;overflow:hidden;margin:0 0 4px;border-radius:999px;background:#FFF1C2;border:1.5px solid #F2B705;color:#B3261E;font-size:.72rem;font-weight:800;white-space:nowrap;animation:tapBlink 1.1s ease-in-out infinite}
 .fill-here[hidden]{display:none}
+.keep-note{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#EAF3FB;border:1.5px solid #9CC3E6;font-size:.82rem;line-height:1.35;color:var(--ink)}
 .copy-pick{display:flex;flex-direction:column;gap:6px}
 .copy-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .copy-chip{display:flex;align-items:center;gap:6px;text-align:left;font:inherit;padding:7px 8px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;min-width:0}
@@ -844,7 +845,7 @@ function showAuth(mode2) {
       <div class="hero-f"><span>⚡ Fill in minutes</span><span>📄 Ready PDF</span><span>📱 Any phone</span></div>
     </div>
     <div class="mode-pick">
-      <button type="button" class="mode-btn on" id="mWith"><span class="mode-ic">🔐</span><span><b>With sign in</b><small>Your data is saved for next time — on any phone</small></span><span class="mode-go">›</span></button>
+      <button type="button" class="mode-btn on" id="mWith"><span class="mode-ic">🔐</span><span><b>With sign in</b><small>Your data is saved for next time — on any phone (check slips kept 30 days)</small></span><span class="mode-go">›</span></button>
       <button type="button" class="mode-btn" id="mWithout"><span class="mode-ic">📱</span><span><b>Without sign in</b><small>Saved on this phone only — previous data may not be available</small></span><span class="mode-go">›</span></button>
     </div>
     <div id="signBox" class="sign-box" ${window._signOpen || mode2 !== "login" ? "" : "hidden"}>
@@ -1750,6 +1751,7 @@ function renderApps(el) {
   const shown = L.filter((a) => (f === "open" ? isOpenApp(a) : f === "all" ? true : f === "forwarded" ? !isOpenApp(a) : a.stage === f) && (!q || [a.name, a.relName, a.phone, a.house, a.refNo, a.epic].some((x) => String(x || "").toLowerCase().includes(q)))).sort((a, b) => (b.updated || 0) - (a.updated || 0));
   el.innerHTML = `<div class="panel">
     <h2 style="text-align:center">Applications</h2>
+    <div class="keep-note">📥 <span><b>Download your PDFs to your phone.</b> Check slips you upload are kept online for <b>30 days</b>, then deleted automatically to keep the app free for every BLO. Your downloaded PDFs stay in your phone's <b>Downloads</b>.</span></div>
     <div class="tally" style="grid-template-columns:repeat(${FORMS_ONLY ? 2 : 3},1fr)">
       ${FORMS_ONLY ? `<div><b>${cnt("received") + cnt("verified")}</b><small>Pending</small></div><div><b>${cnt("forwarded") + cnt("approved") + cnt("rejected")}</b><small>Completed</small></div>` : `<div><b>${cnt("received")}</b><small>Received</small></div><div><b>${cnt("verified")}</b><small>Docs checked</small></div><div><b>${cnt("forwarded") + cnt("approved") + cnt("rejected")}</b><small>Sent to ERO</small></div>`}
     </div>
@@ -2053,7 +2055,7 @@ function openApp(id, typeHint) {
     ${isNew ? `<label class="field-block kind-pick"><span>Type of application</span><select id="pKind">${APP_KINDS.map(([t, gl, ks]) => `<optgroup label="${esc(gl)}">${ks.map(([k, l]) => `<option value="${t}:${k}" ${a.type === t && kindOf(a) === k ? "selected" : ""}>${esc(gl.split(" · ")[0])} · ${esc(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>` : `<div class="kind-tag">${esc(kindLabel(a))}</div>`}
     <section class="win eci-doc" style="--wc:#1D7349"><div class="win-h"><span>📎 Check slip</span><span class="win-s">printed first</span></div>
       <div class="panel" style="padding:12px;gap:8px">
-        <div id="ecInfo" class="small">${a.ecPdf ? `<b>${esc(a.ecPdf.name)}</b> · ${Math.round((a.ecPdf.size || 0) / 1024)} KB${a.ecPdf.cloud ? " · saved to account" : ""}` : `<span class="muted">The ECI application PDF with the <b>Checklist for BLO</b>. Upload it and the name, father name, address and phone fill in by themselves; it comes first in the downloaded PDF.</span>`}</div>
+        <div id="ecInfo" class="small">${a.ecPdf ? `<b>${esc(a.ecPdf.name)}</b> · ${Math.round((a.ecPdf.size || 0) / 1024)} KB${a.ecPdf.cloud ? ` · online till ${fmtDate((a.ecPdf.at || Date.now()) + 30 * 864e5).split(" ").slice(0, 3).join(" ")}` : ""}` : `<span class="muted">The ECI application PDF with the <b>Checklist for BLO</b>. Upload it and the name, father name, address and phone fill in by themselves; it comes first in the downloaded PDF. Kept online for 30 days.</span>`}</div>
         <div class="row" style="gap:6px"><label class="btn ${a.ecPdf ? "" : "primary"}" id="ecUp" for="ecFile">⬆ ${a.ecPdf ? "Replace check slip" : "Upload check slip"}</label>${a.ecPdf ? "" : `<span class="tap-here inline" id="ecTap" aria-hidden="true">👈 Click here</span>`}<input type="file" id="ecFile" accept="application/pdf,.pdf" hidden>
           <button class="btn danger" id="ecDel" type="button" ${a.ecPdf ? "" : "hidden"}>Remove</button></div>
         <div class="ec-verify" id="ecVerify" ${a.ecPdf ? "" : "hidden"}><b>🔎 Please verify the details</b><span>Name, father / husband name, address, phone and other details were read from the check slip. Check each one with the applicant's documents and correct anything wrong before downloading. Boxes filled from the slip are marked in green.</span></div>
@@ -2262,7 +2264,7 @@ function openApp(id, typeHint) {
     } catch (err) {
       toast("Saved on this phone; will need internet to save to account");
     }
-    $("#ecInfo").innerHTML = `<b>${esc(f.name)}</b> · ${Math.round(f.size / 1024)} KB${a.ecPdf.cloud ? " · saved to account" : " · on this phone"}`;
+    $("#ecInfo").innerHTML = `<b>${esc(f.name)}</b> · ${Math.round(f.size / 1024)} KB${a.ecPdf.cloud ? ` · online till ${fmtDate(a.ecPdf.at + 30 * 864e5).split(" ").slice(0, 3).join(" ")}` : " · on this phone"}`;
     const cb = $("#ecChk");
     if (cb) {
       if (!a.eciChk) a.eciChk = eciDefaults("yes");
@@ -2997,7 +2999,7 @@ async function buildFormPdf(a) {
         const k = Math.min(A4W / ep.width, A4H / ep.height), w = ep.width * k, h = ep.height * k;
         pg.drawPage(ep, { x: (A4W - w) / 2, y: (A4H - h) / 2, width: w, height: h });
       }
-    } else toast("The attached ECI application PDF isn't on this phone and couldn't be loaded — making the rest");
+    } else toast("The check slip isn't on this phone and is no longer in your account (online copies are kept 30 days) — upload it again. Making the rest now.");
   }
   const pack = { page: null, y: 0 };
   for (const P of T.parts) {
@@ -3211,7 +3213,7 @@ function markPrinted(a) {
     L[i].pdfAt = a.pdfAt;
     commit("app", -1, "PDF downloaded: " + a.name);
   }
-  toast(FORMS_ONLY ? "PDF downloaded · tap ✅ Completed when it is final" : "PDF downloaded · tap Move to ERO when it is final");
+  toast(FORMS_ONLY ? "PDF saved to your phone (Downloads) · tap ✅ Completed when it is final" : "PDF downloaded · tap Move to ERO when it is final");
   if (i >= 0 && document.getElementById("sbg")) openApp(a.id);
 }
 function moveToEro(a) {
@@ -3232,7 +3234,9 @@ async function downloadFormPdf(a) {
   try {
     toast("Preparing PDF…");
     const { bytes, name } = await buildFormPdf(a);
-    if (saveFile(name, new Blob([bytes], { type: "application/pdf" }))) markPrinted(a);
+    if (saveFile(name, new Blob([bytes], { type: "application/pdf" }))) {
+      markPrinted(a);
+    }
   } catch (e) {
     toast("Couldn't make the PDF: " + (e.message || "error"));
   }
@@ -3289,7 +3293,7 @@ async function previewFormPdf(a) {
   ov.querySelector("#pvPr").onclick = () => printPages(ov, built.name);
   ov.querySelector("#pvDl").onclick = () => {
     if (saveFile(built.name, new Blob([built.bytes], { type: "application/pdf" }))) {
-      toast("PDF downloaded");
+      toast("PDF saved to your phone (Downloads)");
       a.pdfAt = Date.now();
     }
   };

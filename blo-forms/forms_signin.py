@@ -2,7 +2,7 @@
 # (run from make_forms_app.py on the string s)
 i = s.index('<p class="hero-in">'); j = s.index('</p>', i) + 4
 s = s[:i] + """<div class="mode-pick">
-      <button type="button" class="mode-btn on" id="mWith"><span class="mode-ic">🔐</span><span><b>With sign in</b><small>Your data is saved for next time — on any phone</small></span><span class="mode-go">›</span></button>
+      <button type="button" class="mode-btn on" id="mWith"><span class="mode-ic">🔐</span><span><b>With sign in</b><small>Your data is saved for next time — on any phone (check slips kept 30 days)</small></span><span class="mode-go">›</span></button>
       <button type="button" class="mode-btn" id="mWithout"><span class="mode-ic">📱</span><span><b>Without sign in</b><small>Saved on this phone only — previous data may not be available</small></span><span class="mode-go">›</span></button>
     </div>
     <div id="signBox" class="sign-box" ${(window._signOpen||mode!=="login")?"":"hidden"}>
