@@ -2140,7 +2140,7 @@ function openApp(id, typeHint) {
       </div>
     </div>
     <div class="win-f" style="border-top:0">
-      <div class="copy-pick" id="copyPick"><span class="small"><b>Print which copies?</b> <span class="muted">Tap to include / leave out</span></span>
+      <div class="copy-pick" id="copyPick"><span class="small"><b>Print which copies?</b> <span class="muted">Tap to include / leave out. If you leave one out, the chosen copies are joined on the fewest pages — no empty space.</span></span>
         <div class="copy-chips">${COPY_KINDS.map(([k, te, en]) => `<button type="button" class="copy-chip" data-copy-k="${k}" aria-pressed="${copiesOf(a)[k]}"><span class="cc-box"></span><span><b>${te}</b><small>${en}</small></span></button>`).join("")}</div></div>
       <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
       <p class="muted small" style="margin:0">${a.pdfAt ? `✓ Printed ${fmtDate(a.pdfAt)}. Correct anything and download again if needed, then tap <b>${FORMS_ONLY ? "Completed" : "Move to ERO"}</b>.` : "Names print in English capitals. Preview and check before submitting; you can print from the preview."}</p>
@@ -2976,17 +2976,7 @@ async function drawSigBox(doc, page, png, b) {
   page.drawImage(img, { x: b.x + (b.w - w) / 2, y: H - (b.y + b.h) + (b.h - h) / 2, width: w, height: h });
 }
 const COPY_KINDS = [["office", "కార్యాలయ ప్రతి", "Office copy"], ["orig", "అసలు ప్రతి", "Applicant copy"], ["rcpt", "రసీదు", "Receipt"]];
-const F12 = [["orig", 0, 308], ["office", 308, 574], ["rcpt", 574, 842]];
-const COPY_SECS = {
-  "f6-approve.pdf": { 0: [["office", 0, 420], ["orig", 420, 842]], 1: F12 },
-  "f6-reject.pdf": { 0: [["office", 0, 842]], 1: [["orig", 0, 842]], 2: F12 },
-  "f7-death.pdf": { 0: [["office", 0, 392], ["orig", 392, 842]], 1: [["orig", 0, 288], ["office", 288, 547], ["rcpt", 547, 842]], 2: [["orig", 0, 315], ["office", 315, 593], ["rcpt", 593, 842]] },
-  "f7-double.pdf": { 0: [["office", 0, 395], ["orig", 395, 842]], 1: [["orig", 0, 288], ["office", 288, 547], ["rcpt", 547, 842]], 2: [["orig", 0, 315], ["office", 315, 593], ["rcpt", 593, 842]] },
-  "f7-migration.pdf": { 0: [["office", 0, 397], ["orig", 397, 842]], 1: [["orig", 0, 288], ["office", 288, 547], ["rcpt", 547, 842]], 2: [["orig", 0, 315], ["office", 315, 593], ["rcpt", 593, 842]] },
-  "f8-correction.pdf": { 0: [["office", 0, 420], ["orig", 420, 842]], 1: [["orig", 0, 320], ["office", 320, 571], ["rcpt", 571, 842]] },
-  "f8-shifting.pdf": { 0: [["office", 0, 420], ["orig", 420, 842]], 1: F12 },
-  "f12-shifting.pdf": { 0: [["orig", 0, 307], ["office", 307, 590], ["rcpt", 590, 842]] }
-};
+const COPY_SECS = { "f6-approve.pdf": { "0": [["office", 0, 420, 53, 420], ["orig", 420, 842, 420, 793]], "1": [["orig", 0, 308, 66, 306], ["office", 308, 574, 320, 568], ["rcpt", 574, 842, 574, 740]] }, "f6-reject.pdf": { "0": [["office", 0, 842, 54, 748]], "1": [["orig", 0, 842, 54, 797]], "2": [["orig", 0, 308, 66, 306], ["office", 308, 574, 320, 568], ["rcpt", 574, 842, 574, 740]] }, "f7-death.pdf": { "0": [["office", 0, 392, 49, 394], ["orig", 392, 842, 392, 772]], "1": [["orig", 0, 288, 52, 282], ["office", 288, 547, 296, 542], ["rcpt", 547, 842, 555, 776]], "2": [["orig", 0, 315, 52, 319], ["office", 315, 593, 322, 597], ["rcpt", 593, 842, 594, 758]] }, "f7-double.pdf": { "0": [["office", 0, 395, 59, 396], ["orig", 395, 842, 395, 777]], "1": [["orig", 0, 288, 52, 282], ["office", 288, 547, 296, 542], ["rcpt", 547, 842, 555, 776]], "2": [["orig", 0, 315, 52, 319], ["office", 315, 593, 322, 597], ["rcpt", 593, 842, 594, 758]] }, "f7-migration.pdf": { "0": [["office", 0, 397, 53, 397], ["orig", 397, 842, 397, 782]], "1": [["orig", 0, 288, 52, 282], ["office", 288, 547, 296, 542], ["rcpt", 547, 842, 555, 776]], "2": [["orig", 0, 315, 52, 319], ["office", 315, 593, 322, 597], ["rcpt", 593, 842, 594, 758]] }, "f8-correction.pdf": { "0": [["office", 0, 420, 37, 421], ["orig", 420, 842, 420, 809]], "1": [["orig", 0, 320, 52, 303], ["office", 320, 571, 320, 565], ["rcpt", 571, 842, 575, 748]] }, "f8-shifting.pdf": { "0": [["office", 0, 420, 53, 421], ["orig", 420, 842, 420, 793]], "1": [["orig", 0, 308, 66, 306], ["office", 308, 574, 320, 568], ["rcpt", 574, 842, 574, 740]] }, "f12-shifting.pdf": { "0": [["orig", 0, 307, 21, 308], ["office", 307, 590, 307, 594], ["rcpt", 590, 842, 590, 780]] } };
 const copiesOf = (a) => Object.assign({ office: true, orig: true, rcpt: true }, a.copies || {});
 async function buildFormPdf(a) {
   const T = tmplOf(a);
@@ -3009,6 +2999,7 @@ async function buildFormPdf(a) {
       }
     } else toast("The attached ECI application PDF isn't on this phone and couldn't be loaded — making the rest");
   }
+  const pack = { page: null, y: 0 };
   for (const P of T.parts) {
     if (P.optional === "panch" && (f7why(a) !== "death" || a.deathProof === "cert")) continue;
     const src = await PDFLib.PDFDocument.load(await (await fetch(P.file)).arrayBuffer());
@@ -3050,19 +3041,36 @@ async function buildFormPdf(a) {
     let keep = P.keep || pages.map((_, i) => i);
     if (P.declPage != null && a.decl === false) keep = keep.filter((i) => i !== P.declPage);
     {
-      const cp = copiesOf(a), sm = COPY_SECS[String(P.file).split("/").pop()], drop = /* @__PURE__ */ new Set();
-      if (sm) for (const pi of Object.keys(sm)) {
-        const pg = pages[+pi];
-        if (!pg) continue;
-        const secs = sm[pi], off = secs.filter((x) => !cp[x[0]]);
-        if (off.length === secs.length) {
-          drop.add(+pi);
-          continue;
+      const cp = copiesOf(a), sm = COPY_SECS[String(P.file).split("/").pop()];
+      if (sm && !(cp.office && cp.orig && cp.rcpt)) {
+        for (const pi of keep) {
+          const pg = pages[pi], secs = sm[pi];
+          if (!secs) {
+            const [cpg] = await out.copyPages(src, [pi]);
+            out.addPage(cpg);
+            pack.page = null;
+            continue;
+          }
+          const H = pg.getHeight(), W = pg.getWidth();
+          let own = null;
+          for (const [k, , , ct, cb] of secs) {
+            if (!cp[k]) continue;
+            if (!own) [own] = await out.copyPages(src, [pi]);
+            const h = cb - ct, emb = await out.embedPage(own, { left: 0, right: W, bottom: H - cb, top: H - ct });
+            if (!pack.page || pack.y - h < 18) {
+              pack.page = out.addPage([595.28, 841.89]);
+              pack.y = 841.89 - 18;
+            } else {
+              pack.page.drawLine({ start: { x: 24, y: pack.y + 2 }, end: { x: 571, y: pack.y + 2 }, thickness: 0.6, color: PDFLib.rgb(0.55, 0.55, 0.55), dashArray: [5, 4] });
+              pack.y -= 4;
+            }
+            pack.page.drawPage(emb, { x: (595.28 - W) / 2, y: pack.y - h, width: W, height: h });
+            pack.y -= h + 2;
+          }
         }
-        const H = pg.getHeight(), W = pg.getWidth();
-        for (const [, t, b] of off) pg.drawRectangle({ x: 0, y: H - Math.min(b, H), width: W, height: Math.min(b, H) - t, color: white });
+        continue;
       }
-      keep = keep.filter((i) => !drop.has(i));
+      pack.page = null;
     }
     (await out.copyPages(src, keep)).forEach((pg) => out.addPage(pg));
   }
