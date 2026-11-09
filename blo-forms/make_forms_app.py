@@ -55,7 +55,7 @@ s = s.replace('$("#partLine").textContent="Your part\'s voter register";', '$("#
 for item in ['{ id:"backup",', '{ id:"restore",', '{ id:"recent",', '{ id:"fresh",']:
     i = s.index(item, s.index("function renderBackup")); j = s.index("\n", i); s = s[:i] + s[j+1:]
 i = s.index('if(t==="backup") return [['); j = s.index("\n", i)
-s = s[:i] + '''if(t==="backup") return [["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["✍","My signature",()=>{ window._accSec="sign"; }]];''' + s[j:]
+s = s[:i] + '''if(t==="backup") return [["👤",session&&session.token?"Your account":"Create a free account",()=>{ window._accSec="account"; }],["🗳","My part details",()=>{ window._accSec="part"; }],["✍","My signature",()=>{ window._accSec="sign"; }],["🏛","Officer (ERO) name",()=>{ window._accSec="ero"; }]];''' + s[j:]
 
 # ---- overrides: own cloud store, no voter list ----
 over = r'''

@@ -1159,6 +1159,8 @@ function subItems(t) {
     window._accSec = "part";
   }], ["✍", "My signature", () => {
     window._accSec = "sign";
+  }], ["🏛", "Officer (ERO) name", () => {
+    window._accSec = "ero";
   }]];
   if (t === "lists") {
     const V = state.voters.length ? [["", "Voters in my working roll", null], ...subItems("voters").map((it) => [it[0], it[1], () => {
@@ -2980,6 +2982,57 @@ async function drawSigBox(doc, page, png, b) {
 const COPY_KINDS = [["office", "కార్యాలయ ప్రతి", "Office copy"], ["orig", "అసలు ప్రతి", "Applicant copy"], ["rcpt", "రసీదు", "Receipt"]];
 const COPY_SECS = { "f6-approve.pdf": { "0": [["office", 0, 420, 53, 420], ["orig", 420, 842, 420, 793]], "1": [["orig", 0, 308, 66, 306], ["office", 308, 574, 320, 568], ["rcpt", 574, 842, 574, 740]] }, "f6-reject.pdf": { "0": [["office", 0, 842, 54, 748]], "1": [["orig", 0, 842, 54, 797]], "2": [["orig", 0, 308, 66, 306], ["office", 308, 574, 320, 568], ["rcpt", 574, 842, 574, 740]] }, "f7-death.pdf": { "0": [["office", 0, 392, 49, 394], ["orig", 392, 842, 392, 772]], "1": [["orig", 0, 288, 52, 282], ["office", 288, 547, 296, 542], ["rcpt", 547, 842, 555, 776]], "2": [["orig", 0, 315, 52, 319], ["office", 315, 593, 322, 597], ["rcpt", 593, 842, 594, 758]] }, "f7-double.pdf": { "0": [["office", 0, 395, 59, 396], ["orig", 395, 842, 395, 777]], "1": [["orig", 0, 288, 52, 282], ["office", 288, 547, 296, 542], ["rcpt", 547, 842, 555, 776]], "2": [["orig", 0, 315, 52, 319], ["office", 315, 593, 322, 597], ["rcpt", 593, 842, 594, 758]] }, "f7-migration.pdf": { "0": [["office", 0, 397, 53, 397], ["orig", 397, 842, 397, 782]], "1": [["orig", 0, 288, 52, 282], ["office", 288, 547, 296, 542], ["rcpt", 547, 842, 555, 776]], "2": [["orig", 0, 315, 52, 319], ["office", 315, 593, 322, 597], ["rcpt", 593, 842, 594, 758]] }, "f8-correction.pdf": { "0": [["office", 0, 420, 37, 421], ["orig", 420, 842, 420, 809]], "1": [["orig", 0, 320, 52, 303], ["office", 320, 571, 320, 565], ["rcpt", 571, 842, 575, 748]] }, "f8-shifting.pdf": { "0": [["office", 0, 420, 53, 421], ["orig", 420, 842, 420, 793]], "1": [["orig", 0, 308, 66, 306], ["office", 308, 574, 320, 568], ["rcpt", 574, 842, 574, 740]] }, "f12-shifting.pdf": { "0": [["orig", 0, 307, 21, 308], ["office", 307, 590, 307, 594], ["rcpt", 590, 842, 590, 780]] } };
 const copiesOf = (a) => Object.assign({ office: true, orig: true, rcpt: true }, a.copies || {});
+const ERO_DEF = { name: "A.B.V.S.B. శ్రీనివాస్", qual: "B.Tech., L.L.M." };
+const ERO_SPOTS = {
+  "f6-approve.pdf": [[0, "hdr", 242.5, 94.5, 151, 9.5], [0, "hdr", 241, 452, 151, 9.5], [0, "sig", 374, 685, 60.5, 7.5]],
+  "f6-reject.pdf": [[0, "hdr", 239.5, 107, 181, 11.5], [1, "hdr", 239.5, 107, 181, 11.5]],
+  "f7-death.pdf": [[0, "hdr", 238, 89, 151, 9.5], [0, "hdr", 238, 427, 151, 9.5], [0, "sig", 402, 658.5, 48.5, 6]],
+  "f7-double.pdf": [[0, "hdr", 241, 103, 151, 9.5], [0, "hdr", 241, 436, 151, 9.5], [0, "sig", 389.5, 663, 54.5, 7]],
+  "f7-migration.pdf": [[0, "hdr", 240.5, 93, 151, 9.5], [0, "hdr", 239, 434.5, 151, 9.5], [0, "sig", 387, 658.5, 54.5, 7]],
+  "f8-correction.pdf": [[0, "hdr", 242.5, 78.5, 151, 9.5], [0, "hdr", 241, 452, 151, 9.5]],
+  "f8-shifting.pdf": [[0, "hdr", 242.5, 94.5, 151, 9.5], [0, "hdr", 241, 451.5, 151, 9.5], [0, "sig", 374, 685, 60.5, 7.5]]
+};
+const eroOf = () => {
+  const m = state && state.meta || {};
+  return { name: (m.eroName || "").trim() || ERO_DEF.name, qual: m.eroQual != null ? String(m.eroQual).trim() : ERO_DEF.qual };
+};
+const eroChanged = () => {
+  const e = eroOf();
+  return e.name !== ERO_DEF.name || e.qual !== ERO_DEF.qual;
+};
+function textPng(text, bold, ptSize) {
+  const k = 5, fs = ptSize * k, c = document.createElement("canvas"), x = c.getContext("2d");
+  const font = (bold ? "bold " : "") + fs + "px 'Noto Serif Telugu','Noto Sans Telugu','Gautami','Times New Roman',serif";
+  x.font = font;
+  const w = Math.ceil(x.measureText(text).width) + 4;
+  c.width = w;
+  c.height = Math.ceil(fs * 1.6);
+  x.font = font;
+  x.fillStyle = "#000";
+  x.textBaseline = "middle";
+  x.fillText(text, 2, c.height / 2);
+  return { png: c.toDataURL("image/png"), w: w / k, h: c.height / k };
+}
+async function drawEro(src, pages, file) {
+  const spots = ERO_SPOTS[String(file).split("/").pop()];
+  if (!spots || !eroChanged()) return;
+  const e = eroOf(), white = PDFLib.rgb(1, 1, 1), cache = {};
+  for (const [pi, kind, x0, y, w0, h] of spots) {
+    const pg = pages[pi];
+    if (!pg) continue;
+    const H = pg.getHeight();
+    const sh = kind === "hdr" ? h * 1.1 : 0, x = x0 + sh, w = w0 - sh;
+    const text = kind === "hdr" ? e.name + (e.qual ? ", " + e.qual + "," : ",") : e.name + ",";
+    const size = h * (kind === "hdr" ? 1.05 : 1.15), key = kind + size;
+    if (!cache[key]) {
+      const t = textPng(text, kind === "hdr", size);
+      cache[key] = { img: await src.embedPng(t.png), w: t.w, h: t.h };
+    }
+    const im = cache[key], mid = H - (y + h / 2);
+    pg.drawRectangle({ x: x - 1.5, y: H - (y + h + 2), width: w + 3, height: h + 4, color: white });
+    pg.drawImage(im.img, { x: x - 0.5, y: mid - im.h / 2, width: im.w, height: im.h });
+  }
+}
 async function buildFormPdf(a) {
   const T = tmplOf(a);
   if (!T) throw new Error("No PDF form for this kind of application yet");
@@ -3027,6 +3080,10 @@ async function buildFormPdf(a) {
         pg.drawText(text, { x, y: yb, size, font: f, color: ink });
       }
     });
+    try {
+      await drawEro(src, pages, P.file);
+    } catch (e) {
+    }
     if (sig && sig.png && a.useSig === true) for (const b of P.sig || []) {
       try {
         await drawSigBox(src, pages[b.page], sig.png, b);
@@ -5386,6 +5443,7 @@ function renderBackup(el) {
     { id: "account", icon: "👤", color: "var(--accent)", title: signed ? "Your account" : "Create a free account", sub: signed ? esc(session.email) : "Saved on this phone only" },
     { id: "part", icon: "🗳", color: "var(--info)", title: "My part details", sub: [m.ac && "AC " + esc(m.ac), m.part && "Part " + esc(m.part), m.blo && esc(m.blo)].filter(Boolean).join(" · ") || "Not filled yet" },
     { id: "sign", icon: "✍", color: "var(--accent)", title: "My signature", sub: sig ? "Saved · asked each time you download" : "Not added" },
+    { id: "ero", icon: "🏛", color: "var(--warn)", title: "Officer (ERO) name on forms", sub: esc(eroOf().name) + (eroChanged() ? " · changed" : " · as printed") },
     ...installCard() ? [{ id: "install", icon: "📲", color: "var(--info)", title: "Install on this phone", sub: "Open like a normal app" }] : []
   ];
   if (!sec) {
@@ -5411,6 +5469,14 @@ function renderBackup(el) {
       <div class="row" style="align-items:center;gap:12px;margin-bottom:10px"><div class="blo-ph" style="width:64px;height:64px;${m.bloPhoto ? `background-image:url('${m.bloPhoto}')` : ""}">${m.bloPhoto ? "" : "👤"}</div><button type="button" class="btn" onclick="document.getElementById('bloPhIn').click()">📷 ${m.bloPhoto ? "Change" : "Add"} my photo</button>${m.bloPhoto ? `<button type="button" class="btn" id="bloPhDel">Remove photo</button>` : ""}</div>
       <div class="grid2"><label class="f">BLO name<input id="sBlo" value="${esc(m.blo)}"></label><label class="f">BLO phone<input id="sBloPh" value="${esc(m.bloPhone || "")}" inputmode="tel" maxlength="10"></label></div>
       <button class="btn primary" id="sSave">Save details</button>`;
+  if (sec === "ero") {
+    const e = eroOf();
+    body = `<p class="muted small" style="margin:0">When the Electoral Registration Officer (ERO) changes, type the new name here. The app covers the old name on every order copy (the <b>ప్రస్తుతము :</b> line and the <b>సం/-</b> line) and prints the new one. The forms themselves stay the same — no need to upload them again.</p>
+      <label class="f">ERO name (Telugu or English)<input id="eroN" value="${esc(e.name)}" placeholder="${esc(ERO_DEF.name)}"></label>
+      <label class="f">Qualification<input id="eroQ" value="${esc(e.qual)}" placeholder="${esc(ERO_DEF.qual)}"></label>
+      <div class="note small" style="margin:0">Printed as: <b id="eroPv"></b></div>
+      <div class="row"><button class="btn primary" id="eroSave">Save</button><button class="btn" id="eroReset">Back to the printed name</button></div>`;
+  }
   if (sec === "perm") body = `<div id="permBox" class="perm-box"><span class="muted small">Loading…</span></div>`;
   if (sec === "sign") body = `<div class="sig-box">${sig ? `<img src="${m.signature.png}" alt="My signature">` : `<span class="muted small">No signature yet</span>`}</div>
         <label class="f">Name to show as BLO<input id="sigName" value="${esc(m.signature && m.signature.name || m.blo || "")}" placeholder="Your name"></label>
@@ -5434,6 +5500,29 @@ function renderBackup(el) {
     render();
   };
   if (sec === "perm") permLoad();
+  if (sec === "ero") {
+    const pv = () => {
+      const n = $("#eroN").value.trim() || ERO_DEF.name, q = $("#eroQ").value.trim();
+      $("#eroPv").textContent = "ప్రస్తుతము : " + n + (q ? ", " + q + "," : ",");
+    };
+    $("#eroN").oninput = pv;
+    $("#eroQ").oninput = pv;
+    pv();
+    $("#eroSave").onclick = () => {
+      pushUndo("change ERO name");
+      state.meta.eroName = $("#eroN").value.trim();
+      state.meta.eroQual = $("#eroQ").value.trim();
+      commit("meta", -1, "ERO name: " + (state.meta.eroName || ERO_DEF.name));
+      toast("Saved · new PDFs show this name");
+    };
+    $("#eroReset").onclick = () => {
+      delete state.meta.eroName;
+      delete state.meta.eroQual;
+      commit("meta", -1, "ERO name back to printed");
+      render();
+      toast("Back to the printed name");
+    };
+  }
   bindSettings();
   bindInstall();
   if ($("#xl")) $("#xl").onclick = exportExcel;
