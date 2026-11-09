@@ -272,6 +272,15 @@ nav.tabs button[aria-current="true"]{transform:translateY(-1px)}
 .tap-here.inline{align-self:center}
 .fill-here{display:block;width:118px;overflow:hidden;margin:0 0 4px;border-radius:999px;background:#FFF1C2;border:1.5px solid #F2B705;color:#B3261E;font-size:.72rem;font-weight:800;white-space:nowrap;animation:tapBlink 1.1s ease-in-out infinite}
 .fill-here[hidden]{display:none}
+.copy-pick{display:flex;flex-direction:column;gap:6px}
+.copy-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.copy-chip{display:flex;align-items:center;gap:6px;text-align:left;font:inherit;padding:7px 8px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;min-width:0}
+.copy-chip b{display:block;font-size:.78rem;line-height:1.2;color:inherit}
+.copy-chip small{display:block;font-size:.66rem;opacity:.85}
+.cc-box{flex:none;width:18px;height:18px;border-radius:5px;border:2px solid currentColor;display:grid;place-items:center;font-size:.75rem;font-weight:900}
+.copy-chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.copy-chip[aria-pressed="true"] .cc-box{background:var(--accent);border-color:var(--accent)}
+.copy-chip[aria-pressed="true"] .cc-box::after{content:"✓";color:#fff}
 .ec-verify{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:12px;background:#FFF6D6;border:1.5px solid #F2B705;font-size:.84rem;line-height:1.35}
 .ec-verify b{color:#8A5A00}
 .ec-verify[hidden]{display:none}
@@ -2131,6 +2140,8 @@ function openApp(id, typeHint) {
       </div>
     </div>
     <div class="win-f" style="border-top:0">
+      <div class="copy-pick" id="copyPick"><span class="small"><b>Print which copies?</b> <span class="muted">Tap to include / leave out</span></span>
+        <div class="copy-chips">${COPY_KINDS.map(([k, te, en]) => `<button type="button" class="copy-chip" data-copy-k="${k}" aria-pressed="${copiesOf(a)[k]}"><span class="cc-box"></span><span><b>${te}</b><small>${en}</small></span></button>`).join("")}</div></div>
       <div class="row" style="flex-wrap:nowrap"><button class="btn grow" id="apPrev">👁 Preview</button><button class="btn primary grow" id="apPdf">⬇ Download PDF</button></div>
       <p class="muted small" style="margin:0">${a.pdfAt ? `✓ Printed ${fmtDate(a.pdfAt)}. Correct anything and download again if needed, then tap <b>${FORMS_ONLY ? "Completed" : "Move to ERO"}</b>.` : "Names print in English capitals. Preview and check before submitting; you can print from the preview."}</p>
     </div></section>` : ""}
@@ -2592,6 +2603,16 @@ function openApp(id, typeHint) {
     openApp(a.id);
   };
   if ($("#apOpenV")) $("#apOpenV").onclick = () => openVoter(a.addedVoterId);
+  sh.querySelectorAll("[data-copy-k]").forEach((b) => b.onclick = () => {
+    const c = copiesOf(a), k = b.dataset.copyK;
+    c[k] = !c[k];
+    if (!c.office && !c.orig && !c.rcpt) {
+      toast("Keep at least one copy");
+      return;
+    }
+    a.copies = c;
+    b.setAttribute("aria-pressed", c[k]);
+  });
   const pdfReady = () => {
     const x = locked ? a : collect();
     if (!x) return null;
@@ -2954,6 +2975,19 @@ async function drawSigBox(doc, page, png, b) {
   const img = await doc.embedPng(png), H = page.getHeight(), k = Math.min(b.w / img.width, b.h / img.height), w = img.width * k, h = img.height * k;
   page.drawImage(img, { x: b.x + (b.w - w) / 2, y: H - (b.y + b.h) + (b.h - h) / 2, width: w, height: h });
 }
+const COPY_KINDS = [["office", "కార్యాలయ ప్రతి", "Office copy"], ["orig", "అసలు ప్రతి", "Applicant copy"], ["rcpt", "రసీదు", "Receipt"]];
+const F12 = [["orig", 0, 308], ["office", 308, 574], ["rcpt", 574, 842]];
+const COPY_SECS = {
+  "f6-approve.pdf": { 0: [["office", 0, 420], ["orig", 420, 842]], 1: F12 },
+  "f6-reject.pdf": { 0: [["office", 0, 842]], 1: [["orig", 0, 842]], 2: F12 },
+  "f7-death.pdf": { 0: [["office", 0, 392], ["orig", 392, 842]], 1: [["orig", 0, 288], ["office", 288, 547], ["rcpt", 547, 842]], 2: [["orig", 0, 315], ["office", 315, 593], ["rcpt", 593, 842]] },
+  "f7-double.pdf": { 0: [["office", 0, 395], ["orig", 395, 842]], 1: [["orig", 0, 288], ["office", 288, 547], ["rcpt", 547, 842]], 2: [["orig", 0, 315], ["office", 315, 593], ["rcpt", 593, 842]] },
+  "f7-migration.pdf": { 0: [["office", 0, 397], ["orig", 397, 842]], 1: [["orig", 0, 288], ["office", 288, 547], ["rcpt", 547, 842]], 2: [["orig", 0, 315], ["office", 315, 593], ["rcpt", 593, 842]] },
+  "f8-correction.pdf": { 0: [["office", 0, 420], ["orig", 420, 842]], 1: [["orig", 0, 320], ["office", 320, 571], ["rcpt", 571, 842]] },
+  "f8-shifting.pdf": { 0: [["office", 0, 420], ["orig", 420, 842]], 1: F12 },
+  "f12-shifting.pdf": { 0: [["orig", 0, 307], ["office", 307, 590], ["rcpt", 590, 842]] }
+};
+const copiesOf = (a) => Object.assign({ office: true, orig: true, rcpt: true }, a.copies || {});
 async function buildFormPdf(a) {
   const T = tmplOf(a);
   if (!T) throw new Error("No PDF form for this kind of application yet");
@@ -3015,6 +3049,21 @@ async function buildFormPdf(a) {
     }
     let keep = P.keep || pages.map((_, i) => i);
     if (P.declPage != null && a.decl === false) keep = keep.filter((i) => i !== P.declPage);
+    {
+      const cp = copiesOf(a), sm = COPY_SECS[String(P.file).split("/").pop()], drop = /* @__PURE__ */ new Set();
+      if (sm) for (const pi of Object.keys(sm)) {
+        const pg = pages[+pi];
+        if (!pg) continue;
+        const secs = sm[pi], off = secs.filter((x) => !cp[x[0]]);
+        if (off.length === secs.length) {
+          drop.add(+pi);
+          continue;
+        }
+        const H = pg.getHeight(), W = pg.getWidth();
+        for (const [, t, b] of off) pg.drawRectangle({ x: 0, y: H - Math.min(b, H), width: W, height: Math.min(b, H) - t, color: white });
+      }
+      keep = keep.filter((i) => !drop.has(i));
+    }
     (await out.copyPages(src, keep)).forEach((pg) => out.addPage(pg));
   }
   if (tmplKey(a) !== "f6r") await appendDecl(out, a, font);
